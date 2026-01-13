@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.css"></script>
 
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f4f6f9; }
@@ -34,7 +33,7 @@
             border: 1px solid #ccc; background: white; padding: 10px;
             position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             margin: 0 auto; overflow: hidden; page-break-inside: avoid;
-            background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); /* Pattern example */
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
         }
         .exam-card-header { background: #d9534f; color: white; padding: 5px; text-align: center; font-size: 12px; font-weight: bold; border-radius: 4px; }
         .exam-card-body { font-size: 11px; margin-top: 5px; }
@@ -87,10 +86,11 @@
             
             <div class="wizard-step active" id="step1">
                 <h4 class="text-center mb-4">Lütfen Katılmak İstediğiniz Sınavı Seçiniz</h4>
+                <div class="alert alert-info text-center" id="loadingAlert" style="display:none;">Sınav bilgileri yükleniyor...</div>
                 <div class="d-flex justify-content-center mb-3">
                     <select class="form-select form-select-lg w-75" id="examSelect" onchange="loadExamDetails()">
                         <option value="">Sınav Seçiniz...</option>
-                        </select>
+                    </select>
                 </div>
                 <div id="examDetailsArea" class="mt-4" style="display:none;">
                     <table class="table table-hover">
@@ -127,7 +127,6 @@
                         <div class="col-md-6">
                             <label class="form-label">Öğrenci Adı Soyadı</label>
                             <input type="text" class="form-control" id="stdName" required minlength="5" placeholder="En az 2 kelime">
-                            <div class="form-text">Ad ve Soyad arasında boşluk bırakınız.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Okulu</label>
@@ -137,7 +136,9 @@
                             <label class="form-label">Veli Adı Soyadı</label>
                             <input type="text" class="form-control" id="parentName" required minlength="5">
                         </div>
-                        <div class="col-md-6"></div> <div class="col-md-6">
+                        <div class="col-md-6"></div> 
+
+                        <div class="col-md-6">
                             <label class="form-label">Veli Telefon 1</label>
                             <input type="text" class="form-control phone-mask" id="phone1" placeholder="(5XX) XXX XX XX" required>
                         </div>
@@ -146,7 +147,7 @@
                             <input type="text" class="form-control phone-mask" id="phone2" placeholder="(5XX) XXX XX XX">
                         </div>
                         <div class="col-12 alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> Uyarı: Bilgilendirmeler telefon üzerinden yapılacaktır. Lütfen numaraları doğru girdiğinizden emin olunuz.
+                            <i class="fas fa-exclamation-triangle"></i> Uyarı: Bilgilendirmeler telefon üzerinden yapılacaktır. Yanlış girmeyiniz.
                         </div>
                     </div>
                     <div class="text-end mt-4">
@@ -211,7 +212,6 @@
                     <button class="btn btn-danger btn-sm" onclick="bulkDelete()"><i class="fas fa-trash"></i> Seçileni Sil</button>
                 </div>
             </div>
-
             <div class="table-responsive">
                 <table class="table table-bordered table-striped" id="adminTable">
                     <thead class="table-dark">
@@ -236,7 +236,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, set, get, child, update, remove, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
     // Firebase Config
     const firebaseConfig = {
@@ -254,39 +254,61 @@
     const db = getDatabase(app);
 
     // Global Variables
-    window.examData = []; // From Google Sheet
+    window.examData = []; 
     window.selectedExam = null;
-    window.selectedSession = null; // {date, time, quotaIndex, sessionIndex}
+    window.selectedSession = null; 
     window.adminPassword = "13579";
-    let dbStudents = []; // Local cache of students for admin
+    let dbStudents = []; 
 
-    // --- GOOGLE SHEET PARSER ---
+    // --- GOOGLE SHEET FETCH (YENİ VE GÜVENLİ YÖNTEM) ---
     window.fetchExamData = function() {
         const sheetId = "1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg";
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+        // Google Visualization API kullanarak JSON formatında veri çekiyoruz.
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                // Filter empty rows and map
-                window.examData = results.data.filter(row => row['Sınav'] && row['Sınav'] !== "").map(row => {
-                    return {
-                        name: row['Sınav'],
-                        dates: row['Tarih'].split(';'),
-                        seansCount: parseInt(row['Seans']),
-                        quotas: row['Kontenjan'].split(';').map(Number),
-                        times: row['Saatler'].split(';'),
-                        startNo: parseInt(row['İlk numara'])
-                    };
-                });
-                console.log("Exam Data Loaded:", window.examData);
-                populateExamDropdown();
-                populateAdminExamFilter();
-            },
-            error: function(err) {
-                Swal.fire("Hata", "Sınav verileri Google E-Tablodan çekilemedi. Lütfen tablonun 'Web'de Yayınla' (CSV) seçeneğinin aktif olduğundan emin olun.", "error");
-            }
+        const loading = document.getElementById('loadingAlert');
+        if(loading) loading.style.display = 'block';
+
+        fetch(url)
+        .then(res => res.text())
+        .then(text => {
+            if(loading) loading.style.display = 'none';
+            
+            // Google API yanıtını temizle (fazlalık karakterleri sil)
+            const jsonString = text.substring(47).slice(0, -2);
+            const json = JSON.parse(jsonString);
+            
+            // Tabloyu İşle
+            // Sütunlar: 0:Sınav, 1:Tarih, 2:Seans, 3:Kontenjan, 4:Saatler, 5:İlk numara
+            window.examData = [];
+            const rows = json.table.rows;
+
+            rows.forEach(row => {
+                const c = row.c;
+                if(c[0] && c[0].v) { // Sınav adı boş değilse
+                    window.examData.push({
+                        name: c[0] ? c[0].v : "",
+                        dates: c[1] ? c[1].v.toString().split(';') : [],
+                        seansCount: c[2] ? parseInt(c[2].v) : 1,
+                        quotas: c[3] ? c[3].v.toString().split(';').map(Number) : [0],
+                        times: c[4] ? c[4].v.toString().split(';') : [],
+                        startNo: c[5] ? parseInt(c[5].v) : 100
+                    });
+                }
+            });
+
+            console.log("Sınav Verileri Yüklendi:", window.examData);
+            populateExamDropdown();
+            populateAdminExamFilter();
+        })
+        .catch(err => {
+            console.error(err);
+            if(loading) loading.style.display = 'none';
+            Swal.fire({
+                title: "Veri Hatası",
+                text: "Sınav bilgileri çekilemedi. Lütfen Google E-Tablonun 'Web'de Yayınla' seçeneğinin aktif olduğundan emin olun.",
+                icon: "error"
+            });
         });
     }
 
@@ -295,7 +317,7 @@
         document.getElementById('mainMenu').style.display = 'none';
         document.getElementById('wizardContainer').style.display = 'block';
         changeStep(1);
-        fetchExamData(); // Refresh data
+        fetchExamData();
     }
     window.returnToMain = () => {
         document.getElementById('wizardContainer').style.display = 'none';
@@ -308,7 +330,7 @@
         document.getElementById(`step${stepNo}`).classList.add('active');
     }
 
-    // --- STEP 1 & 2: EXAM SELECTION & QUOTA ---
+    // --- EXAM LOGIC ---
     function populateExamDropdown() {
         const select = document.getElementById('examSelect');
         select.innerHTML = '<option value="">Sınav Seçiniz...</option>';
@@ -327,26 +349,17 @@
         if(index === "") { area.style.display = 'none'; return; }
         
         window.selectedExam = window.examData[index];
-
-        // Fetch current counts from Firebase to calculate live quota
         const snapshot = await get(child(ref(db), 'bursluluk/students'));
         const students = snapshot.exists() ? Object.values(snapshot.val()) : [];
         
         let html = '';
-        
-        // Loop through sessions based on "Seans" count (assuming dates/times match logic)
-        // Logic: dates and times are semicolon separated.
-        // If 2 sessions, data might look like: Date: 15.01;16.01, Time: 10:00;12:00
-        
         for(let i=0; i < window.selectedExam.seansCount; i++) {
-            const date = window.selectedExam.dates[i] || window.selectedExam.dates[0]; // Fallback
-            const time = window.selectedExam.times[i] || window.selectedExam.times[0];
+            const date = window.selectedExam.dates[i] || window.selectedExam.dates[0] || "Tarih Yok";
+            const time = window.selectedExam.times[i] || window.selectedExam.times[0] || "Saat Yok";
             const maxQuota = window.selectedExam.quotas[i] || 50;
-
-            // Count registered
+            
             const registeredCount = students.filter(s => 
-                s.examName === window.selectedExam.name && 
-                s.sessionIndex === i
+                s.examName === window.selectedExam.name && s.sessionIndex === i
             ).length;
 
             const remaining = maxQuota - registeredCount;
@@ -354,34 +367,19 @@
                 `<button class="btn btn-primary btn-sm" onclick="selectSession(${i}, '${date}', '${time}', ${remaining})">Seç</button>` : 
                 `<span class="badge bg-danger">Dolu</span>`;
 
-            html += `<tr>
-                <td>${date}</td>
-                <td>${time}</td>
-                <td>${remaining} / ${maxQuota}</td>
-                <td>${btnState}</td>
-            </tr>`;
+            html += `<tr><td>${date}</td><td>${time}</td><td>${remaining} / ${maxQuota}</td><td>${btnState}</td></tr>`;
         }
         tbody.innerHTML = html;
     }
 
     window.selectSession = (idx, date, time, remaining) => {
-        window.selectedSession = {
-            index: idx,
-            date: date,
-            time: time,
-            remaining: remaining
-        };
-        // Show confirm text
+        window.selectedSession = { index: idx, date: date, time: time, remaining: remaining };
         document.getElementById('confirmText').innerHTML = 
-            `<b>Fenomen Çocuk Kulübü</b><br> 
-            ${date} tarihinde saat ${time} gerçekleşecek<br>
-            <b>${window.selectedExam.name}</b><br>
-            sınavına kayıt olmak istiyor musunuz?`;
-        
+            `<b>Fenomen Çocuk Kulübü</b><br>${date} - ${time}<br><b>${window.selectedExam.name}</b><br>sınavına kayıt olmak istiyor musunuz?`;
         changeStep(2);
     }
 
-    // --- STEP 3: TC CHECK ---
+    // --- TC & REGISTRATION ---
     window.checkTCAndProceed = async () => {
         const tc = document.getElementById('tcCheckInput').value;
         if(tc.length !== 11 || isNaN(tc)) {
@@ -392,32 +390,21 @@
         const snapshot = await get(child(ref(db), 'bursluluk/students'));
         let isRegistered = false;
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            // Check if TC exists for THIS exam
-            Object.values(data).forEach(student => {
-                if(student.tc === tc && student.examName === window.selectedExam.name) {
-                    isRegistered = true;
-                }
+            Object.values(snapshot.val()).forEach(student => {
+                if(student.tc === tc && student.examName === window.selectedExam.name) isRegistered = true;
             });
         }
 
         if(isRegistered) {
-            Swal.fire({
-                title: "Zaten Kayıtlı!",
-                text: "Bu T.C. numarası ile bu sınava daha önce başvurunuz alınmıştır.",
-                icon: "info",
-                confirmButtonText: "Ana Menüye Dön"
-            }).then(() => returnToMain());
+            Swal.fire({ title: "Zaten Kayıtlı!", text: "Bu sınava zaten kaydınız var.", icon: "info" }).then(() => returnToMain());
         } else {
             changeStep(4);
-            // Auto fill phone mask listener
             setupPhoneMasks();
         }
     }
 
     function setupPhoneMasks() {
-        const inputs = document.querySelectorAll('.phone-mask');
-        inputs.forEach(input => {
+        document.querySelectorAll('.phone-mask').forEach(input => {
             input.addEventListener('input', function (e) {
                 var x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
                 e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? ' ' + x[3] : '') + (x[4] ? ' ' + x[4] : '');
@@ -425,9 +412,7 @@
         });
     }
 
-    // --- STEP 4 & 5: REGISTRATION LOGIC ---
     window.completeRegistration = async () => {
-        // Form Validation
         const stdName = document.getElementById('stdName').value.trim();
         const stdSchool = document.getElementById('stdSchool').value.trim();
         const parentName = document.getElementById('parentName').value.trim();
@@ -435,178 +420,86 @@
         const phone2 = document.getElementById('phone2').value;
         const tc = document.getElementById('tcCheckInput').value;
 
-        let errors = [];
-        if(stdName.split(' ').length < 2) errors.push("Öğrenci adı en az 2 kelime olmalıdır.");
-        if(parentName.split(' ').length < 2) errors.push("Veli adı en az 2 kelime olmalıdır.");
-        if(phone1.length < 14) errors.push("Telefon 1 eksik girildi.");
-
-        if(errors.length > 0) {
-            Swal.fire({
-                title: "Eksik Bilgi",
-                html: errors.join("<br>"),
-                icon: "warning"
-            });
+        if(stdName.split(' ').length < 2 || parentName.split(' ').length < 2 || phone1.length < 14) {
+            Swal.fire("Eksik Bilgi", "Ad soyadlar en az 2 kelime, telefon tam olmalı.", "warning");
             return;
         }
 
-        // Logic: Calculate Student ID (Fill gaps logic)
-        // 1. Get all students for this exam
         const snapshot = await get(child(ref(db), 'bursluluk/students'));
         const allStudents = snapshot.exists() ? Object.values(snapshot.val()) : [];
         const thisExamStudents = allStudents.filter(s => s.examName === window.selectedExam.name);
-        
-        // Extract Numbers and Sort
         const usedNumbers = thisExamStudents.map(s => parseInt(s.studentNo)).sort((a,b) => a-b);
         
         let assignedNo = window.selectedExam.startNo;
-        // Find gap
         for(let i = 0; i < usedNumbers.length; i++) {
-            if(usedNumbers[i] === assignedNo) {
-                assignedNo++;
-            } else if (usedNumbers[i] > assignedNo) {
-                // Found a gap
-                break;
-            }
+            if(usedNumbers[i] === assignedNo) assignedNo++;
+            else if (usedNumbers[i] > assignedNo) break;
         }
 
-        // Double check quota one last time (Race condition check simplified)
-        // Ideally use runTransaction but simplified here for logic clarity
         const currentSessionCount = thisExamStudents.filter(s => s.sessionIndex === window.selectedSession.index).length;
-        const maxQ = window.selectedExam.quotas[window.selectedSession.index];
-        
-        if(currentSessionCount >= maxQ) {
-            Swal.fire("Üzgünüz", "Bu sırada kontenjan doldu. Lütfen başka seans seçiniz.", "error");
+        if(currentSessionCount >= window.selectedExam.quotas[window.selectedSession.index]) {
+            Swal.fire("Üzgünüz", "Bu sırada kontenjan doldu.", "error");
             changeStep(1);
             return;
         }
 
-        // SAVE TO FIREBASE
-        const newStudentRef = push(ref(db, 'bursluluk/students')); // Use push for unique key
+        const newStudentRef = push(ref(db, 'bursluluk/students'));
         const studentData = {
-            id: newStudentRef.key,
-            tc: tc,
-            studentName: stdName,
-            school: stdSchool,
-            parentName: parentName,
-            phone1: phone1,
-            phone2: phone2,
-            examName: window.selectedExam.name,
-            examDate: window.selectedSession.date,
-            examTime: window.selectedSession.time,
-            sessionIndex: window.selectedSession.index,
-            studentNo: assignedNo,
-            regDate: new Date().toLocaleString()
+            id: newStudentRef.key, tc, studentName: stdName, school: stdSchool, parentName, phone1, phone2,
+            examName: window.selectedExam.name, examDate: window.selectedSession.date, examTime: window.selectedSession.time,
+            sessionIndex: window.selectedSession.index, studentNo: assignedNo, regDate: new Date().toLocaleString()
         };
 
         await set(newStudentRef, studentData);
-
-        // Generate Card
-        const cardHtml = generateCardHTML(studentData);
-        document.getElementById('finalCardPreview').innerHTML = cardHtml;
+        document.getElementById('finalCardPreview').innerHTML = generateCardHTML(studentData);
         changeStep(5);
     }
 
-    // Helper: Card Generator
     function generateCardHTML(data) {
-        return `
-        <div class="exam-card">
-            <div class="exam-card-header">FENOMEN ÇOCUK KULÜBÜ GİRİŞ KARTI</div>
-            <div class="exam-card-body">
-                <div class="exam-card-row"><span>Ad Soyad:</span> <strong>${data.studentName.toUpperCase()}</strong></div>
-                <div class="exam-card-row"><span>Okul:</span> <strong>${data.school}</strong></div>
-                <div class="exam-card-row"><span>T.C. No:</span> <strong>${data.tc}</strong></div>
-                <div class="exam-card-row" style="background:#f9f9f9;"><span>Öğrenci No:</span> <strong style="font-size:14px; color:red;">${data.studentNo}</strong></div>
-                <div class="mt-2 text-center" style="border-top:1px solid #ddd; padding-top:2px;">
-                    <strong>${data.examName}</strong><br>
-                    Tarih: ${data.examDate} - Saat: ${data.examTime}
-                </div>
-                <div class="text-center mt-1 text-muted" style="font-size:9px;">Sınav Yeri: Fenomen Çocuk Kulübü</div>
-            </div>
-        </div>
-        `;
+        return `<div class="exam-card"><div class="exam-card-header">FENOMEN ÇOCUK KULÜBÜ GİRİŞ KARTI</div><div class="exam-card-body">
+            <div class="exam-card-row"><span>Ad Soyad:</span> <strong>${data.studentName.toUpperCase()}</strong></div>
+            <div class="exam-card-row"><span>Okul:</span> <strong>${data.school}</strong></div>
+            <div class="exam-card-row"><span>T.C. No:</span> <strong>${data.tc}</strong></div>
+            <div class="exam-card-row" style="background:#f9f9f9;"><span>Öğrenci No:</span> <strong style="color:red;">${data.studentNo}</strong></div>
+            <div class="mt-2 text-center" style="border-top:1px solid #ddd;"><strong>${data.examName}</strong><br>${data.examDate} - ${data.examTime}</div>
+            <div class="text-center mt-1 text-muted" style="font-size:9px;">Sınav Yeri: Fenomen Çocuk Kulübü</div></div></div>`;
     }
 
-    // --- STUDENT INFO & CANCEL ---
-    window.openStudentInfo = () => {
-        new bootstrap.Modal(document.getElementById('infoModal')).show();
-    }
-
+    // --- OTHER FEATURES ---
+    window.openStudentInfo = () => new bootstrap.Modal(document.getElementById('infoModal')).show();
     window.searchStudentInfo = async () => {
         const key = document.getElementById('searchInfoInput').value.trim();
-        const resDiv = document.getElementById('studentInfoResult');
-        resDiv.innerHTML = "Aranıyor...";
-
         const snapshot = await get(child(ref(db), 'bursluluk/students'));
-        if (!snapshot.exists()) {
-            resDiv.innerHTML = "<div class='alert alert-warning'>Kayıt bulunamadı.</div>";
-            return;
-        }
-
-        const data = Object.values(snapshot.val());
-        const found = data.filter(s => s.tc === key || s.studentNo.toString() === key);
-
-        if(found.length === 0) {
-            resDiv.innerHTML = "<div class='alert alert-warning'>Bu bilgilerle bir başvuru bulunamadı.</div>";
-        } else {
-            let html = '';
-            found.forEach(s => {
-                html += `<div class="mb-3 border p-3 rounded bg-light">
-                    ${generateCardHTML(s)}
-                    <button class="btn btn-danger w-100 mt-2" onclick="cancelRegistration('${s.id}', '${s.studentName}')">
-                        <i class="fas fa-times"></i> Sınava Girmekten Vazgeçtim
-                    </button>
-                </div>`;
-            });
-            resDiv.innerHTML = html;
-        }
+        const resDiv = document.getElementById('studentInfoResult');
+        if (!snapshot.exists()) { resDiv.innerHTML = "<div class='alert alert-warning'>Kayıt bulunamadı.</div>"; return; }
+        
+        const found = Object.values(snapshot.val()).filter(s => s.tc === key || s.studentNo.toString() === key);
+        resDiv.innerHTML = found.length ? found.map(s => 
+            `<div class="mb-3 border p-3 bg-light">${generateCardHTML(s)}<button class="btn btn-danger w-100 mt-2" onclick="cancelRegistration('${s.id}', '${s.studentName}')">Sınavı İptal Et</button></div>`
+        ).join('') : "<div class='alert alert-warning'>Bulunamadı.</div>";
     }
 
     window.cancelRegistration = (id, name) => {
         Swal.fire({
-            title: 'Kaydı Silmek İstiyor musunuz?',
-            html: `İşlemi onaylamak için aşağıya <br> <b>${name} sınav iptal</b> <br> yazınız.`,
-            input: 'text',
-            showCancelButton: true,
-            confirmButtonText: 'Onayla ve Sil',
-            cancelButtonText: 'Vazgeç',
-            preConfirm: (text) => {
-                if (text !== `${name} sınav iptal`) {
-                    Swal.showValidationMessage('Yazı eşleşmedi, silme işlemi iptal edildi.');
-                }
-            }
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                // Delete from Firebase
+            title: 'Silinsin mi?', html: `Onaylamak için yazın:<br><b>${name} sınav iptal</b>`, input: 'text', showCancelButton: true
+        }).then(async (res) => {
+            if (res.isConfirmed && res.value === `${name} sınav iptal`) {
                 await remove(ref(db, `bursluluk/students/${id}`));
-                Swal.fire("Silindi", "Kayıt başarıyla silindi.", "success");
-                document.getElementById('studentInfoResult').innerHTML = ""; // Clear view
-                // Quota automatically opens up, ID becomes free for next user due to gap logic.
-            }
+                Swal.fire("Silindi", "", "success");
+                document.getElementById('studentInfoResult').innerHTML = "";
+            } else if (res.isConfirmed) Swal.fire("Hata", "Yazı eşleşmedi.", "error");
         });
     }
 
-    // --- ADMIN PANEL ---
     window.openAdminPanel = () => {
-        Swal.fire({
-            title: 'Yönetici Girişi',
-            input: 'password',
-            inputAttributes: { autocapitalize: 'off' },
-            showCancelButton: true,
-            confirmButtonText: 'Giriş',
-            showLoaderOnConfirm: true,
-            preConfirm: (login) => {
-                if (login !== window.adminPassword) {
-                    Swal.showValidationMessage('Hatalı Şifre');
-                }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
+        Swal.fire({ title: 'Yönetici Şifresi', input: 'password', showCancelButton: true }).then((res) => {
+            if (res.value === window.adminPassword) {
                 document.getElementById('mainMenu').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
                 fetchExamData();
                 fetchAdminData();
-            }
-        })
+            } else if (res.isConfirmed) Swal.fire("Hata", "Yanlış Şifre", "error");
+        });
     }
 
     async function fetchAdminData() {
@@ -618,183 +511,59 @@
     function populateAdminExamFilter() {
         const sel = document.getElementById('adminExamFilter');
         sel.innerHTML = '<option value="all">Tüm Sınavlar</option>';
-        window.examData.forEach(e => {
-            sel.innerHTML += `<option value="${e.name}">${e.name}</option>`;
-        });
+        window.examData.forEach(e => sel.innerHTML += `<option value="${e.name}">${e.name}</option>`);
     }
 
     window.renderAdminTable = () => {
-        const filterExam = document.getElementById('adminExamFilter').value;
+        const filter = document.getElementById('adminExamFilter').value;
         const search = document.getElementById('adminSearch').value.toLowerCase();
         const tbody = document.getElementById('adminTableBody');
         tbody.innerHTML = "";
-
-        let filtered = dbStudents.filter(s => {
-            let matchExam = filterExam === 'all' || s.examName === filterExam;
-            let matchSearch = (s.studentName.toLowerCase().includes(search) || 
-                               s.tc.includes(search) || 
-                               s.studentNo.toString().includes(search));
-            return matchExam && matchSearch;
-        });
-
-        // Sort by Exam then Number
-        filtered.sort((a,b) => a.studentNo - b.studentNo);
-
-        filtered.forEach(s => {
-            tbody.innerHTML += `
-            <tr>
+        
+        dbStudents.filter(s => (filter === 'all' || s.examName === filter) && (s.studentName.toLowerCase().includes(search) || s.tc.includes(search)))
+        .sort((a,b) => a.studentNo - b.studentNo)
+        .forEach(s => {
+            tbody.innerHTML += `<tr>
                 <td><input type="checkbox" class="admin-chk" value="${s.id}"></td>
-                <td>${s.studentNo}</td>
-                <td>${s.tc}</td>
-                <td>${s.studentName}</td>
-                <td>${s.examName}</td>
-                <td>${s.examDate} ${s.examTime}</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="printSingleCard('${s.id}')"><i class="fas fa-print"></i></button>
-                    <button class="btn btn-sm btn-warning" onclick="editStudent('${s.id}')"><i class="fas fa-edit"></i></button>
-                </td>
+                <td>${s.studentNo}</td><td>${s.tc}</td><td>${s.studentName}</td><td>${s.examName}</td><td>${s.examDate} ${s.examTime}</td>
+                <td><button class="btn btn-sm btn-info" onclick="printSingleCard('${s.id}')"><i class="fas fa-print"></i></button></td>
             </tr>`;
         });
     }
 
-    // --- ADMIN ACTIONS ---
-    window.toggleSelectAll = () => {
-        const master = document.getElementById('selectAll').checked;
-        document.querySelectorAll('.admin-chk').forEach(c => c.checked = master);
-    }
-
-    window.adminQuickRegister = () => {
-        // Simple redirect to wizard for now, or build a mini modal
-        Swal.fire({
-            title: "Hızlı Kayıt",
-            text: "Kayıt sihirbazına yönlendiriliyorsunuz...",
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => startNewRegistration());
-    }
-
-    window.bulkDelete = async () => {
-        const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
-        if(checked.length === 0) return Swal.fire("Uyarı", "Seçili öğrenci yok", "warning");
-
-        const res = await Swal.fire({
-            title: `${checked.length} kaydı silmek üzeresiniz?`,
-            text: "Bu işlem geri alınamaz!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Evet, Sil'
-        });
-
-        if(res.isConfirmed) {
-            const updates = {};
-            checked.forEach(id => updates[`bursluluk/students/${id}`] = null);
-            await update(ref(db), updates);
-            Swal.fire("Silindi", "Seçilenler silindi", "success");
-            fetchAdminData();
-        }
-    }
-
-    // Print Logic
+    window.toggleSelectAll = () => document.querySelectorAll('.admin-chk').forEach(c => c.checked = document.getElementById('selectAll').checked);
     window.printSingleCard = (id) => {
-        const s = dbStudents.find(x => x.id === id);
-        const card = generateCardHTML(s);
-        const printArea = document.getElementById('printArea');
-        printArea.innerHTML = `<div style="display:flex; justify-content:center; margin-top:50px;">${card}</div>`;
+        document.getElementById('printArea').innerHTML = `<div style="display:flex; justify-content:center; margin-top:50px;">${generateCardHTML(dbStudents.find(x => x.id === id))}</div>`;
         window.print();
-        printArea.innerHTML = ""; // clear
+        document.getElementById('printArea').innerHTML = "";
     }
-
     window.printBulkCards = () => {
         const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
-        if(checked.length === 0) return Swal.fire("Uyarı", "Listeden basılacak kişileri seçiniz.", "warning");
-        
-        const selectedStudents = dbStudents.filter(s => checked.includes(s.id));
-        
-        let html = '<div class="print-grid">';
-        selectedStudents.forEach(s => {
-            html += `<div style="border:1px dashed #ccc;">${generateCardHTML(s)}</div>`;
-        });
-        html += '</div>';
-        
-        const printArea = document.getElementById('printArea');
-        printArea.innerHTML = html;
+        if(!checked.length) return Swal.fire("Seçim Yapın", "", "warning");
+        document.getElementById('printArea').innerHTML = `<div class="print-grid">${dbStudents.filter(s => checked.includes(s.id)).map(s => `<div style="border:1px dashed #ccc;">${generateCardHTML(s)}</div>`).join('')}</div>`;
         window.print();
-        printArea.innerHTML = "";
+        document.getElementById('printArea').innerHTML = "";
     }
-
     window.printList = () => {
-        // Generate a clean list table for printing
         const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
-        let list = checked.length > 0 ? dbStudents.filter(s => checked.includes(s.id)) : dbStudents; // If none selected, print all (filtered view)
-        
-        // Use current table view filter if no checkbox selected? 
-        // Logic: if checkboxes, print selection. Else print current view.
-        if(checked.length === 0) {
-             // Re-apply filters manually or just take what's in dbStudents (simplified)
-             // Ideally we grab visible rows but let's just print all loaded
-        }
-
-        let html = `
-        <h3 style="text-align:center;">Fenomen Eğitim Kurumları - Sınav Listesi</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:12px;" border="1">
-            <thead>
-                <tr style="background:#eee;">
-                    <th>No</th><th>TC</th><th>Ad Soyad</th><th>Okul</th><th>Telefon</th><th>Sınav/Seans</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
-        list.forEach(s => {
-            html += `<tr>
-                <td>${s.studentNo}</td>
-                <td>${s.tc}</td>
-                <td>${s.studentName}</td>
-                <td>${s.school}</td>
-                <td>${s.phone1}</td>
-                <td>${s.examName} (${s.examTime})</td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-
-        const printArea = document.getElementById('printArea');
-        printArea.innerHTML = html;
+        const list = checked.length ? dbStudents.filter(s => checked.includes(s.id)) : dbStudents;
+        document.getElementById('printArea').innerHTML = `<table border="1" style="width:100%; border-collapse:collapse;"><thead><tr><th>No</th><th>TC</th><th>Ad</th><th>Okul</th><th>Tel</th><th>Sınav</th></tr></thead><tbody>${list.map(s => `<tr><td>${s.studentNo}</td><td>${s.tc}</td><td>${s.studentName}</td><td>${s.school}</td><td>${s.phone1}</td><td>${s.examName}</td></tr>`).join('')}</tbody></table>`;
         window.print();
-        printArea.innerHTML = "";
+        document.getElementById('printArea').innerHTML = "";
     }
-
-    window.editStudent = async (id) => {
-        const s = dbStudents.find(x => x.id === id);
-        const { value: formValues } = await Swal.fire({
-            title: 'Öğrenci Düzenle',
-            html:
-                `<input id="swal-name" class="swal2-input" value="${s.studentName}" placeholder="Ad Soyad">` +
-                `<input id="swal-phone" class="swal2-input" value="${s.phone1}" placeholder="Telefon">` +
-                `<input id="swal-school" class="swal2-input" value="${s.school}" placeholder="Okul">`,
-            focusConfirm: false,
-            preConfirm: () => {
-                return {
-                    studentName: document.getElementById('swal-name').value,
-                    phone1: document.getElementById('swal-phone').value,
-                    school: document.getElementById('swal-school').value
-                }
-            }
-        });
-
-        if (formValues) {
-            await update(ref(db, `bursluluk/students/${id}`), formValues);
-            Swal.fire('Güncellendi', '', 'success');
+    window.bulkDelete = async () => {
+        const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
+        if(!checked.length) return Swal.fire("Seçim Yapın", "", "warning");
+        if((await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true })).isConfirmed) {
+            const updates = {}; checked.forEach(id => updates[`bursluluk/students/${id}`] = null);
+            await update(ref(db), updates);
+            Swal.fire("Silindi", "", "success");
             fetchAdminData();
         }
     }
-
-    // Needed for module scope access from HTML
-    import { push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-    window.push = push; 
     
-    // Initial Load
+    // Yükleme Başlat
     fetchExamData();
-
 </script>
-
 </body>
 </html>
