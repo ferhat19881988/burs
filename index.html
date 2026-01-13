@@ -1047,32 +1047,36 @@
         return;
       }
 
+      // Loading ekranını sadece veri okuma süresince gösterelim (SweetAlert'i perdelememek için)
       showLoading(true);
+      let students = [];
       try{
         const snap = await get(child(ref(db), "bursluluk/students"));
-        if(!snap.exists()){
-          changeStep(4);
-          setupMasks();
-          return;
-        }
-        const students = Object.values(snap.val());
-        const existsForThisExam = students.some(s => s.tc === tc && s.examName === window.selectedExam.name);
-
-        if(existsForThisExam){
-          await Swal.fire({
-            title:"Zaten Kayıtlı",
-            text:"Bu T.C. numarası ile bu sınava daha önce başvurunuz alınmıştır.",
-            icon:"info",
-            confirmButtonText:"Ana Menüye Dön"
-          });
-          returnToMain();
-        } else {
-          changeStep(4);
-          setupMasks();
-        }
+        students = snap.exists() ? Object.values(snap.val()) : [];
+      } catch(e){
+        console.error("T.C. sorgu hatası:", e);
+        showLoading(false);
+        Swal.fire("Hata","Sorgulama sırasında bir sorun oluştu. Lütfen tekrar deneyiniz.","error");
+        return;
       } finally {
         showLoading(false);
       }
+
+      const existsForThisExam = students.some(s => String(s.tc) === tc && s.examName === window.selectedExam.name);
+
+      if(existsForThisExam){
+        await Swal.fire({
+          title:"Zaten Kayıtlı",
+          text:"Bu T.C. numarası ile bu sınava daha önce başvurunuz alınmıştır.",
+          icon:"info",
+          confirmButtonText:"Ana Menüye Dön"
+        });
+        returnToMain();
+        return;
+      }
+
+      changeStep(4);
+      setupMasks();
     };
 
     function setupMasks(){
@@ -1234,10 +1238,15 @@
       const newStudentRef = push(ref(db, "bursluluk/students"));
       const studentId = newStudentRef.key;
 
+      // try/catch içinde de erişebilmek için
+      let candidate = null;
+
       try{
         // 1) Reserve seat with transaction
         const seatOk = await reserveSeat(examKey, sessionIndex, maxQuota);
         if(!seatOk){
+          // Swal perdelememek için loading'i kapat
+          showLoading(false);
           Swal.fire("Kontenjan Dolu","İşlem sırasında kontenjan doldu. Lütfen başka seans seçiniz.","error");
           changeStep(1);
           return;
@@ -1245,7 +1254,7 @@
 
         // 2) Reserve smallest available number using numberLocks
         let used = await getUsedNumbers(examKey);
-        let candidate = pickSmallestAvailable(startNo, used);
+        candidate = pickSmallestAvailable(startNo, used);
 
         let locked = false;
         let tries = 0;
@@ -1260,6 +1269,7 @@
         if(!locked){
           // release seat and fail
           await releaseSeat(examKey, sessionIndex);
+          showLoading(false);
           Swal.fire("Sistem Yoğun","Öğrenci numarası atanamadı. Lütfen tekrar deneyiniz.","error");
           return;
         }
@@ -1294,7 +1304,11 @@
         console.error(e);
         // cleanup best-effort
         try{ await releaseSeat(examKey, sessionIndex); } catch(_){}
-        try{ /* unknown assigned number */ } catch(_){}
+        // Eğer numara kilidi alındıysa, sistemde kalmaması için (best-effort)
+        try{
+          if(typeof candidate === "number") await releaseNumberLock(examKey, candidate, studentId);
+        } catch(_){}
+        showLoading(false);
         Swal.fire("Hata","Kayıt işlemi sırasında hata oluştu: " + (e?.message || e),"error");
       } finally {
         showLoading(false);
