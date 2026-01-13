@@ -2055,6 +2055,10 @@
 
     // Restrict TC input to digits
     el("tcCheckInput").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
+    window.startNewRegistration = startNewRegistration;
+window.openStudentInfo = openStudentInfo;
+window.openAdminPanel = openAdminPanel;
+window.returnToMain = returnToMain;
   </script>
 </body>
 </html>
