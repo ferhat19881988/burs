@@ -236,10 +236,7 @@
       </div>
     </div>
 
-    <div class="mt-5 hint">
-      Not: Sınav tanımları Google E-Tablo’dan çekilir, öğrenci kayıtları Firebase üzerinde saklanır.
-    </div>
-  </div>
+      </div>
 
   <!-- WIZARD -->
   <div class="container wizard-shell" id="wizardContainer" style="display:none;">
@@ -275,7 +272,7 @@
               <select class="form-select form-select-lg" id="examSelect" onchange="loadExamDetails()">
                 <option value="">Sınav Seçiniz...</option>
               </select>
-              <div class="hint mt-2">Sınav listesi Google E-Tablo’dan alınır. Sütun başlıkları: Sınav, Tarih, Seans, Kontenjan, Saatler, İlk numara</div>
+              <div class="hint mt-2">Sütun başlıkları: Sınav, Tarih, Seans, Kontenjan, Saatler, İlk numara</div>
             </div>
             <div class="col-lg-5">
               <div class="ai-alert">
@@ -558,10 +555,11 @@
     let currentWizardStep = 1;
 
     const SHEET_ID = "1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg";
+    const SHEET_NAME = "Bursluluk-Lgs";
+    const GVIZ_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
-
-    // Password "13579" is validated via SHA-256 hash (obfuscation, not security)
-    const ADMIN_PASSWORD_SHA256_HEX = "9d70d9a5124be6a0496a1f6bd2f0a7f0e1f153a32c3ef0f625d3f8b15a538a38"; // sha256("13579")
+// Password "13579" is validated via SHA-256 hash (obfuscation, not security)
+    const ADMIN_PASSWORD_SHA256_HEX = "0a0667865bc17f9d624bcf11088057bbab46336e7dae65f3d5366f4f7a18333e"; // sha256("13579")
 
     // --- Helpers ---
     const el = (id) => document.getElementById(id);
@@ -633,62 +631,262 @@
     }
 
     // --- Google Sheet Fetch & Parse ---
-    window.fetchExamData = function(isShowAlert=false){
+    window.fetchExamData = async function(isShowAlert=false){
       if(isShowAlert) showLoading(true);
 
-      Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if(isShowAlert) showLoading(false);
+      const normalizeHeader = (h) => {
+        return String(h || "")
+          .replace(/\uFEFF/g, "")
+          .trim()
+          .toLocaleLowerCase("tr-TR")
+          .replaceAll("ğ","g").replaceAll("ü","u").replaceAll("ş","s").replaceAll("ı","i").replaceAll("ö","o").replaceAll("ç","c")
+          .replace(/[^a-z0-9]/g, "");
+      };
 
-          if(!results.data || results.data.length === 0){
-            console.error("Google Sheet verisi boş döndü.");
+      const splitList = (val) => {
+        if(val === undefined || val === null) return [];
+        return String(val)
+          .split(/[;,]/)
+          .map(s => normSpaces(s))
+          .filter(Boolean);
+      };
+
+      const parseFromUrl = (url) => new Promise((resolve, reject) => {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (h) => String(h || "").replace(/\uFEFF/g, "").trim(),
+          complete: (results) => {
+            const rows = results?.data || [];
+            const fields = (results?.meta?.fields || []).map(normalizeHeader);
+
+            const hasSinav = fields.includes("sinav") ||
+              (rows[0] && Object.keys(rows[0]).some(k => normalizeHeader(k) === "sinav"));
+
+            if(!rows.length || !hasSinav){
+              reject(new Error("Beklenen sütunlar bulunamadı veya veri boş döndü."));
+              return;
+            }
+            resolve(rows);
+          },
+          error: (err) => reject(err)
+        });
+      });
+
+      const urlsToTry = [GVIZ_CSV_URL, CSV_URL];
+
+      let rows = null;
+      let lastErr = null;
+
+      for(const url of urlsToTry){
+        try{
+          rows = await parseFromUrl(url);
+          lastErr = null;
+          break;
+        }catch(e){
+          lastErr = e;
+        }
+      }
+
+      if(isShowAlert) showLoading(false);
+
+      if(!rows){
+        console.error("Sheet okuma hatası:", lastErr);
+        if(isShowAlert){
+          Swal.fire("Veri Hatası","Tablodan veri çekilemedi. Lütfen paylaşım / yayın ayarlarını kontrol ediniz.","error");
+        }
+        return false;
+      }
+
+      try{
+        window.examData = rows
+          .map(row => {
+            const m = {};
+            Object.keys(row || {}).forEach(k => { m[normalizeHeader(k)] = row[k]; });
+
+            const name = normSpaces(m["sinav"]);
+            if(!name) return null;
+
+            const dates = splitList(m["tarih"]);
+            const times = splitList(m["saatler"]);
+            const quotasRaw = splitList(m["kontenjan"]);
+            const quotas = quotasRaw.map(x => parseInt(x, 10) || 0);
+
+            let seansCount = parseInt(m["seans"] || "0", 10) || 0;
+            if(!seansCount){
+              seansCount = Math.max(dates.length, times.length, quotas.length, 0);
+            }
+
+            const startNoRaw = m["ilknumara"] ?? m["ilkno"] ?? m["ilknum"] ?? m["ilk"];
+            const startNo = parseInt(String(startNoRaw || "0").trim(), 10) || 0;
+
+            return {
+              name,
+              key: slugifyTR(name),
+              dates,
+              seansCount,
+              quotas,
+              times,
+              startNo
+            };
+          })
+          .filter(Boolean);
+
+        if(window.examData.length === 0){
+          if(isShowAlert){
+            Swal.fire("Veri Format Hatası","Sütun isimleri eşleşmiyor olabilir. Beklenen başlıklar: Sınav, Tarih, Seans, Kontenjan, Saatler, İlk numara","warning");
+          }
+          return false;
+        }
+
+        // normalize array lengths
+        window.examData.forEach(ex => {
+          const n = ex.seansCount || 0;
+          const pad = (arr, fill="") => {
+            const out = Array.isArray(arr) ? arr.slice() : [];
+            while(out.length < n) out.push(fill);
+            return out;
+          };
+          ex.dates = pad(ex.dates, ex.dates[0] || "");
+          ex.times = pad(ex.times, ex.times[0] || "");
+          ex.quotas = pad(ex.quotas, ex.quotas[0] ?? 0);
+        });
+
+        populateExamDropdown();
+        populateAdminFilters();
+        return true;
+
+      }catch(e){
+        console.error("Veri işleme hatası:", e);
+        if(isShowAlert){
+          Swal.fire("İşleme Hatası","Veriler okunurken hata oluştu: " + e.message,"error");
+        }
+        return false;
+      }
+    };
+
+      const splitList = (val) => {
+        if(val === undefined || val === null) return [];
+        return String(val)
+          .split(/[;,]/)
+          .map(s => normSpaces(s))
+          .filter(Boolean);
+      };
+
+      const parseFromUrl = (url) => new Promise((resolve, reject) => {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (h) => String(h || "").replace(/\uFEFF/g, "").trim(),
+          complete: (results) => {
+            const rows = results?.data || [];
+            const fields = (results?.meta?.fields || []).map(normalizeHeader);
+
+            const hasSinav = fields.includes("sinav") ||
+              (rows[0] && Object.keys(rows[0]).some(k => normalizeHeader(k) === "sinav"));
+
+            if(!rows.length || !hasSinav){
+              reject(new Error("Beklenen sütunlar bulunamadı veya veri boş döndü."));
+              return;
+            }
+            resolve(rows);
+          },
+          error: (err) => reject(err)
+        });
+      });
+
+      const urlsToTry = [GVIZ_CSV_URL, CSV_URL];
+
+      (async () => {
+        let rows = null;
+        let lastErr = null;
+
+        for(const url of urlsToTry){
+          try{
+            rows = await parseFromUrl(url);
+            lastErr = null;
+            break;
+          }catch(e){
+            lastErr = e;
+          }
+        }
+
+        if(isShowAlert) showLoading(false);
+
+        if(!rows){
+          console.error("Sheet okuma hatası:", lastErr);
+          if(isShowAlert){
+            Swal.fire("Veri Hatası","Tablodan veri çekilemedi. Lütfen paylaşım / yayın ayarlarını kontrol ediniz.","error");
+          }
+          return;
+        }
+
+        try{
+          window.examData = rows
+            .map(row => {
+              const m = {};
+              Object.keys(row || {}).forEach(k => { m[normalizeHeader(k)] = row[k]; });
+
+              const name = normSpaces(m["sinav"]);
+              if(!name) return null;
+
+              const dates = splitList(m["tarih"]);
+              const times = splitList(m["saatler"]);
+              const quotasRaw = splitList(m["kontenjan"]);
+              const quotas = quotasRaw.map(x => parseInt(x, 10) || 0);
+
+              let seansCount = parseInt(m["seans"] || "0", 10) || 0;
+              if(!seansCount){
+                seansCount = Math.max(dates.length, times.length, quotas.length, 0);
+              }
+
+              const startNoRaw = m["ilknumara"] ?? m["ilkno"] ?? m["ilknum"] ?? m["ilk"];
+              const startNo = parseInt(String(startNoRaw || "0").trim(), 10) || 0;
+
+              return {
+                name,
+                key: slugifyTR(name),
+                dates,
+                seansCount,
+                quotas,
+                times,
+                startNo
+              };
+            })
+            .filter(Boolean);
+
+          if(window.examData.length === 0){
             if(isShowAlert){
-              Swal.fire("Veri Hatası","Tablodan veri çekilemedi. Lütfen Google E-Tablo paylaşım / yayın ayarlarını kontrol ediniz.","error");
+              Swal.fire("Veri Format Hatası","Sütun isimleri eşleşmiyor olabilir. Beklenen başlıklar: Sınav, Tarih, Seans, Kontenjan, Saatler, İlk numara","warning");
             }
             return;
           }
 
-          try{
-            window.examData = results.data
-              .filter(row => row["Sınav"] && String(row["Sınav"]).trim() !== "")
-              .map(row => ({
-                name: normSpaces(row["Sınav"]),
-                key: slugifyTR(row["Sınav"]),
-                dates: row["Tarih"] ? String(row["Tarih"]).split(";").map(s => normSpaces(s)) : [],
-                seansCount: parseInt(row["Seans"] || "0", 10) || 0,
-                quotas: row["Kontenjan"] ? String(row["Kontenjan"]).split(";").map(x => parseInt(normSpaces(x),10) || 0) : [],
-                times: row["Saatler"] ? String(row["Saatler"]).split(";").map(s => normSpaces(s)) : [],
-                startNo: parseInt(row["İlk numara"] || "0", 10) || 0,
-              }));
+          // normalize array lengths
+          window.examData.forEach(ex => {
+            const n = ex.seansCount || 0;
+            const pad = (arr, fill="") => {
+              const out = Array.isArray(arr) ? arr.slice() : [];
+              while(out.length < n) out.push(fill);
+              return out;
+            };
+            ex.dates = pad(ex.dates, ex.dates[0] || "");
+            ex.times = pad(ex.times, ex.times[0] || "");
+            ex.quotas = pad(ex.quotas, ex.quotas[0] ?? 0);
+          });
 
-            if(window.examData.length === 0){
-              if(isShowAlert){
-                Swal.fire("Veri Format Hatası","Sütun isimleri eşleşmiyor olabilir. Beklenen başlıklar: Sınav, Tarih, Seans, Kontenjan, Saatler, İlk numara","warning");
-              }
-              return;
-            }
+          populateExamDropdown();
+          populateAdminFilters();
 
-            populateExamDropdown();
-            populateAdminFilters();
-
-          }catch(e){
-            console.error("Veri işleme hatası:", e);
-            if(isShowAlert){
-              Swal.fire("İşleme Hatası","Veriler okunurken hata oluştu: " + e.message,"error");
-            }
-          }
-        },
-        error: (err) => {
-          if(isShowAlert) showLoading(false);
-          console.error("PapaParse Hatası:", err);
+        }catch(e){
+          console.error("Veri işleme hatası:", e);
           if(isShowAlert){
-            Swal.fire("Bağlantı Hatası","Google E-Tabloya erişilemedi. İnternet bağlantınızı ve tablo erişimini kontrol ediniz.","error");
+            Swal.fire("İşleme Hatası","Veriler okunurken hata oluştu: " + e.message,"error");
           }
         }
-      });
+      })();
     };
 
     function populateExamDropdown(){
