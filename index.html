@@ -3,866 +3,941 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fenomen Eğitim Kurumları – Bursluluk/LGS Başvuru</title>
-    <!-- Bootstrap CSS for modern UI -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <title>Fenomen Eğitim Kurumları - Sınav Başvuru</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
-        /* General page styling */
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --danger-color: #e74a3b;
+        }
+        
         body {
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding-top: 40px;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fc;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
-        h1, h2 {
-            text-align: center;
-            margin-bottom: 20px;
+
+        .main-container {
+            max-width: 1000px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
-        .main-buttons {
+
+        /* Ana Menü Butonları */
+        .big-btn {
+            height: 150px;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            border: none;
+            border-radius: 15px;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 10px;
+            color: white;
         }
-        .main-buttons .btn {
-            width: 220px;
-            height: 80px;
-            font-size: 20px;
-            font-weight: bold;
+        .big-btn:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn-new { background: linear-gradient(45deg, #4e73df, #224abe); }
+        .btn-check { background: linear-gradient(45deg, #1cc88a, #13855c); }
+        .btn-admin { background: linear-gradient(45deg, #36b9cc, #258391); }
+
+        /* Wizard Steps */
+        .step-section { display: none; animation: fadeIn 0.5s; }
+        .step-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Exam Card Design */
+        .exam-card {
+            border: 2px solid #4e73df;
+            border-radius: 10px;
+            padding: 20px;
+            background: white;
+            position: relative;
+            max-width: 500px;
+            margin: 20px auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        /* Wizard styling */
-        .wizard-step {
-            display: none;
-        }
-        .wizard-step.active {
-            display: block;
-        }
-        /* Entry card styling */
-        .entry-card {
-            border: 1px solid #343a40;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 8px;
-            max-width: 400px;
-            background-color: #fff;
-        }
-        .entry-card h5 {
+        .exam-card-header {
+            background: #4e73df;
+            color: white;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
             text-align: center;
-            margin-bottom: 10px;
             font-weight: bold;
+            margin: -20px -20px 15px -20px;
         }
-        .entry-card div {
-            margin-bottom: 5px;
-        }
-        /* Admin table styles */
-        .admin-table th, .admin-table td {
-            font-size: 14px;
-        }
-        .cursor-pointer {
-            cursor: pointer;
+        .exam-card-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #ddd; padding-bottom: 5px; }
+        .exam-card-label { font-weight: 600; color: #555; }
+
+        /* Admin Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+            
+            /* Kartvizit Baskı Düzeni (A4) */
+            .batch-print-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 10px;
+            }
+            .batch-card {
+                border: 1px dashed #000;
+                padding: 10px;
+                page-break-inside: avoid;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Fenomen Eğitim Kurumları</h1>
-        <h2>Bursluluk / LGS Prova Başvuru Sistemi</h2>
-        <!-- Main Buttons -->
-        <div class="main-buttons">
-            <button id="btnNew" class="btn btn-primary">Yeni Kayıt</button>
-            <button id="btnLookup" class="btn btn-secondary">Kayıtlı Bilgisi</button>
-            <button id="btnAdmin" class="btn btn-warning">Yönetici Bölümü</button>
-        </div>
 
-        <!-- Wizard modal for new registration -->
-        <div class="modal fade" id="wizardModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Yeni Başvuru</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="wizardSteps">
-                            <!-- Step 1: Select Exam -->
-                            <div id="step1" class="wizard-step">
-                                <h5>Sınav Seçimi</h5>
-                                <div class="mb-3">
-                                    <label for="examSelect" class="form-label">Sınav</label>
-                                    <select id="examSelect" class="form-select">
-                                        <option value="">-- Sınav seçin --</option>
-                                    </select>
-                                </div>
-                                <div id="sessionContainer" class="mb-3" style="display:none;">
-                                    <label class="form-label">Seans ve Saat Seçimi</label>
-                                    <div id="sessionOptions"></div>
-                                    <small class="form-text text-muted">Kontenjan dolu olan seanslar seçilemez.</small>
-                                </div>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-primary" id="btnStep1Next" disabled>Devam</button>
-                                </div>
-                            </div>
-                            <!-- Step 2: Confirmation and TC -->
-                            <div id="step2" class="wizard-step">
-                                <h5>Başvuru Onayı</h5>
-                                <p id="examSummary" class="fw-bold"></p>
-                                <p>Bu sınava başvurmak istediğinize emin misiniz?</p>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-secondary" id="btnStep2Cancel">Hayır</button>
-                                    <button class="btn btn-primary" id="btnStep2Next">Evet</button>
-                                </div>
-                            </div>
-                            <!-- Step 3: TC check -->
-                            <div id="step3" class="wizard-step">
-                                <h5>TC Kimlik Numarası Kontrolü</h5>
-                                <div class="mb-3">
-                                    <label for="tcInput" class="form-label">Öğrenci TC (11 haneli)</label>
-                                    <input type="text" id="tcInput" class="form-control" maxlength="11" placeholder="TC Kimlik Numarası">
-                                </div>
-                                <div id="tcError" class="text-danger mb-2" style="display:none;"></div>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-secondary" id="btnStep3Back">Geri</button>
-                                    <button class="btn btn-primary ms-2" id="btnStep3Next">Devam</button>
-                                </div>
-                            </div>
-                            <!-- Step 4: Student info entry -->
-                            <div id="step4" class="wizard-step">
-                                <h5>Öğrenci Bilgileri</h5>
-                                <form id="studentForm">
-                                    <div class="mb-3">
-                                        <label class="form-label">Öğrenci Tam Adı</label>
-                                        <input type="text" class="form-control" id="studentName" placeholder="Ad Soyad">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Okulu</label>
-                                        <input type="text" class="form-control" id="studentSchool" placeholder="Okul Adı">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Veli Tam Adı</label>
-                                        <input type="text" class="form-control" id="parentName" placeholder="Ad Soyad">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Telefon 1</label>
-                                        <input type="text" class="form-control" id="phone1" placeholder="(5xx) xxx xx xx">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Telefon 2</label>
-                                        <input type="text" class="form-control" id="phone2" placeholder="(5xx) xxx xx xx">
-                                        <small class="form-text text-muted">Bilgilendirme telefon üzerinden yapılacaktır, lütfen doğru giriniz.</small>
-                                    </div>
-                                </form>
-                                <div id="formError" class="text-danger mb-2" style="display:none;"></div>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-secondary" id="btnStep4Back">Geri</button>
-                                    <button class="btn btn-success ms-2" id="btnSubmit">Kaydet</button>
-                                </div>
-                            </div>
-                            <!-- Step 5: Success -->
-                            <div id="step5" class="wizard-step">
-                                <h5>Başvuru Tamamlandı</h5>
-                                <p class="text-success">Fenomen Çocuk Kulübü başvurunuz alınmıştır. Giriş kartınız basıma geçilmiştir, sınavdan 2 gün öncesine kadar teslim alabilirsiniz.</p>
-                                <div id="entryCardPreview"></div>
-                                <div class="d-flex justify-content-end mt-3">
-                                    <button class="btn btn-primary" data-bs-dismiss="modal">Kapat</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="container main-container">
+    
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">FENOMEN EĞİTİM KURUMLARI</h2>
+        <h5 class="text-muted">Online Sınav Başvuru Sistemi</h5>
+    </div>
 
-        <!-- Lookup modal -->
-        <div class="modal fade" id="lookupModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-md modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Kayıtlı Bilgi Sorgulama</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="lookupStep1">
-                            <p>Kayıt sorgulamak için TC kimlik numarası veya öğrenci numarasını girin.</p>
-                            <div class="mb-3">
-                                <label class="form-label">TC / Öğrenci No</label>
-                                <input type="text" id="lookupInput" class="form-control" placeholder="TC veya öğrenci numarası">
-                            </div>
-                            <div class="d-flex justify-content-end">
-                                <button class="btn btn-primary" id="btnLookupSearch">Ara</button>
-                            </div>
-                            <div id="lookupError" class="text-danger mt-2" style="display:none;"></div>
-                        </div>
-                        <div id="lookupResults" style="display:none;">
-                            <h5>Başvurular</h5>
-                            <ul id="resultList" class="list-group"></ul>
-                            <div class="mt-3">
-                                <button class="btn btn-secondary" id="btnLookupBack">Yeni Sorgu</button>
-                            </div>
-                        </div>
-                        <div id="lookupCard" style="display:none;">
-                            <h5>Başvuru Detayı</h5>
-                            <div id="selectedCard"></div>
-                            <div class="mt-3">
-                                <button class="btn btn-danger" id="btnCancelExam">Sınava Girmekten Vazgeçtim</button>
-                                <button class="btn btn-secondary ms-2" id="btnLookupHome">Geri</button>
-                            </div>
-                        </div>
-                        <!-- Cancel modal inside lookup -->
-                        <div id="cancelSection" style="display:none;">
-                            <p>Lütfen kayıtlı tam adınızı ve ardından "sınav iptal" ifadesini yazınız.</p>
-                            <div class="mb-3">
-                                <input type="text" id="cancelInput" class="form-control" placeholder="Örn: Necla Sıza sınav iptal">
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-secondary" id="btnCancelBack">İptal</button>
-                                <button class="btn btn-danger" id="btnCancelConfirm">Onayla</button>
-                            </div>
-                            <div id="cancelError" class="text-danger mt-2" style="display:none;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="globalAlert" class="alert d-none" role="alert"></div>
 
-        <!-- Admin modal -->
-        <div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Yönetici Paneli</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Admin login -->
-                        <div id="adminLogin">
-                            <p>Lütfen şifrenizi girin.</p>
-                            <div class="mb-3">
-                                <input type="password" id="adminPassword" class="form-control" placeholder="******">
-                            </div>
-                            <div class="d-flex justify-content-end">
-                                <button class="btn btn-primary" id="btnAdminLogin">Giriş</button>
-                            </div>
-                            <div id="adminError" class="text-danger mt-2" style="display:none;"></div>
-                        </div>
-                        <!-- Admin dashboard -->
-                        <div id="adminDashboard" style="display:none;">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5>Kayıtlı Öğrenciler</h5>
-                                <div>
-                                    <select id="filterExam" class="form-select d-inline" style="width:auto;">
-                                        <option value="">Tüm Sınavlar</option>
-                                    </select>
-                                    <select id="filterSession" class="form-select d-inline" style="width:auto;">
-                                        <option value="">Tüm Seanslar</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Öğrenci No</th>
-                                            <th>Öğrenci Adı</th>
-                                            <th>TC</th>
-                                            <th>Okulu</th>
-                                            <th>Veli Adı</th>
-                                            <th>Telefon 1</th>
-                                            <th>Telefon 2</th>
-                                            <th>Sınav</th>
-                                            <th>Tarih</th>
-                                            <th>Seans</th>
-                                            <th>Saat</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminTableBody"></tbody>
-                                </table>
-                            </div>
-                            <div class="mt-3">
-                                <button class="btn btn-outline-primary" id="btnAdminRefresh">Tabloyu Yenile</button>
-                            </div>
-                            <!-- Admin actions placeholders -->
-                            <div class="mt-4">
-                                <h5>Yönetici İşlemleri</h5>
-                                <p>Aşağıdaki işlemler için butonlar henüz tam olarak uygulanmamıştır. Bu şablon, istenen gelişmiş özelliklerin daha sonra eklenebilmesi için genişletilebilir niteliktedir.</p>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <button class="btn btn-outline-success" disabled>Hızlı Öğrenci Kayıt</button>
-                                    <button class="btn btn-outline-secondary" disabled>Toplu Öğrenci Çıktısı</button>
-                                    <button class="btn btn-outline-info" disabled>Yoklama Listesi</button>
-                                    <button class="btn btn-outline-warning" disabled>Tekli Kart Basımı</button>
-                                    <button class="btn btn-outline-danger" disabled>Toplu Kart Basımı</button>
-                                    <button class="btn btn-outline-dark" disabled>Öğrenci Kayıt Silme</button>
-                                    <button class="btn btn-outline-primary" disabled>Kayıt Güncelleme</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div id="mainMenu" class="row g-4">
+        <div class="col-md-4">
+            <button class="big-btn btn-new w-100" onclick="app.startNewRegistration()">
+                <i class="fas fa-user-plus fa-2x"></i> Yeni Kayıt
+            </button>
+        </div>
+        <div class="col-md-4">
+            <button class="big-btn btn-check w-100" onclick="app.showCheckStatus()">
+                <i class="fas fa-search fa-2x"></i> Kayıtlı Bilgisi
+            </button>
+        </div>
+        <div class="col-md-4">
+            <button class="big-btn btn-admin w-100" onclick="app.openAdminAuth()">
+                <i class="fas fa-user-shield fa-2x"></i> Yönetici
+            </button>
         </div>
     </div>
 
-    <!-- Required scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Inputmask for TC and phone formatting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/inputmask/5.0.8/jquery.inputmask.min.js"></script>
-    <!-- Firebase libraries -->
-    <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
-    <script>
-        // Firebase configuration from user instructions
-        const firebaseConfig = {
-            apiKey: "AIzaSyAIzu6aNQstwQCdMWODyIwiaVVBm63OeGw",
-            authDomain: "odevfeno.firebaseapp.com",
-            databaseURL: "https://odevfeno-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "odevfeno",
-            storageBucket: "odevfeno.firebasestorage.app",
-            messagingSenderId: "662757516934",
-            appId: "1:662757516934:web:0042188832f63deb6fd307",
-            measurementId: "G-4Q99NQRB38"
-        };
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    <div id="wizardContainer" class="d-none">
+        <button class="btn btn-outline-secondary mb-3" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Ana Menü</button>
+        
+        <div id="step1" class="step-section">
+            <h4 class="mb-4"><i class="fas fa-list"></i> Sınav Seçimi</h4>
+            <div class="mb-3">
+                <label class="form-label">Sınav Adı</label>
+                <select id="examSelect" class="form-select" onchange="app.onExamSelect()">
+                    <option value="">Seçiniz...</option>
+                </select>
+            </div>
+            <div id="examDetailsArea" class="d-none">
+                <div class="mb-3">
+                    <label class="form-label">Tarih</label>
+                    <select id="dateSelect" class="form-select"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Seans & Saat (Kontenjan Durumu)</label>
+                    <select id="sessionSelect" class="form-select"></select>
+                </div>
+                <button class="btn btn-primary w-100" onclick="app.confirmExamSelection()">Devam Et <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
 
-        // Global variables
-        let exams = [];
-        let selectedExam = null;
-        let selectedSessionIndex = null;
-        let selectedRecord = null; // for lookup / cancellation
+        <div id="step2" class="step-section">
+            <h4 class="mb-4"><i class="fas fa-id-card"></i> Kimlik Kontrolü</h4>
+            <div class="mb-3">
+                <label class="form-label">Öğrenci TC Kimlik No</label>
+                <input type="text" id="tcCheckInput" class="form-control" maxlength="11" placeholder="11 haneli TC giriniz">
+            </div>
+            <button class="btn btn-primary" onclick="app.checkTC()">Sorgula</button>
+        </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize input masks
-            $("#tcInput").inputmask("99999999999");
-            $("#phone1, #phone2").inputmask({mask: "(599) 999 99 99"});
+        <div id="step3" class="step-section">
+            <h4 class="mb-4"><i class="fas fa-edit"></i> Öğrenci Bilgileri</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Öğrenci Tam Adı</label>
+                    <input type="text" id="stdName" class="form-control" placeholder="Ad Soyad">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Okulu</label>
+                    <input type="text" id="stdSchool" class="form-control" placeholder="Okul Adı">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Veli Tam Adı</label>
+                    <input type="text" id="parentName" class="form-control" placeholder="Veli Ad Soyad">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefon 1 (Veli)</label>
+                    <input type="text" id="phone1" class="form-control phone-mask" placeholder="(5XX) XXX XX XX">
+                    <small class="text-danger">Bilgilendirme bu numaraya yapılacaktır.</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefon 2</label>
+                    <input type="text" id="phone2" class="form-control phone-mask" placeholder="(5XX) XXX XX XX">
+                </div>
+            </div>
+            <button class="btn btn-success w-100 mt-4 btn-lg" onclick="app.completeRegistration()">KAYDI TAMAMLA</button>
+        </div>
 
-            // Load exam data from Google Sheets
-            loadExamData();
+        <div id="step4" class="step-section text-center">
+            <div class="alert alert-success">
+                <h4><i class="fas fa-check-circle"></i> Başvurunuz Alınmıştır!</h4>
+                <p>Giriş kartınız aşağıdadır. Sınavdan 2 gün önce kurumdan teslim alabilirsiniz.</p>
+            </div>
+            <div id="finalCardDisplay"></div>
+            <button class="btn btn-primary mt-3 no-print" onclick="window.print()">Çıktı Al (Örnek)</button>
+            <button class="btn btn-secondary mt-3 no-print" onclick="location.reload()">Yeni İşlem</button>
+        </div>
+    </div>
 
-            // Event bindings for main buttons
-            document.getElementById('btnNew').addEventListener('click', openWizard);
-            document.getElementById('btnLookup').addEventListener('click', openLookup);
-            document.getElementById('btnAdmin').addEventListener('click', openAdmin);
+    <div id="checkStatusContainer" class="d-none">
+        <button class="btn btn-outline-secondary mb-3" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Ana Menü</button>
+        <h4><i class="fas fa-search"></i> Başvuru Sorgulama</h4>
+        <div class="input-group mb-3">
+            <input type="text" id="searchQuery" class="form-control" placeholder="TC veya Öğrenci Numarası giriniz">
+            <button class="btn btn-primary" onclick="app.searchStudent()">Ara</button>
+        </div>
+        <div id="searchResults"></div>
+    </div>
 
-            // Wizard navigation
-            document.getElementById('btnStep1Next').addEventListener('click', goToStep2);
-            document.getElementById('btnStep2Cancel').addEventListener('click', function(){ closeModal('wizardModal'); });
-            document.getElementById('btnStep2Next').addEventListener('click', function(){ showStep('step3'); });
-            document.getElementById('btnStep3Back').addEventListener('click', function(){ showStep('step2'); });
-            document.getElementById('btnStep3Next').addEventListener('click', handleTCCheck);
-            document.getElementById('btnStep4Back').addEventListener('click', function(){ showStep('step3'); });
-            document.getElementById('btnSubmit').addEventListener('click', submitRegistration);
+    <div id="adminContainer" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+            <button class="btn btn-outline-secondary" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Çıkış</button>
+            <h4 class="m-0">Yönetici Paneli</h4>
+            <div>
+                 <button class="btn btn-success btn-sm" onclick="app.adminQuickAdd()"><i class="fas fa-plus"></i> Hızlı Kayıt</button>
+                 <button class="btn btn-warning btn-sm" onclick="app.printAttendance()"><i class="fas fa-list-alt"></i> Yoklama Listesi</button>
+                 <button class="btn btn-info btn-sm" onclick="app.printBatchCards()"><i class="fas fa-print"></i> Toplu Kart Bas</button>
+            </div>
+        </div>
 
-            // Lookup events
-            document.getElementById('btnLookupSearch').addEventListener('click', lookupRecord);
-            document.getElementById('btnLookupBack').addEventListener('click', function(){ resetLookup(); });
-            document.getElementById('btnLookupHome').addEventListener('click', function(){ showLookupList(); });
-            document.getElementById('btnCancelExam').addEventListener('click', function(){ showCancelSection(); });
-            document.getElementById('btnCancelBack').addEventListener('click', function(){ hideCancelSection(); });
-            document.getElementById('btnCancelConfirm').addEventListener('click', confirmCancellation);
+        <div class="row mb-3 no-print">
+            <div class="col-md-4">
+                <select id="adminFilterExam" class="form-select" onchange="app.adminLoadData()"></select>
+            </div>
+            <div class="col-md-4">
+                 <select id="adminFilterSession" class="form-select" onchange="app.adminLoadData()"><option value="all">Tüm Seanslar</option></select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="adminSearch" class="form-control" placeholder="Öğrenci Ara..." onkeyup="app.adminFilterTable()">
+            </div>
+        </div>
 
-            // Admin events
-            document.getElementById('btnAdminLogin').addEventListener('click', adminLogin);
-            document.getElementById('btnAdminRefresh').addEventListener('click', loadAdminData);
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="adminTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>No</th>
+                        <th>Ad Soyad</th>
+                        <th>TC</th>
+                        <th>Okul</th>
+                        <th>Veli Tel</th>
+                        <th>Sınav/Seans</th>
+                        <th class="no-print">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div id="printableArea"></div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Sınav İptali</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Kayıt silmek üzeresiniz. İşlemi onaylamak için lütfen aşağıdaki kutuya <strong><span id="cancelConfirmText"></span> sınav iptal</strong> yazınız.</p>
+                <input type="text" id="cancelInput" class="form-control" placeholder="Örn: ali veli sınav iptal">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                <button type="button" class="btn btn-danger" onclick="app.executeCancellation()">Onayla ve Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Hızlı Öğrenci Kaydı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="quickAddForm"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-success" onclick="app.saveQuickAdd()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+<script type="module">
+    // --- FIREBASE CONFIG ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, query, orderByChild, equalTo, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAIzu6aNQstwQCdMWODyIwiaVVBm63OeGw",
+        authDomain: "odevfeno.firebaseapp.com",
+        databaseURL: "https://odevfeno-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "odevfeno",
+        storageBucket: "odevfeno.firebasestorage.app",
+        messagingSenderId: "662757516934",
+        appId: "1:662757516934:web:0042188832f63deb6fd307",
+        measurementId: "G-4Q99NQRB38"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- STATE MANAGEMENT ---
+    let examData = []; // Google Sheet'ten gelen ham veri
+    let currentSelection = {
+        examName: null,
+        date: null,
+        sessionIndex: null, // Seans sırası (0, 1...)
+        sessionTime: null,
+        quotaLimit: 0,
+        startNumber: 0,
+        tc: null
+    };
+    let studentToCancel = null; // Silinecek öğrenci ID
+
+    // --- GOOGLE SHEETS DATA FETCH ---
+    const SHEET_ID = '1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg';
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+    async function fetchExamData() {
+        return new Promise((resolve, reject) => {
+            Papa.parse(SHEET_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    console.log("Sheet Data:", results.data);
+                    examData = results.data.filter(row => row['Sınav'] && row['Sınav'] !== "");
+                    resolve(examData);
+                },
+                error: function(err) {
+                    showAlert("Sınav verileri yüklenemedi. Lütfen internet bağlantınızı kontrol edin.", "danger");
+                    reject(err);
+                }
+            });
+        });
+    }
+
+    // --- UI HELPERS ---
+    function showSection(sectionId) {
+        document.getElementById('mainMenu').classList.add('d-none');
+        document.getElementById('wizardContainer').classList.add('d-none');
+        document.getElementById('checkStatusContainer').classList.add('d-none');
+        document.getElementById('adminContainer').classList.add('d-none');
+        
+        // Hide wizard steps
+        document.querySelectorAll('.step-section').forEach(el => el.classList.remove('active'));
+
+        const target = document.getElementById(sectionId);
+        if(target) target.classList.remove('d-none');
+    }
+
+    function goHome() {
+        document.getElementById('mainMenu').classList.remove('d-none');
+        document.getElementById('wizardContainer').classList.add('d-none');
+        document.getElementById('checkStatusContainer').classList.add('d-none');
+        document.getElementById('adminContainer').classList.add('d-none');
+        document.getElementById('globalAlert').classList.add('d-none');
+        // Reset forms
+        document.querySelectorAll('input').forEach(i => i.value = '');
+    }
+
+    function showAlert(msg, type='warning') {
+        const el = document.getElementById('globalAlert');
+        el.className = `alert alert-${type}`;
+        el.innerHTML = msg;
+        el.classList.remove('d-none');
+        setTimeout(() => el.classList.add('d-none'), 5000);
+    }
+
+    // --- WIZARD LOGIC ---
+    
+    // 1. Start & Populate Exams
+    window.app.startNewRegistration = async function() {
+        showSection('wizardContainer');
+        document.getElementById('step1').classList.add('active');
+        
+        try {
+            await fetchExamData();
+            const select = document.getElementById('examSelect');
+            select.innerHTML = '<option value="">Seçiniz...</option>';
+            // Unique Exam Names
+            const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
+            uniqueExams.forEach(exam => {
+                const opt = document.createElement('option');
+                opt.value = exam;
+                opt.textContent = exam;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    window.app.onExamSelect = function() {
+        const examName = document.getElementById('examSelect').value;
+        const detailsArea = document.getElementById('examDetailsArea');
+        
+        if (!examName) {
+            detailsArea.classList.add('d-none');
+            return;
+        }
+
+        // Seçilen sınavın verisini bul (Sheet'te her satır farklı sınav parametresi olabilir)
+        // Burada basitlik adına ilk eşleşeni alıyoruz, fakat gelişmiş senaryoda tarih bazlı ayrım yapılabilir.
+        const examRow = examData.find(e => e['Sınav'] === examName);
+        if (!examRow) return;
+
+        currentSelection.examName = examName;
+        currentSelection.startNumber = parseInt(examRow['İlk numara']) || 1000;
+
+        // Tarihler
+        const dates = examRow['Tarih'].split(';');
+        const dateSelect = document.getElementById('dateSelect');
+        dateSelect.innerHTML = '';
+        dates.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.trim();
+            opt.textContent = d.trim();
+            dateSelect.appendChild(opt);
         });
 
-        /**
-         * Fetch exam information from the Google Sheet and populate exam selector.
-         * The sheet is expected to have columns: Sinav, Tarih, Seans, Kontenjan, Saatler, İlk numara
-         */
-        function loadExamData() {
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg/gviz/tq?tqx=out:csv&sheet=Bursluluk-Lgs';
-            fetch(sheetUrl)
-                .then(resp => resp.text())
-                .then(csvText => {
-                    const lines = csvText.trim().split('\n');
-                    const headers = lines[0].split(',');
-                    lines.slice(1).forEach(row => {
-                        const cols = row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
-                        const exam = {
-                            name: cols[0],
-                            dates: cols[1].split(';'),
-                            sessionCount: parseInt(cols[2]),
-                            quotas: cols[3].split(';').map(x => parseInt(x)),
-                            times: cols[4].split(';'),
-                            startNumber: parseInt(cols[5])
-                        };
-                        exams.push(exam);
-                    });
-                    populateExamSelect();
-                    populateAdminFilters();
-                })
-                .catch(err => {
-                    console.error('Exam data load error', err);
-                });
-        }
+        // Seanslar, Saatler, Kontenjanlar
+        const sessions = parseInt(examRow['Seans']);
+        const quotas = examRow['Kontenjan'].split(';');
+        const hours = examRow['Saatler'].split(';');
 
-        /**
-         * Populate exam selection dropdown for new registration and admin filter.
-         */
-        function populateExamSelect() {
-            const examSelect = document.getElementById('examSelect');
-            exams.forEach((exam, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = exam.name;
-                examSelect.appendChild(opt);
-            });
-            examSelect.addEventListener('change', function() {
-                selectedExam = exams[this.value];
-                selectedSessionIndex = null;
-                renderSessionOptions();
-            });
-        }
+        const sessionSelect = document.getElementById('sessionSelect');
+        sessionSelect.innerHTML = '';
 
-        function populateAdminFilters() {
-            const filterExam = document.getElementById('filterExam');
-            exams.forEach((exam, idx) => {
-                const opt = document.createElement('option');
-                opt.value = exam.name;
-                opt.textContent = exam.name;
-                filterExam.appendChild(opt);
-            });
-            filterExam.addEventListener('change', function() {
-                // re-render session filter based on selected exam
-                const sessionSelect = document.getElementById('filterSession');
-                sessionSelect.innerHTML = '<option value="">Tüm Seanslar</option>';
-                const selectedName = this.value;
-                const exam = exams.find(e => e.name === selectedName);
-                if (exam) {
-                    exam.times.forEach((time, idx) => {
-                        const opt2 = document.createElement('option');
-                        opt2.value = idx;
-                        opt2.textContent = 'Seans ' + (idx+1) + ' (' + time + ')';
-                        sessionSelect.appendChild(opt2);
-                    });
-                }
-                loadAdminData();
-            });
-            document.getElementById('filterSession').addEventListener('change', loadAdminData);
-        }
+        // Her seans için kontenjanı veritabanından kontrol etmemiz lazım
+        // Asenkron olduğu için UI'yi "Yükleniyor" yapıp dolduracağız.
+        sessionSelect.innerHTML = '<option>Kontenjanlar kontrol ediliyor...</option>';
+        
+        checkQuotasAndFill(examName, dates[0], sessions, quotas, hours);
+        
+        detailsArea.classList.remove('d-none');
+    };
 
-        /**
-         * Render session choices based on selected exam and quota. Disabled if quota exhausted.
-         */
-        function renderSessionOptions() {
-            const container = document.getElementById('sessionContainer');
-            const optionsDiv = document.getElementById('sessionOptions');
-            optionsDiv.innerHTML = '';
-            if (!selectedExam) {
-                container.style.display = 'none';
-                document.getElementById('btnStep1Next').disabled = true;
-                return;
+    async function checkQuotasAndFill(examName, date, sessionCount, quotas, hours) {
+        const sessionSelect = document.getElementById('sessionSelect');
+        sessionSelect.innerHTML = '';
+
+        for (let i = 0; i < sessionCount; i++) {
+            const time = hours[i] ? hours[i].trim() : 'Saatsiz';
+            const maxQuota = parseInt(quotas[i]) || 0;
+            
+            // Firebase'den bu sınav+tarih+saat için kayıt sayısını al
+            const q = query(ref(db, 'bursluluk'), orderByChild('examKey'), equalTo(`${examName}_${date}_${time}`));
+            const snapshot = await get(q);
+            const currentCount = snapshot.size; // Kayıt sayısı
+            
+            const remaining = maxQuota - currentCount;
+            
+            const opt = document.createElement('option');
+            opt.value = i; // index
+            opt.dataset.time = time;
+            opt.dataset.quota = maxQuota;
+            
+            if (remaining <= 0) {
+                opt.textContent = `${time} - (DOLDU)`;
+                opt.disabled = true;
+            } else {
+                opt.textContent = `${time} - (Kalan: ${remaining})`;
             }
-            // For each session fetch occupancy count from firebase
-            // We'll compute available seats by subtracting count from quota
-            const tasks = [];
-            selectedExam.times.forEach((time, idx) => {
-                tasks.push(new Promise(resolve => {
-                    const ref = db.ref('bursluluk/' + selectedExam.name + '/' + idx);
-                    ref.once('value', snapshot => {
-                        const data = snapshot.val();
-                        const count = data ? Object.keys(data).length : 0;
-                        resolve({idx, count});
-                    }, () => resolve({idx, count:0}));
-                }));
-            });
-            Promise.all(tasks).then(results => {
-                results.forEach(res => {
-                    const available = selectedExam.quotas[res.idx] - res.count;
-                    const radioId = 'session' + res.idx;
-                    const div = document.createElement('div');
-                    div.classList.add('form-check');
-                    const radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = 'sessionRadio';
-                    radio.id = radioId;
-                    radio.value = res.idx;
-                    radio.classList.add('form-check-input');
-                    if (available <= 0) {
-                        radio.disabled = true;
-                    }
-                    const label = document.createElement('label');
-                    label.htmlFor = radioId;
-                    label.classList.add('form-check-label');
-                    label.textContent = 'Seans ' + (res.idx+1) + ' – ' + selectedExam.times[res.idx] + ' (Kontenjan: ' + available + '/' + selectedExam.quotas[res.idx] + ')';
-                    radio.addEventListener('change', function() {
-                        selectedSessionIndex = parseInt(this.value);
-                        document.getElementById('btnStep1Next').disabled = false;
-                    });
-                    div.appendChild(radio);
-                    div.appendChild(label);
-                    optionsDiv.appendChild(div);
-                });
-                container.style.display = 'block';
-                document.getElementById('btnStep1Next').disabled = true;
-            });
+            sessionSelect.appendChild(opt);
+        }
+    }
+
+    window.app.confirmExamSelection = function() {
+        const sSelect = document.getElementById('sessionSelect');
+        if (sSelect.value === "") { showAlert("Lütfen bir seans seçiniz"); return; }
+        
+        const selectedOpt = sSelect.options[sSelect.selectedIndex];
+        currentSelection.date = document.getElementById('dateSelect').value;
+        currentSelection.sessionIndex = sSelect.value;
+        currentSelection.sessionTime = selectedOpt.dataset.time;
+        currentSelection.quotaLimit = parseInt(selectedOpt.dataset.quota);
+
+        const confirmMsg = `
+            <strong>Fenomen Çocuk Kulübü</strong><br>
+            Tarih: ${currentSelection.date}<br>
+            Saat: ${currentSelection.sessionTime}<br>
+            Sınav: ${currentSelection.examName}<br><br>
+            Bu sınava kayıt olmak istiyor musunuz?
+        `;
+        
+        // Custom Modal yerine basit confirm veya HTML içi geçiş
+        // Modern "wizard" akışı için alert yerine bir sonraki adıma geçiş öncesi onay sorusu gibi davranalım.
+        // Kullanıcı deneyimi için bir "Onay Modal"ı tetikleyelim.
+        
+        // Burada basitlik için JS confirm kullanmıyorum, UI'yı güncelliyorum.
+        if(confirm(selectedOpt.dataset.time + " saatindeki sınava başvuruyu onaylıyor musunuz?")) {
+             document.getElementById('step1').classList.remove('active');
+             document.getElementById('step2').classList.add('active');
+        }
+    };
+
+    // 2. TC Check
+    window.app.checkTC = async function() {
+        const tc = document.getElementById('tcCheckInput').value;
+        if (tc.length !== 11 || isNaN(tc)) {
+            showAlert("Lütfen geçerli 11 haneli bir TC giriniz.", "danger");
+            return;
         }
 
-        /** Show wizard modal and start at step1 */
-        function openWizard() {
-            selectedExam = null;
-            selectedSessionIndex = null;
-            document.getElementById('examSelect').value = '';
-            document.getElementById('sessionContainer').style.display = 'none';
-            document.getElementById('btnStep1Next').disabled = true;
-            showStep('step1');
-            const modal = new bootstrap.Modal(document.getElementById('wizardModal'));
-            modal.show();
-        }
-
-        function goToStep2() {
-            // prepare summary
-            const date = selectedExam.dates[selectedSessionIndex] || selectedExam.dates[0];
-            const time = selectedExam.times[selectedSessionIndex];
-            document.getElementById('examSummary').textContent = `${selectedExam.name} – ${date} – ${time}`;
-            showStep('step2');
-        }
-
-        /** Show specific step in wizard */
-        function showStep(stepId) {
-            document.querySelectorAll('#wizardSteps .wizard-step').forEach(el => el.classList.remove('active'));
-            document.getElementById(stepId).classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            const modalEl = document.getElementById(modalId);
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            modalInstance.hide();
-        }
-
-        /**
-         * Check if the TC number is valid and if there is an existing application.
-         */
-        function handleTCCheck() {
-            const tc = document.getElementById('tcInput').value.trim();
-            const errorDiv = document.getElementById('tcError');
-            errorDiv.style.display = 'none';
-            if (!/^[0-9]{11}$/.test(tc)) {
-                errorDiv.textContent = 'TC numarası 11 haneli sayısal olmalıdır.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            // Check duplicate
-            const ref = db.ref('bursluluk/' + selectedExam.name + '/' + selectedSessionIndex);
-            ref.once('value', snapshot => {
-                const data = snapshot.val();
-                let exists = false;
-                if (data) {
-                    Object.values(data).forEach(rec => {
-                        if (rec.tc === tc) {
-                            exists = true;
-                        }
-                    });
-                }
-                if (exists) {
-                    errorDiv.textContent = 'Bu sınav için daha önce başvurunuz alınmıştır.';
-                    errorDiv.style.display = 'block';
-                } else {
-                    showStep('step4');
+        // Bu sınav için daha önce kaydı var mı?
+        const examKey = `${currentSelection.examName}_${currentSelection.date}_${currentSelection.sessionTime}`;
+        
+        // TC sorgusu (tüm verilerde TC'yi ara, sonra examKey kontrol et)
+        // Firebase kuralı: 'bursluluk' altında, orderByChild('tc') equalTo(tc)
+        const q = query(ref(db, 'bursluluk'), orderByChild('tc'), equalTo(tc));
+        
+        try {
+            const snapshot = await get(q);
+            let alreadyRegistered = false;
+            
+            snapshot.forEach(child => {
+                if (child.val().examKey === examKey) {
+                    alreadyRegistered = true;
                 }
             });
+
+            if (alreadyRegistered) {
+                showAlert("Bu öğrenci için seçilen sınava zaten kayıt oluşturulmuş.", "info");
+                setTimeout(() => goHome(), 3000);
+            } else {
+                currentSelection.tc = tc;
+                document.getElementById('step2').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+            }
+        } catch (error) {
+            console.error(error);
+            showAlert("Sistem hatası.", "danger");
+        }
+    };
+
+    // 3. Complete Registration
+    window.app.completeRegistration = async function() {
+        const stdName = document.getElementById('stdName').value.trim();
+        const stdSchool = document.getElementById('stdSchool').value.trim();
+        const parentName = document.getElementById('parentName').value.trim();
+        const phone1 = document.getElementById('phone1').value.trim();
+        const phone2 = document.getElementById('phone2').value.trim();
+
+        // Validasyonlar
+        let errors = [];
+        if (stdName.split(' ').length < 2) errors.push("Öğrenci adı en az 2 kelime olmalıdır.");
+        if (parentName.split(' ').length < 2) errors.push("Veli adı en az 2 kelime olmalıdır.");
+        if (phone1.length < 10) errors.push("Telefon 1 eksik.");
+        if (!stdSchool) errors.push("Okul bilgisi girilmedi.");
+
+        if (errors.length > 0) {
+            showAlert("Eksik Bilgiler:<br>" + errors.join("<br>"), "danger");
+            return;
         }
 
-        /**
-         * Validate form and submit registration to Firebase.
-         */
-        function submitRegistration() {
-            const studentName = document.getElementById('studentName').value.trim();
-            const studentSchool = document.getElementById('studentSchool').value.trim();
-            const parentName = document.getElementById('parentName').value.trim();
-            const phone1 = document.getElementById('phone1').value.trim();
-            const phone2 = document.getElementById('phone2').value.trim();
-            const tc = document.getElementById('tcInput').value.trim();
-            const errorDiv = document.getElementById('formError');
-            errorDiv.style.display = 'none';
-            // Validation
-            if (studentName.split(' ').length < 2) {
-                errorDiv.textContent = 'Öğrenci tam adı en az iki kelime olmalıdır.';
-                errorDiv.style.display = 'block';
-                return;
+        // Öğrenci Numarası Atama
+        // Strateji: O sınavdaki tüm öğrencilerin numaralarını çek, sırala, boşluk bul veya sona ekle.
+        const examKey = `${currentSelection.examName}_${currentSelection.date}_${currentSelection.sessionTime}`;
+        const q = query(ref(db, 'bursluluk'), orderByChild('examKey'), equalTo(examKey));
+        
+        const snapshot = await get(q);
+        let existingNumbers = [];
+        snapshot.forEach(c => existingNumbers.push(c.val().studentNumber));
+        
+        existingNumbers.sort((a,b) => a - b);
+        
+        let assignedNo = currentSelection.startNumber;
+        for (let i = 0; i < existingNumbers.length + 1; i++) {
+            let candidate = currentSelection.startNumber + i;
+            if (!existingNumbers.includes(candidate)) {
+                assignedNo = candidate;
+                break;
             }
-            if (parentName.split(' ').length < 2) {
-                errorDiv.textContent = 'Veli tam adı en az iki kelime olmalıdır.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            if (!studentSchool) {
-                errorDiv.textContent = 'Okul adı girilmelidir.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            if (phone1.length < 10) {
-                errorDiv.textContent = 'Telefon 1 geçerli bir numara olmalıdır.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            // assign student number
-            const ref = db.ref('bursluluk/' + selectedExam.name + '/' + selectedSessionIndex);
-            ref.once('value', snapshot => {
-                const data = snapshot.val() || {};
-                let usedNumbers = [];
-                Object.values(data).forEach(rec => {
-                    usedNumbers.push(rec.studentNumber);
-                });
-                usedNumbers.sort((a,b) => a-b);
-                let nextNumber = selectedExam.startNumber;
-                // find smallest available number
-                for (;;) {
-                    if (!usedNumbers.includes(nextNumber)) break;
-                    nextNumber++;
-                }
-                const record = {
-                    studentNumber: nextNumber,
-                    studentName,
-                    studentSchool,
-                    parentName,
-                    phone1,
-                    phone2,
-                    tc,
-                    examName: selectedExam.name,
-                    date: selectedExam.dates[selectedSessionIndex] || selectedExam.dates[0],
-                    session: selectedSessionIndex + 1,
-                    time: selectedExam.times[selectedSessionIndex]
-                };
-                // push to firebase
-                const newRef = ref.push();
-                newRef.set(record, err => {
-                    if (err) {
-                        errorDiv.textContent = 'Kayıt sırasında hata oluştu: ' + err;
-                        errorDiv.style.display = 'block';
-                    } else {
-                        // show success and card
-                        renderEntryCard(record, 'entryCardPreview');
-                        showStep('step5');
-                    }
-                });
-            });
         }
 
-        /**
-         * Render a mini student entry card in the given container.
-         * @param {*} record object containing student data
-         * @param {*} containerId html element id to append card
-         */
-        function renderEntryCard(record, containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            const card = document.createElement('div');
-            card.classList.add('entry-card');
-            card.innerHTML = `
-                <h5>Fenomen Çocuk Kulübü</h5>
-                <div><strong>Öğrenci Adı:</strong> ${record.studentName}</div>
-                <div><strong>Okulu:</strong> ${record.studentSchool}</div>
-                <div><strong>TC No:</strong> ${record.tc}</div>
-                <div><strong>Öğrenci No:</strong> ${record.studentNumber}</div>
-                <div><strong>Sınav:</strong> ${record.examName}</div>
-                <div><strong>Tarih:</strong> ${record.date}</div>
-                <div><strong>Seans Saati:</strong> ${record.time}</div>
-                <div><strong>Yer:</strong> Fenomen Çocuk Kulübü</div>
+        // Firebase Kayıt
+        const newStudent = {
+            tc: currentSelection.tc,
+            stdName: stdName.toUpperCase(),
+            school: stdSchool.toUpperCase(),
+            parentName: parentName.toUpperCase(),
+            phone1: phone1,
+            phone2: phone2,
+            examName: currentSelection.examName,
+            date: currentSelection.date,
+            time: currentSelection.sessionTime,
+            studentNumber: assignedNo,
+            examKey: examKey,
+            createdAt: new Date().toISOString()
+        };
+
+        const newRef = push(ref(db, 'bursluluk'));
+        await set(newRef, newStudent);
+
+        // UI Güncelleme
+        document.getElementById('step3').classList.remove('active');
+        document.getElementById('step4').classList.add('active');
+        
+        renderCard('finalCardDisplay', newStudent);
+    };
+
+    function renderCard(containerId, data) {
+        const html = `
+            <div class="exam-card">
+                <div class="exam-card-header">FENOMEN ÇOCUK KULÜBÜ<br>SINAV GİRİŞ KARTI</div>
+                <div class="exam-card-row">
+                    <span class="exam-card-label">Öğrenci Adı:</span>
+                    <span>${data.stdName}</span>
+                </div>
+                 <div class="exam-card-row">
+                    <span class="exam-card-label">TC No:</span>
+                    <span>${data.tc.substring(0,2)}*******${data.tc.substring(9)}</span>
+                </div>
+                <div class="exam-card-row">
+                    <span class="exam-card-label">Okulu:</span>
+                    <span>${data.school}</span>
+                </div>
+                 <div class="exam-card-row">
+                    <span class="exam-card-label">Sınav:</span>
+                    <span>${data.examName}</span>
+                </div>
+                <div class="exam-card-row">
+                    <span class="exam-card-label">Tarih / Saat:</span>
+                    <span>${data.date} / ${data.time}</span>
+                </div>
+                 <div class="exam-card-row" style="background:#f1f1f1; padding:5px;">
+                    <span class="exam-card-label">ÖĞRENCİ NO:</span>
+                    <span style="font-size:1.2rem; font-weight:bold;">${data.studentNumber}</span>
+                </div>
+                <div class="text-center mt-3 text-muted" style="font-size:0.8rem;">
+                    Sınav Yeri: Fenomen Çocuk Kulübü<br>
+                    (Lütfen sınav saatinden 15 dk önce geliniz.)
+                </div>
+            </div>
+        `;
+        document.getElementById(containerId).innerHTML = html;
+        // Print area için de hazırla
+        document.getElementById('printableArea').innerHTML = html;
+    }
+
+    // --- CHECK STATUS & CANCEL ---
+    window.app.showCheckStatus = function() {
+        showSection('checkStatusContainer');
+        document.getElementById('searchResults').innerHTML = '';
+        document.getElementById('searchQuery').value = '';
+    };
+
+    window.app.searchStudent = async function() {
+        const val = document.getElementById('searchQuery').value.trim();
+        if(!val) return;
+
+        const resultsDiv = document.getElementById('searchResults');
+        resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Aranıyor...</div>';
+
+        // Hem TC hem Öğrenci No ile arama yapılmalı. Firebase NoSQL olduğu için iki ayrı sorgu veya client-side filtre.
+        // Client-side filtre (veri çok büyük değilse) veya iki ayrı query.
+        // Basitlik için tüm veriyi çekip filtrelemek yerine, index'li alan (TC) üzerinden gidelim.
+        // Eğer numara girildiyse (kısa ise) studentNumber, uzunsa (11) TC varsayalım.
+        
+        let q;
+        if(val.length === 11) {
+            q = query(ref(db, 'bursluluk'), orderByChild('tc'), equalTo(val));
+        } else {
+            // studentNumber sayı olarak saklanıyor
+            q = query(ref(db, 'bursluluk'), orderByChild('studentNumber'), equalTo(parseInt(val)));
+        }
+
+        const snapshot = await get(q);
+        resultsDiv.innerHTML = '';
+
+        if (!snapshot.exists()) {
+             resultsDiv.innerHTML = '<div class="alert alert-warning">Kayıt bulunamadı.</div>';
+             return;
+        }
+
+        snapshot.forEach(child => {
+            const data = child.val();
+            const key = child.key;
+            
+            const cardId = `card_${key}`;
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div id="${cardId}"></div>
+                <div class="text-center mb-5">
+                     <button class="btn btn-danger btn-sm" onclick="app.initiateCancel('${key}', '${data.stdName}', '${data.examName}')">
+                        <i class="fas fa-times"></i> Sınava Girmekten Vazgeçtim
+                     </button>
+                     <button class="btn btn-primary btn-sm" onclick="app.printSingleCard('${key}')"><i class="fas fa-print"></i> Yazdır</button>
+                </div>
+                <hr>
             `;
-            container.appendChild(card);
+            resultsDiv.appendChild(div);
+            renderCard(cardId, data);
+            
+            // Print fonksiyonu için datayı sakla
+            div.dataset.json = JSON.stringify(data);
+        });
+    };
+    
+    window.app.printSingleCard = function(key) {
+        const cardHtml = document.getElementById(`card_${key}`).innerHTML;
+        document.getElementById('printableArea').innerHTML = `<div style="margin:50px;">${cardHtml}</div>`;
+        window.print();
+    }
+
+    window.app.initiateCancel = function(key, name, exam) {
+        studentToCancel = { key, name };
+        document.getElementById('cancelConfirmText').textContent = name;
+        document.getElementById('cancelInput').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+        modal.show();
+    };
+
+    window.app.executeCancellation = async function() {
+        const input = document.getElementById('cancelInput').value;
+        const expected = `${studentToCancel.name} sınav iptal`; // Case sensitive? Prompt says "tam adınızı yazın"
+        
+        // Küçük harf toleransı tanıyalım
+        if (input.toLowerCase() === expected.toLowerCase()) {
+            await remove(ref(db, `bursluluk/${studentToCancel.key}`));
+            bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+            showAlert("Kayıt başarıyla silindi.", "success");
+            window.app.searchStudent(); // Listeyi yenile
+        } else {
+            alert("Girdiğiniz metin hatalı. Silme işlemi yapılmadı.");
+        }
+    };
+
+    // --- ADMIN PANEL ---
+    window.app.openAdminAuth = function() {
+        const pass = prompt("Yönetici Şifresi:");
+        if (pass === "13579") {
+            showSection('adminContainer');
+            app.setupAdminFilters();
+            app.adminLoadData();
+        } else {
+            showAlert("Hatalı Şifre!", "danger");
+        }
+    };
+
+    window.app.setupAdminFilters = async function() {
+         await fetchExamData(); // Ensure data
+         const select = document.getElementById('adminFilterExam');
+         select.innerHTML = '<option value="all">Tüm Sınavlar</option>';
+         const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
+         uniqueExams.forEach(e => {
+             select.innerHTML += `<option value="${e}">${e}</option>`;
+         });
+    };
+
+    let allStudentsCache = [];
+
+    window.app.adminLoadData = async function() {
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = '<tr><td colspan="7">Yükleniyor...</td></tr>';
+        
+        const snapshot = await get(ref(db, 'bursluluk'));
+        allStudentsCache = [];
+        snapshot.forEach(c => allStudentsCache.push({key: c.key, ...c.val()}));
+
+        app.adminFilterTable();
+    };
+
+    window.app.adminFilterTable = function() {
+        const examFilter = document.getElementById('adminFilterExam').value;
+        const search = document.getElementById('adminSearch').value.toLowerCase();
+
+        const filtered = allStudentsCache.filter(s => {
+            const matchExam = examFilter === 'all' || s.examName === examFilter;
+            const matchSearch = s.stdName.toLowerCase().includes(search) || s.tc.includes(search) || s.studentNumber.toString().includes(search);
+            return matchExam && matchSearch;
+        });
+        
+        // Sırala (Öğrenci No)
+        filtered.sort((a,b) => a.studentNumber - b.studentNumber);
+
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = '';
+        filtered.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${s.studentNumber}</td>
+                <td>${s.stdName}</td>
+                <td>${s.tc}</td>
+                <td>${s.school}</td>
+                <td>${s.phone1}</td>
+                <td>${s.examName} / ${s.time}</td>
+                <td class="no-print">
+                    <button class="btn btn-danger btn-sm" onclick="app.adminDelete('${s.key}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-primary btn-sm" onclick="app.printSingleCardKey('${s.key}')"><i class="fas fa-print"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+    
+    window.app.printSingleCardKey = function(key) {
+        const data = allStudentsCache.find(s => s.key === key);
+        renderCard('printableArea', data);
+        window.print();
+    }
+    
+    window.app.adminDelete = async function(key) {
+        if(confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+            await remove(ref(db, `bursluluk/${key}`));
+            app.adminLoadData();
+        }
+    };
+
+    // --- ADMIN: PRINT OPERATIONS ---
+    window.app.printAttendance = function() {
+        // Tabloyu yazdıracağız sadece
+        const content = document.getElementById('adminTable').outerHTML;
+        const title = `<h3 class="text-center">Sınav Yoklama Listesi</h3><br>`;
+        document.getElementById('printableArea').innerHTML = title + content;
+        window.print();
+    };
+
+    window.app.printBatchCards = function() {
+        // Filtrelenmiş listeyi al
+        const examFilter = document.getElementById('adminFilterExam').value;
+        const search = document.getElementById('adminSearch').value.toLowerCase();
+        const filtered = allStudentsCache.filter(s => {
+            const matchExam = examFilter === 'all' || s.examName === examFilter;
+            const matchSearch = s.stdName.toLowerCase().includes(search);
+            return matchExam && matchSearch;
+        });
+
+        let html = '<div class="batch-print-container">';
+        filtered.forEach(data => {
+            html += `
+            <div class="batch-card">
+                 <div style="text-align:center; font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px;">FENOMEN ÇOCUK KULÜBÜ<br>SINAV GİRİŞ KARTI</div>
+                <div><strong>Ad:</strong> ${data.stdName}</div>
+                <div><strong>TC:</strong> ${data.tc}</div>
+                <div><strong>Okul:</strong> ${data.school}</div>
+                <div><strong>Sınav:</strong> ${data.examName}</div>
+                <div><strong>Zaman:</strong> ${data.date} - ${data.time}</div>
+                <div style="font-size:14px; font-weight:bold; text-align:right; margin-top:5px;">NO: ${data.studentNumber}</div>
+            </div>
+            `;
+        });
+        html += '</div>';
+        
+        document.getElementById('printableArea').innerHTML = html;
+        window.print();
+    };
+    
+    // --- ADMIN: QUICK ADD ---
+    window.app.adminQuickAdd = function() {
+         const modal = new bootstrap.Modal(document.getElementById('quickAddModal'));
+         // Modal içine basit form koy
+         const formHtml = `
+             <label>TC</label><input type="text" id="q_tc" class="form-control mb-2">
+             <label>Ad Soyad</label><input type="text" id="q_name" class="form-control mb-2">
+             <label>Okul</label><input type="text" id="q_school" class="form-control mb-2">
+             <label>Veli Tel</label><input type="text" id="q_phone" class="form-control mb-2">
+             <label>Sınav</label><select id="q_exam" class="form-control mb-2"></select>
+             <label>Tarih</label><input type="text" id="q_date" class="form-control mb-2" placeholder="01.01.2026">
+             <label>Saat</label><input type="text" id="q_time" class="form-control mb-2" placeholder="10:00-11:15">
+             <label>Manuel No (Boşsa otomatik)</label><input type="number" id="q_no" class="form-control mb-2">
+         `;
+         document.getElementById('quickAddForm').innerHTML = formHtml;
+         
+         // Sınavları doldur
+         const select = document.getElementById('q_exam');
+         const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
+         uniqueExams.forEach(e => select.innerHTML += `<option>${e}</option>`);
+
+         modal.show();
+    };
+
+    window.app.saveQuickAdd = async function() {
+        // Basit kaydetme mantığı
+        const data = {
+            tc: document.getElementById('q_tc').value,
+            stdName: document.getElementById('q_name').value.toUpperCase(),
+            school: document.getElementById('q_school').value.toUpperCase(),
+            phone1: document.getElementById('q_phone').value,
+            examName: document.getElementById('q_exam').value,
+            date: document.getElementById('q_date').value,
+            time: document.getElementById('q_time').value,
+            studentNumber: parseInt(document.getElementById('q_no').value) || 0, // 0 ise backend mantığı gerekir ama burada admin manuel giriyor varsayalım veya random
+            examKey: `${document.getElementById('q_exam').value}_${document.getElementById('q_date').value}_${document.getElementById('q_time').value}`,
+            createdAt: new Date().toISOString()
+        };
+
+        if(data.studentNumber === 0) {
+            // Basitçe rastgele atayalım hızlı kayıt için
+            data.studentNumber = Math.floor(Math.random() * 1000) + 9000; 
         }
 
-        /** Open lookup modal */
-        function openLookup() {
-            resetLookup();
-            const modal = new bootstrap.Modal(document.getElementById('lookupModal'));
-            modal.show();
-        }
+        await push(ref(db, 'bursluluk'), data);
+        bootstrap.Modal.getInstance(document.getElementById('quickAddModal')).hide();
+        app.adminLoadData();
+        showAlert("Hızlı kayıt eklendi", "success");
+    };
 
-        /** Reset lookup modal to initial state */
-        function resetLookup() {
-            document.getElementById('lookupStep1').style.display = 'block';
-            document.getElementById('lookupResults').style.display = 'none';
-            document.getElementById('lookupCard').style.display = 'none';
-            document.getElementById('cancelSection').style.display = 'none';
-            document.getElementById('lookupInput').value = '';
-            document.getElementById('lookupError').style.display = 'none';
-        }
+    // --- GLOBAL ---
+    window.app.goHome = goHome;
 
-        /** Lookup records by TC or student number */
-        function lookupRecord() {
-            const query = document.getElementById('lookupInput').value.trim();
-            const errorDiv = document.getElementById('lookupError');
-            errorDiv.style.display = 'none';
-            if (!query) {
-                errorDiv.textContent = 'TC veya öğrenci numarası girin.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            // Search across all exams and sessions
-            const tasks = [];
-            exams.forEach(exam => {
-                exam.times.forEach((time, idx) => {
-                    tasks.push(new Promise(resolve => {
-                        db.ref('bursluluk/' + exam.name + '/' + idx).once('value', snapshot => {
-                            const data = snapshot.val();
-                            if (data) {
-                                Object.entries(data).forEach(([key, rec]) => {
-                                    if (rec.tc === query || rec.studentNumber.toString() === query) {
-                                        resolve({key, rec});
-                                    }
-                                });
-                            }
-                            resolve(null);
-                        }, () => resolve(null));
-                    }));
-                });
-            });
-            Promise.all(tasks).then(results => {
-                const found = results.filter(x => x); 
-                if (found.length === 0) {
-                    errorDiv.textContent = 'Girilen numara ile bir başvuru bulunamadı.';
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-                // Show list of results (most users will have one)
-                document.getElementById('lookupStep1').style.display = 'none';
-                const resultList = document.getElementById('resultList');
-                resultList.innerHTML = '';
-                found.forEach(item => {
-                    const li = document.createElement('li');
-                    li.classList.add('list-group-item', 'cursor-pointer');
-                    li.textContent = item.rec.examName + ' – ' + item.rec.date + ' – Seans ' + item.rec.session;
-                    li.addEventListener('click', function(){
-                        selectedRecord = item;
-                        showSelectedCard();
-                    });
-                    resultList.appendChild(li);
-                });
-                document.getElementById('lookupResults').style.display = 'block';
-            });
+    // Mask Logic (Simple)
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('phone-mask')) {
+            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? ' ' + x[3] : '') + (x[4] ? ' ' + x[4] : '');
         }
+    });
 
-        /** Show selected record card */
-        function showSelectedCard() {
-            document.getElementById('lookupResults').style.display = 'none';
-            document.getElementById('lookupCard').style.display = 'block';
-            renderEntryCard(selectedRecord.rec, 'selectedCard');
-        }
+    // Sayfa yüklenince data çek
+    fetchExamData();
 
-        function showLookupList() {
-            document.getElementById('lookupCard').style.display = 'none';
-            document.getElementById('lookupResults').style.display = 'block';
-        }
+</script>
 
-        /** Cancel exam section show/hide */
-        function showCancelSection() {
-            document.getElementById('cancelSection').style.display = 'block';
-            document.getElementById('lookupCard').style.display = 'none';
-            document.getElementById('cancelInput').value = '';
-            document.getElementById('cancelError').style.display = 'none';
-        }
-        function hideCancelSection() {
-            document.getElementById('cancelSection').style.display = 'none';
-            document.getElementById('lookupCard').style.display = 'block';
-        }
+<script>
+    // Module scope dışında global erişim için köprü (app nesnesini window'a bağladık module içinde)
+    // Yukarıdaki type="module" scripti çalıştığında window.app kullanılabilir olacak.
+</script>
 
-        /** Confirm cancellation: verify typed text and delete record from Firebase */
-        function confirmCancellation() {
-            const userInput = document.getElementById('cancelInput').value.trim().toLowerCase();
-            const expected = `${selectedRecord.rec.studentName.toLowerCase()} sınav iptal`;
-            const errorDiv = document.getElementById('cancelError');
-            errorDiv.style.display = 'none';
-            if (userInput !== expected) {
-                errorDiv.textContent = 'Lütfen tam adınızı ve "sınav iptal" ifadesini doğru yazınız.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            // Confirmation
-            if (!confirm('Bu işlem geri alınamaz. Onaylıyor musunuz?')) {
-                return;
-            }
-            // Remove from database
-            const rec = selectedRecord.rec;
-            const exam = rec.examName;
-            const sessionIndex = rec.session - 1;
-            // Find firebase key by comparing TC and student number
-            db.ref('bursluluk/' + exam + '/' + sessionIndex).once('value', snapshot => {
-                const data = snapshot.val();
-                if (data) {
-                    Object.entries(data).forEach(([key, value]) => {
-                        if (value.tc === rec.tc && value.studentNumber === rec.studentNumber) {
-                            db.ref('bursluluk/' + exam + '/' + sessionIndex + '/' + key).remove(() => {
-                                alert('Kayıt başarıyla silindi.');
-                                hideCancelSection();
-                                closeModal('lookupModal');
-                            });
-                        }
-                    });
-                }
-            });
-        }
-
-        /** Open admin panel */
-        function openAdmin() {
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('adminError').style.display = 'none';
-            document.getElementById('adminLogin').style.display = 'block';
-            document.getElementById('adminDashboard').style.display = 'none';
-            const modal = new bootstrap.Modal(document.getElementById('adminModal'));
-            modal.show();
-        }
-
-        /** Admin login check */
-        function adminLogin() {
-            const pwd = document.getElementById('adminPassword').value;
-            const errorDiv = document.getElementById('adminError');
-            errorDiv.style.display = 'none';
-            // Hardcoded password hashed (simple) – for demonstration only
-            if (pwd !== '13579') {
-                errorDiv.textContent = 'Yanlış şifre.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            document.getElementById('adminLogin').style.display = 'none';
-            document.getElementById('adminDashboard').style.display = 'block';
-            loadAdminData();
-        }
-
-        /** Load all records for admin table with optional filters */
-        function loadAdminData() {
-            const filterExam = document.getElementById('filterExam').value;
-            const filterSession = document.getElementById('filterSession').value;
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = '';
-            const tasks = [];
-            exams.forEach(exam => {
-                if (filterExam && exam.name !== filterExam) return;
-                exam.times.forEach((time, idx) => {
-                    if (filterSession && idx.toString() !== filterSession) return;
-                    tasks.push(new Promise(resolve => {
-                        db.ref('bursluluk/' + exam.name + '/' + idx).once('value', snapshot => {
-                            const data = snapshot.val();
-                            if (data) {
-                                Object.values(data).forEach(rec => {
-                                    const tr = document.createElement('tr');
-                                    tr.innerHTML = `
-                                        <td>${rec.studentNumber}</td>
-                                        <td>${rec.studentName}</td>
-                                        <td>${rec.tc}</td>
-                                        <td>${rec.studentSchool}</td>
-                                        <td>${rec.parentName}</td>
-                                        <td>${rec.phone1}</td>
-                                        <td>${rec.phone2}</td>
-                                        <td>${rec.examName}</td>
-                                        <td>${rec.date}</td>
-                                        <td>${rec.session}</td>
-                                        <td>${rec.time}</td>
-                                    `;
-                                    tbody.appendChild(tr);
-                                });
-                            }
-                            resolve();
-                        }, () => resolve());
-                    }));
-                });
-            });
-            Promise.all(tasks).then(() => {
-                // all rows loaded
-            });
-        }
-    </script>
 </body>
 </html>
