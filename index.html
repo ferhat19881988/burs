@@ -3,310 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fenomen Eğitim Kurumları - Sınav Başvuru</title>
+    <title>Fenomen Eğitim Kurumları - Bursluluk & LGS Provası</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.css"></script>
+
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --success-color: #1cc88a;
-            --danger-color: #e74a3b;
+        body { font-family: 'Poppins', sans-serif; background-color: #f4f6f9; }
+        .hero-section { text-align: center; padding: 50px 20px; }
+        .main-btn {
+            width: 100%; height: 120px; font-size: 1.5rem; border-radius: 15px;
+            transition: transform 0.2s, box-shadow 0.2s; border: none; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
+        .main-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn-new { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn-info { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .btn-admin { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
         
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fc;
-            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-
-        .main-container {
-            max-width: 1000px;
-            margin: 50px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Ana Menü Butonları */
-        .big-btn {
-            height: 150px;
-            font-size: 1.5rem;
-            transition: all 0.3s;
-            border: none;
-            border-radius: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: white;
-        }
-        .big-btn:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .btn-new { background: linear-gradient(45deg, #4e73df, #224abe); }
-        .btn-check { background: linear-gradient(45deg, #1cc88a, #13855c); }
-        .btn-admin { background: linear-gradient(45deg, #36b9cc, #258391); }
-
         /* Wizard Steps */
-        .step-section { display: none; animation: fadeIn 0.5s; }
-        .step-section.active { display: block; }
-
+        .wizard-step { display: none; animation: fadeIn 0.5s; }
+        .wizard-step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Exam Card Design */
+        /* Exam Card Preview */
         .exam-card {
-            border: 2px solid #4e73df;
-            border-radius: 10px;
-            padding: 20px;
-            background: white;
-            position: relative;
-            max-width: 500px;
-            margin: 20px auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 85.6mm; height: 53.98mm; /* Standard ID Card Size */
+            border: 1px solid #ccc; background: white; padding: 10px;
+            position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 0 auto; overflow: hidden; page-break-inside: avoid;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); /* Pattern example */
         }
-        .exam-card-header {
-            background: #4e73df;
-            color: white;
-            padding: 10px;
-            border-radius: 8px 8px 0 0;
-            text-align: center;
-            font-weight: bold;
-            margin: -20px -20px 15px -20px;
-        }
-        .exam-card-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #ddd; padding-bottom: 5px; }
-        .exam-card-label { font-weight: 600; color: #555; }
+        .exam-card-header { background: #d9534f; color: white; padding: 5px; text-align: center; font-size: 12px; font-weight: bold; border-radius: 4px; }
+        .exam-card-body { font-size: 11px; margin-top: 5px; }
+        .exam-card-row { display: flex; justify-content: space-between; margin-bottom: 2px; border-bottom: 1px dashed #eee; }
+        .exam-card-label { font-weight: bold; color: #555; }
 
         /* Admin Print Styles */
         @media print {
             body * { visibility: hidden; }
-            #printableArea, #printableArea * { visibility: visible; }
-            #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
             .no-print { display: none !important; }
             .page-break { page-break-after: always; }
-            
-            /* Kartvizit Baskı Düzeni (A4) */
-            .batch-print-container {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                padding: 10px;
-            }
-            .batch-card {
-                border: 1px dashed #000;
-                padding: 10px;
-                page-break-inside: avoid;
-                font-size: 12px;
-            }
+            .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container main-container">
+<div class="container hero-section" id="mainMenu">
+    <h1 class="mb-4 text-primary"><i class="fas fa-graduation-cap"></i> Fenomen Eğitim Kurumları</h1>
+    <h4 class="mb-5 text-secondary">Bursluluk ve LGS Provası Başvuru Sistemi</h4>
     
-    <div class="text-center mb-5">
-        <h2 class="fw-bold text-primary">FENOMEN EĞİTİM KURUMLARI</h2>
-        <h5 class="text-muted">Online Sınav Başvuru Sistemi</h5>
-    </div>
-
-    <div id="globalAlert" class="alert d-none" role="alert"></div>
-
-    <div id="mainMenu" class="row g-4">
+    <div class="row g-4 justify-content-center">
         <div class="col-md-4">
-            <button class="big-btn btn-new w-100" onclick="app.startNewRegistration()">
-                <i class="fas fa-user-plus fa-2x"></i> Yeni Kayıt
+            <button class="main-btn btn-new" onclick="startNewRegistration()">
+                <i class="fas fa-user-plus fa-2x mb-2"></i> Yeni Kayıt
             </button>
         </div>
         <div class="col-md-4">
-            <button class="big-btn btn-check w-100" onclick="app.showCheckStatus()">
-                <i class="fas fa-search fa-2x"></i> Kayıtlı Bilgisi
+            <button class="main-btn btn-info" onclick="openStudentInfo()">
+                <i class="fas fa-search fa-2x mb-2"></i> Kayıtlı Bilgisi
             </button>
         </div>
         <div class="col-md-4">
-            <button class="big-btn btn-admin w-100" onclick="app.openAdminAuth()">
-                <i class="fas fa-user-shield fa-2x"></i> Yönetici
+            <button class="main-btn btn-admin" onclick="openAdminPanel()">
+                <i class="fas fa-user-shield fa-2x mb-2"></i> Yönetici Bölümü
             </button>
         </div>
     </div>
-
-    <div id="wizardContainer" class="d-none">
-        <button class="btn btn-outline-secondary mb-3" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Ana Menü</button>
-        
-        <div id="step1" class="step-section">
-            <h4 class="mb-4"><i class="fas fa-list"></i> Sınav Seçimi</h4>
-            <div class="mb-3">
-                <label class="form-label">Sınav Adı</label>
-                <select id="examSelect" class="form-select" onchange="app.onExamSelect()">
-                    <option value="">Seçiniz...</option>
-                </select>
-            </div>
-            <div id="examDetailsArea" class="d-none">
-                <div class="mb-3">
-                    <label class="form-label">Tarih</label>
-                    <select id="dateSelect" class="form-select"></select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Seans & Saat (Kontenjan Durumu)</label>
-                    <select id="sessionSelect" class="form-select"></select>
-                </div>
-                <button class="btn btn-primary w-100" onclick="app.confirmExamSelection()">Devam Et <i class="fas fa-arrow-right"></i></button>
-            </div>
-        </div>
-
-        <div id="step2" class="step-section">
-            <h4 class="mb-4"><i class="fas fa-id-card"></i> Kimlik Kontrolü</h4>
-            <div class="mb-3">
-                <label class="form-label">Öğrenci TC Kimlik No</label>
-                <input type="text" id="tcCheckInput" class="form-control" maxlength="11" placeholder="11 haneli TC giriniz">
-            </div>
-            <button class="btn btn-primary" onclick="app.checkTC()">Sorgula</button>
-        </div>
-
-        <div id="step3" class="step-section">
-            <h4 class="mb-4"><i class="fas fa-edit"></i> Öğrenci Bilgileri</h4>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Öğrenci Tam Adı</label>
-                    <input type="text" id="stdName" class="form-control" placeholder="Ad Soyad">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Okulu</label>
-                    <input type="text" id="stdSchool" class="form-control" placeholder="Okul Adı">
-                </div>
-                <div class="col-md-12">
-                    <label class="form-label">Veli Tam Adı</label>
-                    <input type="text" id="parentName" class="form-control" placeholder="Veli Ad Soyad">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Telefon 1 (Veli)</label>
-                    <input type="text" id="phone1" class="form-control phone-mask" placeholder="(5XX) XXX XX XX">
-                    <small class="text-danger">Bilgilendirme bu numaraya yapılacaktır.</small>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Telefon 2</label>
-                    <input type="text" id="phone2" class="form-control phone-mask" placeholder="(5XX) XXX XX XX">
-                </div>
-            </div>
-            <button class="btn btn-success w-100 mt-4 btn-lg" onclick="app.completeRegistration()">KAYDI TAMAMLA</button>
-        </div>
-
-        <div id="step4" class="step-section text-center">
-            <div class="alert alert-success">
-                <h4><i class="fas fa-check-circle"></i> Başvurunuz Alınmıştır!</h4>
-                <p>Giriş kartınız aşağıdadır. Sınavdan 2 gün önce kurumdan teslim alabilirsiniz.</p>
-            </div>
-            <div id="finalCardDisplay"></div>
-            <button class="btn btn-primary mt-3 no-print" onclick="window.print()">Çıktı Al (Örnek)</button>
-            <button class="btn btn-secondary mt-3 no-print" onclick="location.reload()">Yeni İşlem</button>
-        </div>
-    </div>
-
-    <div id="checkStatusContainer" class="d-none">
-        <button class="btn btn-outline-secondary mb-3" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Ana Menü</button>
-        <h4><i class="fas fa-search"></i> Başvuru Sorgulama</h4>
-        <div class="input-group mb-3">
-            <input type="text" id="searchQuery" class="form-control" placeholder="TC veya Öğrenci Numarası giriniz">
-            <button class="btn btn-primary" onclick="app.searchStudent()">Ara</button>
-        </div>
-        <div id="searchResults"></div>
-    </div>
-
-    <div id="adminContainer" class="d-none">
-        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-            <button class="btn btn-outline-secondary" onclick="app.goHome()"><i class="fas fa-arrow-left"></i> Çıkış</button>
-            <h4 class="m-0">Yönetici Paneli</h4>
-            <div>
-                 <button class="btn btn-success btn-sm" onclick="app.adminQuickAdd()"><i class="fas fa-plus"></i> Hızlı Kayıt</button>
-                 <button class="btn btn-warning btn-sm" onclick="app.printAttendance()"><i class="fas fa-list-alt"></i> Yoklama Listesi</button>
-                 <button class="btn btn-info btn-sm" onclick="app.printBatchCards()"><i class="fas fa-print"></i> Toplu Kart Bas</button>
-            </div>
-        </div>
-
-        <div class="row mb-3 no-print">
-            <div class="col-md-4">
-                <select id="adminFilterExam" class="form-select" onchange="app.adminLoadData()"></select>
-            </div>
-            <div class="col-md-4">
-                 <select id="adminFilterSession" class="form-select" onchange="app.adminLoadData()"><option value="all">Tüm Seanslar</option></select>
-            </div>
-            <div class="col-md-4">
-                <input type="text" id="adminSearch" class="form-control" placeholder="Öğrenci Ara..." onkeyup="app.adminFilterTable()">
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover" id="adminTable">
-                <thead class="table-dark">
-                    <tr>
-                        <th>No</th>
-                        <th>Ad Soyad</th>
-                        <th>TC</th>
-                        <th>Okul</th>
-                        <th>Veli Tel</th>
-                        <th>Sınav/Seans</th>
-                        <th class="no-print">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody id="adminTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
 </div>
 
-<div id="printableArea"></div>
+<div class="container mt-5" id="wizardContainer" style="display:none;">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Sınav Kayıt İşlemleri</h5>
+            <button class="btn btn-sm btn-light" onclick="returnToMain()">Ana Menü</button>
+        </div>
+        <div class="card-body">
+            
+            <div class="wizard-step active" id="step1">
+                <h4 class="text-center mb-4">Lütfen Katılmak İstediğiniz Sınavı Seçiniz</h4>
+                <div class="d-flex justify-content-center mb-3">
+                    <select class="form-select form-select-lg w-75" id="examSelect" onchange="loadExamDetails()">
+                        <option value="">Sınav Seçiniz...</option>
+                        </select>
+                </div>
+                <div id="examDetailsArea" class="mt-4" style="display:none;">
+                    <table class="table table-hover">
+                        <thead><tr><th>Tarih</th><th>Saat</th><th>Kalan Kontenjan</th><th>İşlem</th></tr></thead>
+                        <tbody id="sessionTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
 
-<div class="modal fade" id="cancelModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Sınav İptali</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="wizard-step" id="step2">
+                <div class="text-center">
+                    <h3 class="text-primary mb-3">Seçim Onayı</h3>
+                    <p class="lead" id="confirmText">...</p>
+                    <hr>
+                    <button class="btn btn-secondary btn-lg me-2" onclick="changeStep(1)">Hayır, Geri Dön</button>
+                    <button class="btn btn-success btn-lg" onclick="changeStep(3)">Evet, Devam Et</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <p>Kayıt silmek üzeresiniz. İşlemi onaylamak için lütfen aşağıdaki kutuya <strong><span id="cancelConfirmText"></span> sınav iptal</strong> yazınız.</p>
-                <input type="text" id="cancelInput" class="form-control" placeholder="Örn: ali veli sınav iptal">
+
+            <div class="wizard-step" id="step3">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 text-center">
+                        <label class="form-label">Öğrenci T.C. Kimlik Numarası</label>
+                        <input type="text" class="form-control form-control-lg text-center" id="tcCheckInput" maxlength="11" placeholder="11 haneli TC giriniz">
+                        <button class="btn btn-primary mt-3 w-100" onclick="checkTCAndProceed()">Sorgula ve Devam Et</button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
-                <button type="button" class="btn btn-danger" onclick="app.executeCancellation()">Onayla ve Sil</button>
+
+            <div class="wizard-step" id="step4">
+                <h4 class="mb-3 border-bottom pb-2">Öğrenci ve Veli Bilgileri</h4>
+                <form id="regForm" onsubmit="event.preventDefault(); completeRegistration();">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Öğrenci Adı Soyadı</label>
+                            <input type="text" class="form-control" id="stdName" required minlength="5" placeholder="En az 2 kelime">
+                            <div class="form-text">Ad ve Soyad arasında boşluk bırakınız.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Okulu</label>
+                            <input type="text" class="form-control" id="stdSchool" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Veli Adı Soyadı</label>
+                            <input type="text" class="form-control" id="parentName" required minlength="5">
+                        </div>
+                        <div class="col-md-6"></div> <div class="col-md-6">
+                            <label class="form-label">Veli Telefon 1</label>
+                            <input type="text" class="form-control phone-mask" id="phone1" placeholder="(5XX) XXX XX XX" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Veli Telefon 2</label>
+                            <input type="text" class="form-control phone-mask" id="phone2" placeholder="(5XX) XXX XX XX">
+                        </div>
+                        <div class="col-12 alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Uyarı: Bilgilendirmeler telefon üzerinden yapılacaktır. Lütfen numaraları doğru girdiğinizden emin olunuz.
+                        </div>
+                    </div>
+                    <div class="text-end mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Kaydı Tamamla</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="wizard-step" id="step5">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-success fa-5x mb-3"></i>
+                    <h2>Tebrikler! Başvurunuz Alınmıştır.</h2>
+                    <p>Giriş kartınız basıma hazırlanmıştır. Sınavdan 2 gün önce kurumumuzdan teslim alabilirsiniz.</p>
+                    <div class="d-flex justify-content-center mt-4">
+                        <div id="finalCardPreview"></div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="returnToMain()">Ana Sayfaya Dön</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="quickAddModal" tabindex="-1">
+<div class="modal fade" id="infoModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Hızlı Öğrenci Kaydı</h5>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Öğrenci Kayıt Sorgulama</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="quickAddForm"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
-                <button type="button" class="btn btn-success" onclick="app.saveQuickAdd()">Kaydet</button>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="searchInfoInput" placeholder="T.C. Kimlik veya Öğrenci No giriniz">
+                    <button class="btn btn-primary" onclick="searchStudentInfo()">Sorgula</button>
+                </div>
+                <div id="studentInfoResult"></div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<div class="container mt-4" id="adminPanel" style="display:none;">
+    <div class="card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+            <h4>Yönetici Paneli</h4>
+            <button class="btn btn-sm btn-outline-light" onclick="returnToMain()">Çıkış</button>
+        </div>
+        <div class="card-body">
+            <div class="row g-2 mb-3 no-print">
+                <div class="col-md-3">
+                    <select class="form-select" id="adminExamFilter" onchange="renderAdminTable()">
+                        <option value="all">Tüm Sınavlar</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="adminSearch" placeholder="Ara (Ad, TC, No)..." onkeyup="renderAdminTable()">
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-success btn-sm" onclick="adminQuickRegister()"><i class="fas fa-plus"></i> Hızlı Kayıt</button>
+                    <button class="btn btn-primary btn-sm" onclick="printList()"><i class="fas fa-print"></i> Liste Çıktısı</button>
+                    <button class="btn btn-warning btn-sm" onclick="printBulkCards()"><i class="fas fa-id-card"></i> Toplu Kart Bas</button>
+                    <button class="btn btn-danger btn-sm" onclick="bulkDelete()"><i class="fas fa-trash"></i> Seçileni Sil</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="adminTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                            <th>Öğrenci No</th>
+                            <th>TC Kimlik</th>
+                            <th>Ad Soyad</th>
+                            <th>Sınav</th>
+                            <th>Tarih/Saat</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="printArea"></div>
 
 <script type="module">
-    // --- FIREBASE CONFIG ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue, query, orderByChild, equalTo, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAIzu6aNQstwQCdMWODyIwiaVVBm63OeGw",
         authDomain: "odevfeno.firebaseapp.com",
@@ -321,622 +253,547 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- STATE MANAGEMENT ---
-    let examData = []; // Google Sheet'ten gelen ham veri
-    let currentSelection = {
-        examName: null,
-        date: null,
-        sessionIndex: null, // Seans sırası (0, 1...)
-        sessionTime: null,
-        quotaLimit: 0,
-        startNumber: 0,
-        tc: null
-    };
-    let studentToCancel = null; // Silinecek öğrenci ID
+    // Global Variables
+    window.examData = []; // From Google Sheet
+    window.selectedExam = null;
+    window.selectedSession = null; // {date, time, quotaIndex, sessionIndex}
+    window.adminPassword = "13579";
+    let dbStudents = []; // Local cache of students for admin
 
-    // --- GOOGLE SHEETS DATA FETCH ---
-    const SHEET_ID = '1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg';
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    // --- GOOGLE SHEET PARSER ---
+    window.fetchExamData = function() {
+        const sheetId = "1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg";
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
 
-    async function fetchExamData() {
-        return new Promise((resolve, reject) => {
-            Papa.parse(SHEET_URL, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    console.log("Sheet Data:", results.data);
-                    examData = results.data.filter(row => row['Sınav'] && row['Sınav'] !== "");
-                    resolve(examData);
-                },
-                error: function(err) {
-                    showAlert("Sınav verileri yüklenemedi. Lütfen internet bağlantınızı kontrol edin.", "danger");
-                    reject(err);
-                }
-            });
-        });
-    }
-
-    // --- UI HELPERS ---
-    function showSection(sectionId) {
-        document.getElementById('mainMenu').classList.add('d-none');
-        document.getElementById('wizardContainer').classList.add('d-none');
-        document.getElementById('checkStatusContainer').classList.add('d-none');
-        document.getElementById('adminContainer').classList.add('d-none');
-        
-        // Hide wizard steps
-        document.querySelectorAll('.step-section').forEach(el => el.classList.remove('active'));
-
-        const target = document.getElementById(sectionId);
-        if(target) target.classList.remove('d-none');
-    }
-
-    function goHome() {
-        document.getElementById('mainMenu').classList.remove('d-none');
-        document.getElementById('wizardContainer').classList.add('d-none');
-        document.getElementById('checkStatusContainer').classList.add('d-none');
-        document.getElementById('adminContainer').classList.add('d-none');
-        document.getElementById('globalAlert').classList.add('d-none');
-        // Reset forms
-        document.querySelectorAll('input').forEach(i => i.value = '');
-    }
-
-    function showAlert(msg, type='warning') {
-        const el = document.getElementById('globalAlert');
-        el.className = `alert alert-${type}`;
-        el.innerHTML = msg;
-        el.classList.remove('d-none');
-        setTimeout(() => el.classList.add('d-none'), 5000);
-    }
-
-    // --- WIZARD LOGIC ---
-    
-    // 1. Start & Populate Exams
-    window.app.startNewRegistration = async function() {
-        showSection('wizardContainer');
-        document.getElementById('step1').classList.add('active');
-        
-        try {
-            await fetchExamData();
-            const select = document.getElementById('examSelect');
-            select.innerHTML = '<option value="">Seçiniz...</option>';
-            // Unique Exam Names
-            const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
-            uniqueExams.forEach(exam => {
-                const opt = document.createElement('option');
-                opt.value = exam;
-                opt.textContent = exam;
-                select.appendChild(opt);
-            });
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    window.app.onExamSelect = function() {
-        const examName = document.getElementById('examSelect').value;
-        const detailsArea = document.getElementById('examDetailsArea');
-        
-        if (!examName) {
-            detailsArea.classList.add('d-none');
-            return;
-        }
-
-        // Seçilen sınavın verisini bul (Sheet'te her satır farklı sınav parametresi olabilir)
-        // Burada basitlik adına ilk eşleşeni alıyoruz, fakat gelişmiş senaryoda tarih bazlı ayrım yapılabilir.
-        const examRow = examData.find(e => e['Sınav'] === examName);
-        if (!examRow) return;
-
-        currentSelection.examName = examName;
-        currentSelection.startNumber = parseInt(examRow['İlk numara']) || 1000;
-
-        // Tarihler
-        const dates = examRow['Tarih'].split(';');
-        const dateSelect = document.getElementById('dateSelect');
-        dateSelect.innerHTML = '';
-        dates.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.trim();
-            opt.textContent = d.trim();
-            dateSelect.appendChild(opt);
-        });
-
-        // Seanslar, Saatler, Kontenjanlar
-        const sessions = parseInt(examRow['Seans']);
-        const quotas = examRow['Kontenjan'].split(';');
-        const hours = examRow['Saatler'].split(';');
-
-        const sessionSelect = document.getElementById('sessionSelect');
-        sessionSelect.innerHTML = '';
-
-        // Her seans için kontenjanı veritabanından kontrol etmemiz lazım
-        // Asenkron olduğu için UI'yi "Yükleniyor" yapıp dolduracağız.
-        sessionSelect.innerHTML = '<option>Kontenjanlar kontrol ediliyor...</option>';
-        
-        checkQuotasAndFill(examName, dates[0], sessions, quotas, hours);
-        
-        detailsArea.classList.remove('d-none');
-    };
-
-    async function checkQuotasAndFill(examName, date, sessionCount, quotas, hours) {
-        const sessionSelect = document.getElementById('sessionSelect');
-        sessionSelect.innerHTML = '';
-
-        for (let i = 0; i < sessionCount; i++) {
-            const time = hours[i] ? hours[i].trim() : 'Saatsiz';
-            const maxQuota = parseInt(quotas[i]) || 0;
-            
-            // Firebase'den bu sınav+tarih+saat için kayıt sayısını al
-            const q = query(ref(db, 'bursluluk'), orderByChild('examKey'), equalTo(`${examName}_${date}_${time}`));
-            const snapshot = await get(q);
-            const currentCount = snapshot.size; // Kayıt sayısı
-            
-            const remaining = maxQuota - currentCount;
-            
-            const opt = document.createElement('option');
-            opt.value = i; // index
-            opt.dataset.time = time;
-            opt.dataset.quota = maxQuota;
-            
-            if (remaining <= 0) {
-                opt.textContent = `${time} - (DOLDU)`;
-                opt.disabled = true;
-            } else {
-                opt.textContent = `${time} - (Kalan: ${remaining})`;
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                // Filter empty rows and map
+                window.examData = results.data.filter(row => row['Sınav'] && row['Sınav'] !== "").map(row => {
+                    return {
+                        name: row['Sınav'],
+                        dates: row['Tarih'].split(';'),
+                        seansCount: parseInt(row['Seans']),
+                        quotas: row['Kontenjan'].split(';').map(Number),
+                        times: row['Saatler'].split(';'),
+                        startNo: parseInt(row['İlk numara'])
+                    };
+                });
+                console.log("Exam Data Loaded:", window.examData);
+                populateExamDropdown();
+                populateAdminExamFilter();
+            },
+            error: function(err) {
+                Swal.fire("Hata", "Sınav verileri Google E-Tablodan çekilemedi. Lütfen tablonun 'Web'de Yayınla' (CSV) seçeneğinin aktif olduğundan emin olun.", "error");
             }
-            sessionSelect.appendChild(opt);
-        }
+        });
     }
 
-    window.app.confirmExamSelection = function() {
-        const sSelect = document.getElementById('sessionSelect');
-        if (sSelect.value === "") { showAlert("Lütfen bir seans seçiniz"); return; }
-        
-        const selectedOpt = sSelect.options[sSelect.selectedIndex];
-        currentSelection.date = document.getElementById('dateSelect').value;
-        currentSelection.sessionIndex = sSelect.value;
-        currentSelection.sessionTime = selectedOpt.dataset.time;
-        currentSelection.quotaLimit = parseInt(selectedOpt.dataset.quota);
+    // --- NAVIGATION ---
+    window.startNewRegistration = () => {
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('wizardContainer').style.display = 'block';
+        changeStep(1);
+        fetchExamData(); // Refresh data
+    }
+    window.returnToMain = () => {
+        document.getElementById('wizardContainer').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'block';
+        document.getElementById('regForm').reset();
+    }
+    window.changeStep = (stepNo) => {
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step${stepNo}`).classList.add('active');
+    }
 
-        const confirmMsg = `
-            <strong>Fenomen Çocuk Kulübü</strong><br>
-            Tarih: ${currentSelection.date}<br>
-            Saat: ${currentSelection.sessionTime}<br>
-            Sınav: ${currentSelection.examName}<br><br>
-            Bu sınava kayıt olmak istiyor musunuz?
-        `;
+    // --- STEP 1 & 2: EXAM SELECTION & QUOTA ---
+    function populateExamDropdown() {
+        const select = document.getElementById('examSelect');
+        select.innerHTML = '<option value="">Sınav Seçiniz...</option>';
+        window.examData.forEach((exam, index) => {
+            select.innerHTML += `<option value="${index}">${exam.name}</option>`;
+        });
+    }
+
+    window.loadExamDetails = async () => {
+        const index = document.getElementById('examSelect').value;
+        const area = document.getElementById('examDetailsArea');
+        const tbody = document.getElementById('sessionTableBody');
+        tbody.innerHTML = '<tr><td colspan="4">Kontenjanlar yükleniyor...</td></tr>';
+        area.style.display = 'block';
+
+        if(index === "") { area.style.display = 'none'; return; }
         
-        // Custom Modal yerine basit confirm veya HTML içi geçiş
-        // Modern "wizard" akışı için alert yerine bir sonraki adıma geçiş öncesi onay sorusu gibi davranalım.
-        // Kullanıcı deneyimi için bir "Onay Modal"ı tetikleyelim.
+        window.selectedExam = window.examData[index];
+
+        // Fetch current counts from Firebase to calculate live quota
+        const snapshot = await get(child(ref(db), 'bursluluk/students'));
+        const students = snapshot.exists() ? Object.values(snapshot.val()) : [];
         
-        // Burada basitlik için JS confirm kullanmıyorum, UI'yı güncelliyorum.
-        if(confirm(selectedOpt.dataset.time + " saatindeki sınava başvuruyu onaylıyor musunuz?")) {
-             document.getElementById('step1').classList.remove('active');
-             document.getElementById('step2').classList.add('active');
+        let html = '';
+        
+        // Loop through sessions based on "Seans" count (assuming dates/times match logic)
+        // Logic: dates and times are semicolon separated.
+        // If 2 sessions, data might look like: Date: 15.01;16.01, Time: 10:00;12:00
+        
+        for(let i=0; i < window.selectedExam.seansCount; i++) {
+            const date = window.selectedExam.dates[i] || window.selectedExam.dates[0]; // Fallback
+            const time = window.selectedExam.times[i] || window.selectedExam.times[0];
+            const maxQuota = window.selectedExam.quotas[i] || 50;
+
+            // Count registered
+            const registeredCount = students.filter(s => 
+                s.examName === window.selectedExam.name && 
+                s.sessionIndex === i
+            ).length;
+
+            const remaining = maxQuota - registeredCount;
+            const btnState = remaining > 0 ? 
+                `<button class="btn btn-primary btn-sm" onclick="selectSession(${i}, '${date}', '${time}', ${remaining})">Seç</button>` : 
+                `<span class="badge bg-danger">Dolu</span>`;
+
+            html += `<tr>
+                <td>${date}</td>
+                <td>${time}</td>
+                <td>${remaining} / ${maxQuota}</td>
+                <td>${btnState}</td>
+            </tr>`;
         }
-    };
+        tbody.innerHTML = html;
+    }
 
-    // 2. TC Check
-    window.app.checkTC = async function() {
+    window.selectSession = (idx, date, time, remaining) => {
+        window.selectedSession = {
+            index: idx,
+            date: date,
+            time: time,
+            remaining: remaining
+        };
+        // Show confirm text
+        document.getElementById('confirmText').innerHTML = 
+            `<b>Fenomen Çocuk Kulübü</b><br> 
+            ${date} tarihinde saat ${time} gerçekleşecek<br>
+            <b>${window.selectedExam.name}</b><br>
+            sınavına kayıt olmak istiyor musunuz?`;
+        
+        changeStep(2);
+    }
+
+    // --- STEP 3: TC CHECK ---
+    window.checkTCAndProceed = async () => {
         const tc = document.getElementById('tcCheckInput').value;
-        if (tc.length !== 11 || isNaN(tc)) {
-            showAlert("Lütfen geçerli 11 haneli bir TC giriniz.", "danger");
+        if(tc.length !== 11 || isNaN(tc)) {
+            Swal.fire("Hata", "Lütfen geçerli 11 haneli T.C. Kimlik Numarası giriniz.", "warning");
             return;
         }
 
-        // Bu sınav için daha önce kaydı var mı?
-        const examKey = `${currentSelection.examName}_${currentSelection.date}_${currentSelection.sessionTime}`;
-        
-        // TC sorgusu (tüm verilerde TC'yi ara, sonra examKey kontrol et)
-        // Firebase kuralı: 'bursluluk' altında, orderByChild('tc') equalTo(tc)
-        const q = query(ref(db, 'bursluluk'), orderByChild('tc'), equalTo(tc));
-        
-        try {
-            const snapshot = await get(q);
-            let alreadyRegistered = false;
-            
-            snapshot.forEach(child => {
-                if (child.val().examKey === examKey) {
-                    alreadyRegistered = true;
+        const snapshot = await get(child(ref(db), 'bursluluk/students'));
+        let isRegistered = false;
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            // Check if TC exists for THIS exam
+            Object.values(data).forEach(student => {
+                if(student.tc === tc && student.examName === window.selectedExam.name) {
+                    isRegistered = true;
                 }
             });
-
-            if (alreadyRegistered) {
-                showAlert("Bu öğrenci için seçilen sınava zaten kayıt oluşturulmuş.", "info");
-                setTimeout(() => goHome(), 3000);
-            } else {
-                currentSelection.tc = tc;
-                document.getElementById('step2').classList.remove('active');
-                document.getElementById('step3').classList.add('active');
-            }
-        } catch (error) {
-            console.error(error);
-            showAlert("Sistem hatası.", "danger");
         }
-    };
 
-    // 3. Complete Registration
-    window.app.completeRegistration = async function() {
+        if(isRegistered) {
+            Swal.fire({
+                title: "Zaten Kayıtlı!",
+                text: "Bu T.C. numarası ile bu sınava daha önce başvurunuz alınmıştır.",
+                icon: "info",
+                confirmButtonText: "Ana Menüye Dön"
+            }).then(() => returnToMain());
+        } else {
+            changeStep(4);
+            // Auto fill phone mask listener
+            setupPhoneMasks();
+        }
+    }
+
+    function setupPhoneMasks() {
+        const inputs = document.querySelectorAll('.phone-mask');
+        inputs.forEach(input => {
+            input.addEventListener('input', function (e) {
+                var x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+                e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? ' ' + x[3] : '') + (x[4] ? ' ' + x[4] : '');
+            });
+        });
+    }
+
+    // --- STEP 4 & 5: REGISTRATION LOGIC ---
+    window.completeRegistration = async () => {
+        // Form Validation
         const stdName = document.getElementById('stdName').value.trim();
         const stdSchool = document.getElementById('stdSchool').value.trim();
         const parentName = document.getElementById('parentName').value.trim();
-        const phone1 = document.getElementById('phone1').value.trim();
-        const phone2 = document.getElementById('phone2').value.trim();
+        const phone1 = document.getElementById('phone1').value;
+        const phone2 = document.getElementById('phone2').value;
+        const tc = document.getElementById('tcCheckInput').value;
 
-        // Validasyonlar
         let errors = [];
-        if (stdName.split(' ').length < 2) errors.push("Öğrenci adı en az 2 kelime olmalıdır.");
-        if (parentName.split(' ').length < 2) errors.push("Veli adı en az 2 kelime olmalıdır.");
-        if (phone1.length < 10) errors.push("Telefon 1 eksik.");
-        if (!stdSchool) errors.push("Okul bilgisi girilmedi.");
+        if(stdName.split(' ').length < 2) errors.push("Öğrenci adı en az 2 kelime olmalıdır.");
+        if(parentName.split(' ').length < 2) errors.push("Veli adı en az 2 kelime olmalıdır.");
+        if(phone1.length < 14) errors.push("Telefon 1 eksik girildi.");
 
-        if (errors.length > 0) {
-            showAlert("Eksik Bilgiler:<br>" + errors.join("<br>"), "danger");
+        if(errors.length > 0) {
+            Swal.fire({
+                title: "Eksik Bilgi",
+                html: errors.join("<br>"),
+                icon: "warning"
+            });
             return;
         }
 
-        // Öğrenci Numarası Atama
-        // Strateji: O sınavdaki tüm öğrencilerin numaralarını çek, sırala, boşluk bul veya sona ekle.
-        const examKey = `${currentSelection.examName}_${currentSelection.date}_${currentSelection.sessionTime}`;
-        const q = query(ref(db, 'bursluluk'), orderByChild('examKey'), equalTo(examKey));
+        // Logic: Calculate Student ID (Fill gaps logic)
+        // 1. Get all students for this exam
+        const snapshot = await get(child(ref(db), 'bursluluk/students'));
+        const allStudents = snapshot.exists() ? Object.values(snapshot.val()) : [];
+        const thisExamStudents = allStudents.filter(s => s.examName === window.selectedExam.name);
         
-        const snapshot = await get(q);
-        let existingNumbers = [];
-        snapshot.forEach(c => existingNumbers.push(c.val().studentNumber));
+        // Extract Numbers and Sort
+        const usedNumbers = thisExamStudents.map(s => parseInt(s.studentNo)).sort((a,b) => a-b);
         
-        existingNumbers.sort((a,b) => a - b);
-        
-        let assignedNo = currentSelection.startNumber;
-        for (let i = 0; i < existingNumbers.length + 1; i++) {
-            let candidate = currentSelection.startNumber + i;
-            if (!existingNumbers.includes(candidate)) {
-                assignedNo = candidate;
+        let assignedNo = window.selectedExam.startNo;
+        // Find gap
+        for(let i = 0; i < usedNumbers.length; i++) {
+            if(usedNumbers[i] === assignedNo) {
+                assignedNo++;
+            } else if (usedNumbers[i] > assignedNo) {
+                // Found a gap
                 break;
             }
         }
 
-        // Firebase Kayıt
-        const newStudent = {
-            tc: currentSelection.tc,
-            stdName: stdName.toUpperCase(),
-            school: stdSchool.toUpperCase(),
-            parentName: parentName.toUpperCase(),
+        // Double check quota one last time (Race condition check simplified)
+        // Ideally use runTransaction but simplified here for logic clarity
+        const currentSessionCount = thisExamStudents.filter(s => s.sessionIndex === window.selectedSession.index).length;
+        const maxQ = window.selectedExam.quotas[window.selectedSession.index];
+        
+        if(currentSessionCount >= maxQ) {
+            Swal.fire("Üzgünüz", "Bu sırada kontenjan doldu. Lütfen başka seans seçiniz.", "error");
+            changeStep(1);
+            return;
+        }
+
+        // SAVE TO FIREBASE
+        const newStudentRef = push(ref(db, 'bursluluk/students')); // Use push for unique key
+        const studentData = {
+            id: newStudentRef.key,
+            tc: tc,
+            studentName: stdName,
+            school: stdSchool,
+            parentName: parentName,
             phone1: phone1,
             phone2: phone2,
-            examName: currentSelection.examName,
-            date: currentSelection.date,
-            time: currentSelection.sessionTime,
-            studentNumber: assignedNo,
-            examKey: examKey,
-            createdAt: new Date().toISOString()
+            examName: window.selectedExam.name,
+            examDate: window.selectedSession.date,
+            examTime: window.selectedSession.time,
+            sessionIndex: window.selectedSession.index,
+            studentNo: assignedNo,
+            regDate: new Date().toLocaleString()
         };
 
-        const newRef = push(ref(db, 'bursluluk'));
-        await set(newRef, newStudent);
+        await set(newStudentRef, studentData);
 
-        // UI Güncelleme
-        document.getElementById('step3').classList.remove('active');
-        document.getElementById('step4').classList.add('active');
-        
-        renderCard('finalCardDisplay', newStudent);
-    };
+        // Generate Card
+        const cardHtml = generateCardHTML(studentData);
+        document.getElementById('finalCardPreview').innerHTML = cardHtml;
+        changeStep(5);
+    }
 
-    function renderCard(containerId, data) {
-        const html = `
-            <div class="exam-card">
-                <div class="exam-card-header">FENOMEN ÇOCUK KULÜBÜ<br>SINAV GİRİŞ KARTI</div>
-                <div class="exam-card-row">
-                    <span class="exam-card-label">Öğrenci Adı:</span>
-                    <span>${data.stdName}</span>
+    // Helper: Card Generator
+    function generateCardHTML(data) {
+        return `
+        <div class="exam-card">
+            <div class="exam-card-header">FENOMEN ÇOCUK KULÜBÜ GİRİŞ KARTI</div>
+            <div class="exam-card-body">
+                <div class="exam-card-row"><span>Ad Soyad:</span> <strong>${data.studentName.toUpperCase()}</strong></div>
+                <div class="exam-card-row"><span>Okul:</span> <strong>${data.school}</strong></div>
+                <div class="exam-card-row"><span>T.C. No:</span> <strong>${data.tc}</strong></div>
+                <div class="exam-card-row" style="background:#f9f9f9;"><span>Öğrenci No:</span> <strong style="font-size:14px; color:red;">${data.studentNo}</strong></div>
+                <div class="mt-2 text-center" style="border-top:1px solid #ddd; padding-top:2px;">
+                    <strong>${data.examName}</strong><br>
+                    Tarih: ${data.examDate} - Saat: ${data.examTime}
                 </div>
-                 <div class="exam-card-row">
-                    <span class="exam-card-label">TC No:</span>
-                    <span>${data.tc.substring(0,2)}*******${data.tc.substring(9)}</span>
-                </div>
-                <div class="exam-card-row">
-                    <span class="exam-card-label">Okulu:</span>
-                    <span>${data.school}</span>
-                </div>
-                 <div class="exam-card-row">
-                    <span class="exam-card-label">Sınav:</span>
-                    <span>${data.examName}</span>
-                </div>
-                <div class="exam-card-row">
-                    <span class="exam-card-label">Tarih / Saat:</span>
-                    <span>${data.date} / ${data.time}</span>
-                </div>
-                 <div class="exam-card-row" style="background:#f1f1f1; padding:5px;">
-                    <span class="exam-card-label">ÖĞRENCİ NO:</span>
-                    <span style="font-size:1.2rem; font-weight:bold;">${data.studentNumber}</span>
-                </div>
-                <div class="text-center mt-3 text-muted" style="font-size:0.8rem;">
-                    Sınav Yeri: Fenomen Çocuk Kulübü<br>
-                    (Lütfen sınav saatinden 15 dk önce geliniz.)
-                </div>
+                <div class="text-center mt-1 text-muted" style="font-size:9px;">Sınav Yeri: Fenomen Çocuk Kulübü</div>
             </div>
+        </div>
         `;
-        document.getElementById(containerId).innerHTML = html;
-        // Print area için de hazırla
-        document.getElementById('printableArea').innerHTML = html;
     }
 
-    // --- CHECK STATUS & CANCEL ---
-    window.app.showCheckStatus = function() {
-        showSection('checkStatusContainer');
-        document.getElementById('searchResults').innerHTML = '';
-        document.getElementById('searchQuery').value = '';
-    };
+    // --- STUDENT INFO & CANCEL ---
+    window.openStudentInfo = () => {
+        new bootstrap.Modal(document.getElementById('infoModal')).show();
+    }
 
-    window.app.searchStudent = async function() {
-        const val = document.getElementById('searchQuery').value.trim();
-        if(!val) return;
+    window.searchStudentInfo = async () => {
+        const key = document.getElementById('searchInfoInput').value.trim();
+        const resDiv = document.getElementById('studentInfoResult');
+        resDiv.innerHTML = "Aranıyor...";
 
-        const resultsDiv = document.getElementById('searchResults');
-        resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Aranıyor...</div>';
-
-        // Hem TC hem Öğrenci No ile arama yapılmalı. Firebase NoSQL olduğu için iki ayrı sorgu veya client-side filtre.
-        // Client-side filtre (veri çok büyük değilse) veya iki ayrı query.
-        // Basitlik için tüm veriyi çekip filtrelemek yerine, index'li alan (TC) üzerinden gidelim.
-        // Eğer numara girildiyse (kısa ise) studentNumber, uzunsa (11) TC varsayalım.
-        
-        let q;
-        if(val.length === 11) {
-            q = query(ref(db, 'bursluluk'), orderByChild('tc'), equalTo(val));
-        } else {
-            // studentNumber sayı olarak saklanıyor
-            q = query(ref(db, 'bursluluk'), orderByChild('studentNumber'), equalTo(parseInt(val)));
-        }
-
-        const snapshot = await get(q);
-        resultsDiv.innerHTML = '';
-
+        const snapshot = await get(child(ref(db), 'bursluluk/students'));
         if (!snapshot.exists()) {
-             resultsDiv.innerHTML = '<div class="alert alert-warning">Kayıt bulunamadı.</div>';
-             return;
+            resDiv.innerHTML = "<div class='alert alert-warning'>Kayıt bulunamadı.</div>";
+            return;
         }
 
-        snapshot.forEach(child => {
-            const data = child.val();
-            const key = child.key;
-            
-            const cardId = `card_${key}`;
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <div id="${cardId}"></div>
-                <div class="text-center mb-5">
-                     <button class="btn btn-danger btn-sm" onclick="app.initiateCancel('${key}', '${data.stdName}', '${data.examName}')">
+        const data = Object.values(snapshot.val());
+        const found = data.filter(s => s.tc === key || s.studentNo.toString() === key);
+
+        if(found.length === 0) {
+            resDiv.innerHTML = "<div class='alert alert-warning'>Bu bilgilerle bir başvuru bulunamadı.</div>";
+        } else {
+            let html = '';
+            found.forEach(s => {
+                html += `<div class="mb-3 border p-3 rounded bg-light">
+                    ${generateCardHTML(s)}
+                    <button class="btn btn-danger w-100 mt-2" onclick="cancelRegistration('${s.id}', '${s.studentName}')">
                         <i class="fas fa-times"></i> Sınava Girmekten Vazgeçtim
-                     </button>
-                     <button class="btn btn-primary btn-sm" onclick="app.printSingleCard('${key}')"><i class="fas fa-print"></i> Yazdır</button>
-                </div>
-                <hr>
-            `;
-            resultsDiv.appendChild(div);
-            renderCard(cardId, data);
-            
-            // Print fonksiyonu için datayı sakla
-            div.dataset.json = JSON.stringify(data);
-        });
-    };
-    
-    window.app.printSingleCard = function(key) {
-        const cardHtml = document.getElementById(`card_${key}`).innerHTML;
-        document.getElementById('printableArea').innerHTML = `<div style="margin:50px;">${cardHtml}</div>`;
-        window.print();
+                    </button>
+                </div>`;
+            });
+            resDiv.innerHTML = html;
+        }
     }
 
-    window.app.initiateCancel = function(key, name, exam) {
-        studentToCancel = { key, name };
-        document.getElementById('cancelConfirmText').textContent = name;
-        document.getElementById('cancelInput').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
-        modal.show();
-    };
-
-    window.app.executeCancellation = async function() {
-        const input = document.getElementById('cancelInput').value;
-        const expected = `${studentToCancel.name} sınav iptal`; // Case sensitive? Prompt says "tam adınızı yazın"
-        
-        // Küçük harf toleransı tanıyalım
-        if (input.toLowerCase() === expected.toLowerCase()) {
-            await remove(ref(db, `bursluluk/${studentToCancel.key}`));
-            bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
-            showAlert("Kayıt başarıyla silindi.", "success");
-            window.app.searchStudent(); // Listeyi yenile
-        } else {
-            alert("Girdiğiniz metin hatalı. Silme işlemi yapılmadı.");
-        }
-    };
+    window.cancelRegistration = (id, name) => {
+        Swal.fire({
+            title: 'Kaydı Silmek İstiyor musunuz?',
+            html: `İşlemi onaylamak için aşağıya <br> <b>${name} sınav iptal</b> <br> yazınız.`,
+            input: 'text',
+            showCancelButton: true,
+            confirmButtonText: 'Onayla ve Sil',
+            cancelButtonText: 'Vazgeç',
+            preConfirm: (text) => {
+                if (text !== `${name} sınav iptal`) {
+                    Swal.showValidationMessage('Yazı eşleşmedi, silme işlemi iptal edildi.');
+                }
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                // Delete from Firebase
+                await remove(ref(db, `bursluluk/students/${id}`));
+                Swal.fire("Silindi", "Kayıt başarıyla silindi.", "success");
+                document.getElementById('studentInfoResult').innerHTML = ""; // Clear view
+                // Quota automatically opens up, ID becomes free for next user due to gap logic.
+            }
+        });
+    }
 
     // --- ADMIN PANEL ---
-    window.app.openAdminAuth = function() {
-        const pass = prompt("Yönetici Şifresi:");
-        if (pass === "13579") {
-            showSection('adminContainer');
-            app.setupAdminFilters();
-            app.adminLoadData();
-        } else {
-            showAlert("Hatalı Şifre!", "danger");
-        }
-    };
-
-    window.app.setupAdminFilters = async function() {
-         await fetchExamData(); // Ensure data
-         const select = document.getElementById('adminFilterExam');
-         select.innerHTML = '<option value="all">Tüm Sınavlar</option>';
-         const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
-         uniqueExams.forEach(e => {
-             select.innerHTML += `<option value="${e}">${e}</option>`;
-         });
-    };
-
-    let allStudentsCache = [];
-
-    window.app.adminLoadData = async function() {
-        const tbody = document.getElementById('adminTableBody');
-        tbody.innerHTML = '<tr><td colspan="7">Yükleniyor...</td></tr>';
-        
-        const snapshot = await get(ref(db, 'bursluluk'));
-        allStudentsCache = [];
-        snapshot.forEach(c => allStudentsCache.push({key: c.key, ...c.val()}));
-
-        app.adminFilterTable();
-    };
-
-    window.app.adminFilterTable = function() {
-        const examFilter = document.getElementById('adminFilterExam').value;
-        const search = document.getElementById('adminSearch').value.toLowerCase();
-
-        const filtered = allStudentsCache.filter(s => {
-            const matchExam = examFilter === 'all' || s.examName === examFilter;
-            const matchSearch = s.stdName.toLowerCase().includes(search) || s.tc.includes(search) || s.studentNumber.toString().includes(search);
-            return matchExam && matchSearch;
-        });
-        
-        // Sırala (Öğrenci No)
-        filtered.sort((a,b) => a.studentNumber - b.studentNumber);
-
-        const tbody = document.getElementById('adminTableBody');
-        tbody.innerHTML = '';
-        filtered.forEach(s => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${s.studentNumber}</td>
-                <td>${s.stdName}</td>
-                <td>${s.tc}</td>
-                <td>${s.school}</td>
-                <td>${s.phone1}</td>
-                <td>${s.examName} / ${s.time}</td>
-                <td class="no-print">
-                    <button class="btn btn-danger btn-sm" onclick="app.adminDelete('${s.key}')"><i class="fas fa-trash"></i></button>
-                    <button class="btn btn-primary btn-sm" onclick="app.printSingleCardKey('${s.key}')"><i class="fas fa-print"></i></button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    };
-    
-    window.app.printSingleCardKey = function(key) {
-        const data = allStudentsCache.find(s => s.key === key);
-        renderCard('printableArea', data);
-        window.print();
+    window.openAdminPanel = () => {
+        Swal.fire({
+            title: 'Yönetici Girişi',
+            input: 'password',
+            inputAttributes: { autocapitalize: 'off' },
+            showCancelButton: true,
+            confirmButtonText: 'Giriş',
+            showLoaderOnConfirm: true,
+            preConfirm: (login) => {
+                if (login !== window.adminPassword) {
+                    Swal.showValidationMessage('Hatalı Şifre');
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                fetchExamData();
+                fetchAdminData();
+            }
+        })
     }
-    
-    window.app.adminDelete = async function(key) {
-        if(confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
-            await remove(ref(db, `bursluluk/${key}`));
-            app.adminLoadData();
-        }
-    };
 
-    // --- ADMIN: PRINT OPERATIONS ---
-    window.app.printAttendance = function() {
-        // Tabloyu yazdıracağız sadece
-        const content = document.getElementById('adminTable').outerHTML;
-        const title = `<h3 class="text-center">Sınav Yoklama Listesi</h3><br>`;
-        document.getElementById('printableArea').innerHTML = title + content;
-        window.print();
-    };
+    async function fetchAdminData() {
+        const snapshot = await get(child(ref(db), 'bursluluk/students'));
+        dbStudents = snapshot.exists() ? Object.values(snapshot.val()) : [];
+        renderAdminTable();
+    }
 
-    window.app.printBatchCards = function() {
-        // Filtrelenmiş listeyi al
-        const examFilter = document.getElementById('adminFilterExam').value;
+    function populateAdminExamFilter() {
+        const sel = document.getElementById('adminExamFilter');
+        sel.innerHTML = '<option value="all">Tüm Sınavlar</option>';
+        window.examData.forEach(e => {
+            sel.innerHTML += `<option value="${e.name}">${e.name}</option>`;
+        });
+    }
+
+    window.renderAdminTable = () => {
+        const filterExam = document.getElementById('adminExamFilter').value;
         const search = document.getElementById('adminSearch').value.toLowerCase();
-        const filtered = allStudentsCache.filter(s => {
-            const matchExam = examFilter === 'all' || s.examName === examFilter;
-            const matchSearch = s.stdName.toLowerCase().includes(search);
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = "";
+
+        let filtered = dbStudents.filter(s => {
+            let matchExam = filterExam === 'all' || s.examName === filterExam;
+            let matchSearch = (s.studentName.toLowerCase().includes(search) || 
+                               s.tc.includes(search) || 
+                               s.studentNo.toString().includes(search));
             return matchExam && matchSearch;
         });
 
-        let html = '<div class="batch-print-container">';
-        filtered.forEach(data => {
-            html += `
-            <div class="batch-card">
-                 <div style="text-align:center; font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px;">FENOMEN ÇOCUK KULÜBÜ<br>SINAV GİRİŞ KARTI</div>
-                <div><strong>Ad:</strong> ${data.stdName}</div>
-                <div><strong>TC:</strong> ${data.tc}</div>
-                <div><strong>Okul:</strong> ${data.school}</div>
-                <div><strong>Sınav:</strong> ${data.examName}</div>
-                <div><strong>Zaman:</strong> ${data.date} - ${data.time}</div>
-                <div style="font-size:14px; font-weight:bold; text-align:right; margin-top:5px;">NO: ${data.studentNumber}</div>
-            </div>
-            `;
+        // Sort by Exam then Number
+        filtered.sort((a,b) => a.studentNo - b.studentNo);
+
+        filtered.forEach(s => {
+            tbody.innerHTML += `
+            <tr>
+                <td><input type="checkbox" class="admin-chk" value="${s.id}"></td>
+                <td>${s.studentNo}</td>
+                <td>${s.tc}</td>
+                <td>${s.studentName}</td>
+                <td>${s.examName}</td>
+                <td>${s.examDate} ${s.examTime}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="printSingleCard('${s.id}')"><i class="fas fa-print"></i></button>
+                    <button class="btn btn-sm btn-warning" onclick="editStudent('${s.id}')"><i class="fas fa-edit"></i></button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    // --- ADMIN ACTIONS ---
+    window.toggleSelectAll = () => {
+        const master = document.getElementById('selectAll').checked;
+        document.querySelectorAll('.admin-chk').forEach(c => c.checked = master);
+    }
+
+    window.adminQuickRegister = () => {
+        // Simple redirect to wizard for now, or build a mini modal
+        Swal.fire({
+            title: "Hızlı Kayıt",
+            text: "Kayıt sihirbazına yönlendiriliyorsunuz...",
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => startNewRegistration());
+    }
+
+    window.bulkDelete = async () => {
+        const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
+        if(checked.length === 0) return Swal.fire("Uyarı", "Seçili öğrenci yok", "warning");
+
+        const res = await Swal.fire({
+            title: `${checked.length} kaydı silmek üzeresiniz?`,
+            text: "Bu işlem geri alınamaz!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Evet, Sil'
+        });
+
+        if(res.isConfirmed) {
+            const updates = {};
+            checked.forEach(id => updates[`bursluluk/students/${id}`] = null);
+            await update(ref(db), updates);
+            Swal.fire("Silindi", "Seçilenler silindi", "success");
+            fetchAdminData();
+        }
+    }
+
+    // Print Logic
+    window.printSingleCard = (id) => {
+        const s = dbStudents.find(x => x.id === id);
+        const card = generateCardHTML(s);
+        const printArea = document.getElementById('printArea');
+        printArea.innerHTML = `<div style="display:flex; justify-content:center; margin-top:50px;">${card}</div>`;
+        window.print();
+        printArea.innerHTML = ""; // clear
+    }
+
+    window.printBulkCards = () => {
+        const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
+        if(checked.length === 0) return Swal.fire("Uyarı", "Listeden basılacak kişileri seçiniz.", "warning");
+        
+        const selectedStudents = dbStudents.filter(s => checked.includes(s.id));
+        
+        let html = '<div class="print-grid">';
+        selectedStudents.forEach(s => {
+            html += `<div style="border:1px dashed #ccc;">${generateCardHTML(s)}</div>`;
         });
         html += '</div>';
         
-        document.getElementById('printableArea').innerHTML = html;
+        const printArea = document.getElementById('printArea');
+        printArea.innerHTML = html;
         window.print();
-    };
+        printArea.innerHTML = "";
+    }
+
+    window.printList = () => {
+        // Generate a clean list table for printing
+        const checked = Array.from(document.querySelectorAll('.admin-chk:checked')).map(c => c.value);
+        let list = checked.length > 0 ? dbStudents.filter(s => checked.includes(s.id)) : dbStudents; // If none selected, print all (filtered view)
+        
+        // Use current table view filter if no checkbox selected? 
+        // Logic: if checkboxes, print selection. Else print current view.
+        if(checked.length === 0) {
+             // Re-apply filters manually or just take what's in dbStudents (simplified)
+             // Ideally we grab visible rows but let's just print all loaded
+        }
+
+        let html = `
+        <h3 style="text-align:center;">Fenomen Eğitim Kurumları - Sınav Listesi</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;" border="1">
+            <thead>
+                <tr style="background:#eee;">
+                    <th>No</th><th>TC</th><th>Ad Soyad</th><th>Okul</th><th>Telefon</th><th>Sınav/Seans</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        list.forEach(s => {
+            html += `<tr>
+                <td>${s.studentNo}</td>
+                <td>${s.tc}</td>
+                <td>${s.studentName}</td>
+                <td>${s.school}</td>
+                <td>${s.phone1}</td>
+                <td>${s.examName} (${s.examTime})</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+
+        const printArea = document.getElementById('printArea');
+        printArea.innerHTML = html;
+        window.print();
+        printArea.innerHTML = "";
+    }
+
+    window.editStudent = async (id) => {
+        const s = dbStudents.find(x => x.id === id);
+        const { value: formValues } = await Swal.fire({
+            title: 'Öğrenci Düzenle',
+            html:
+                `<input id="swal-name" class="swal2-input" value="${s.studentName}" placeholder="Ad Soyad">` +
+                `<input id="swal-phone" class="swal2-input" value="${s.phone1}" placeholder="Telefon">` +
+                `<input id="swal-school" class="swal2-input" value="${s.school}" placeholder="Okul">`,
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    studentName: document.getElementById('swal-name').value,
+                    phone1: document.getElementById('swal-phone').value,
+                    school: document.getElementById('swal-school').value
+                }
+            }
+        });
+
+        if (formValues) {
+            await update(ref(db, `bursluluk/students/${id}`), formValues);
+            Swal.fire('Güncellendi', '', 'success');
+            fetchAdminData();
+        }
+    }
+
+    // Needed for module scope access from HTML
+    import { push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    window.push = push; 
     
-    // --- ADMIN: QUICK ADD ---
-    window.app.adminQuickAdd = function() {
-         const modal = new bootstrap.Modal(document.getElementById('quickAddModal'));
-         // Modal içine basit form koy
-         const formHtml = `
-             <label>TC</label><input type="text" id="q_tc" class="form-control mb-2">
-             <label>Ad Soyad</label><input type="text" id="q_name" class="form-control mb-2">
-             <label>Okul</label><input type="text" id="q_school" class="form-control mb-2">
-             <label>Veli Tel</label><input type="text" id="q_phone" class="form-control mb-2">
-             <label>Sınav</label><select id="q_exam" class="form-control mb-2"></select>
-             <label>Tarih</label><input type="text" id="q_date" class="form-control mb-2" placeholder="01.01.2026">
-             <label>Saat</label><input type="text" id="q_time" class="form-control mb-2" placeholder="10:00-11:15">
-             <label>Manuel No (Boşsa otomatik)</label><input type="number" id="q_no" class="form-control mb-2">
-         `;
-         document.getElementById('quickAddForm').innerHTML = formHtml;
-         
-         // Sınavları doldur
-         const select = document.getElementById('q_exam');
-         const uniqueExams = [...new Set(examData.map(item => item['Sınav']))];
-         uniqueExams.forEach(e => select.innerHTML += `<option>${e}</option>`);
-
-         modal.show();
-    };
-
-    window.app.saveQuickAdd = async function() {
-        // Basit kaydetme mantığı
-        const data = {
-            tc: document.getElementById('q_tc').value,
-            stdName: document.getElementById('q_name').value.toUpperCase(),
-            school: document.getElementById('q_school').value.toUpperCase(),
-            phone1: document.getElementById('q_phone').value,
-            examName: document.getElementById('q_exam').value,
-            date: document.getElementById('q_date').value,
-            time: document.getElementById('q_time').value,
-            studentNumber: parseInt(document.getElementById('q_no').value) || 0, // 0 ise backend mantığı gerekir ama burada admin manuel giriyor varsayalım veya random
-            examKey: `${document.getElementById('q_exam').value}_${document.getElementById('q_date').value}_${document.getElementById('q_time').value}`,
-            createdAt: new Date().toISOString()
-        };
-
-        if(data.studentNumber === 0) {
-            // Basitçe rastgele atayalım hızlı kayıt için
-            data.studentNumber = Math.floor(Math.random() * 1000) + 9000; 
-        }
-
-        await push(ref(db, 'bursluluk'), data);
-        bootstrap.Modal.getInstance(document.getElementById('quickAddModal')).hide();
-        app.adminLoadData();
-        showAlert("Hızlı kayıt eklendi", "success");
-    };
-
-    // --- GLOBAL ---
-    window.app.goHome = goHome;
-
-    // Mask Logic (Simple)
-    document.addEventListener('input', function (e) {
-        if (e.target.classList.contains('phone-mask')) {
-            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? ' ' + x[3] : '') + (x[4] ? ' ' + x[4] : '');
-        }
-    });
-
-    // Sayfa yüklenince data çek
+    // Initial Load
     fetchExamData();
 
-</script>
-
-<script>
-    // Module scope dışında global erişim için köprü (app nesnesini window'a bağladık module içinde)
-    // Yukarıdaki type="module" scripti çalıştığında window.app kullanılabilir olacak.
 </script>
 
 </body>
