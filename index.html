@@ -104,21 +104,15 @@
     /* Card preview (vizit) */
     .card-preview-wrap{display:flex;justify-content:center}
     .exam-card{
-      --c1: rgba(37,99,235,.16);
-      --c2: rgba(124,58,237,.14);
-      --stroke: rgba(2,6,23,.10);
-      --soft: rgba(2,6,23,.06);
+      /* Redefined variables for simplified card styling */
       --radius:16px;
-
       width:90mm;
       height:55mm;
       border-radius:var(--radius);
-      background:
-        radial-gradient(120mm 70mm at 10% 0%, var(--c1), transparent 60%),
-        radial-gradient(120mm 70mm at 100% 100%, var(--c2), transparent 55%),
-        linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      border:1px solid var(--stroke);
-      box-shadow:0 14px 34px rgba(2,6,23,.12);
+      /* Use a light gradient background instead of busy radial patterns */
+      background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border:1px solid rgba(2,6,23,.08);
+      box-shadow:0 8px 24px rgba(2,6,23,.10);
       padding:10px;
       position:relative;
       overflow:hidden;
@@ -126,22 +120,12 @@
       text-rendering:optimizeLegibility;
     }
     .exam-card:before{
-      content:"";position:absolute;inset:-40px;
-      background:conic-gradient(from 180deg,
-        rgba(37,99,235,.10),
-        rgba(124,58,237,.08),
-        rgba(34,197,94,.06),
-        rgba(37,99,235,.10)
-      );
-      filter:blur(10px);
-      opacity:.55;
-      transform:rotate(6deg);
-      z-index:0;
+      /* Remove decorative conic gradient */
+      display:none;
     }
     .exam-card:after{
-      content:"";position:absolute;inset:0;
-      background:linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0));
-      z-index:0;
+      /* Hide overlay */
+      display:none;
     }
     .exam-card > *{position:relative;z-index:1}
 
@@ -572,15 +556,16 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-9">
-              <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
-              <input type="text" class="form-control form-control-lg" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
-              <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
+          <!-- Redesigned search area for student info: label on top, unified input + button -->
+          <div>
+            <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
+            <div class="input-group input-group-lg mb-2">
+              <input type="text" class="form-control" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
+              <button class="btn btn-primary" type="button" onclick="searchStudentInfo()">
+                <i class="fa-solid fa-magnifying-glass me-1"></i> Sorgula
+              </button>
             </div>
-            <div class="col-md-3 d-grid">
-              <button class="btn btn-primary btn-lg" onclick="searchStudentInfo()"><i class="fa-solid fa-magnifying-glass"></i> Sorgula</button>
-            </div>
+            <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
           </div>
 
           <hr class="my-4" />
@@ -892,6 +877,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           ex.dates = pad(ex.dates, ex.dates[0] || "");
           ex.times = pad(ex.times, ex.times[0] || "");
           ex.quotas = pad(ex.quotas, ex.quotas[0] ?? 0);
+
+        // Build a "sessions" array combining date, time and quota.  Many parts of the app rely on
+        // exam.sessions but it was never set previously, causing quick registration and edit flows
+        // to fail (no seans list).  Each session object has a date, time and maxQuota.
+        ex.sessions = ex.dates.map((d,i) => ({
+          date: d || ex.dates[0] || "",
+          time: ex.times[i] || ex.times[0] || "",
+          maxQuota: ex.quotas[i] ?? 0
+        }));
         });
 
         populateExamDropdown();
@@ -924,14 +918,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         examSel.innerHTML += `<option value="${exam.name}">${exam.name}</option>`;
       });
 
-      // Session filter (dynamic based on available times across exams)
+      // Session filter options will be populated dynamically based on the selected exam.
       const sesSel = el("adminSessionFilter");
-      const times = new Set();
-      window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
-      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
-      Array.from(times).sort().forEach(t => {
-        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
-      });
+      // Function to populate session (time) options based on the selected exam filter.
+      const updateSessionOptions = () => {
+        const selectedExamName = examSel.value;
+        const times = new Set();
+        window.examData.forEach(ex => {
+          // If "all" exams are selected include all times, otherwise only include times for the selected exam.
+          if(selectedExamName === 'all' || ex.name === selectedExamName){
+            (ex.times || []).forEach(t => times.add(t));
+          }
+        });
+        // Populate the session select element
+        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+        Array.from(times).sort().forEach(t => {
+          sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+      };
+      // Attach change handler on exam filter to update session options when selection changes
+      examSel.addEventListener('change', updateSessionOptions);
+      // Populate initial session options
+      updateSessionOptions();
     }
 
     // --- Navigation ---
@@ -1408,15 +1416,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       return `
         <div class="exam-card" aria-label="Öğrenci giriş kartı önizleme">
           <div class="exam-card-inner">
-            <div class="exam-card-head">
-              <div class="brand">
-                <div class="logo-badge"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div>
-                  <div class="brand-title">FENOMEN ÇOCUK KULÜBÜ</div>
-                  <div class="brand-sub">Öğrenci Giriş Belgesi</div>
-                </div>
+            <div class="exam-card-header">
+              <div class="card-brand">
+                <div class="card-mark"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div class="card-title">FENOMEN ÇOCUK KULÜBÜ</div>
               </div>
-              <div class="card-type">GİRİŞ KARTI</div>
+              <div class="card-type">ÖĞRENCİ GİRİŞ KARTI</div>
             </div>
 
             <div class="exam-card-body">
@@ -1552,8 +1557,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         showLoading(false);
       }
 
-      const expected = toLowerTR(normSpaces(`${student.studentName} sınav iptal`));
-      const instruction = `Kayıt silmek için aşağıya <b>${student.studentName} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: necla sıza sınav iptal</span>`;
+      // Prepare instruction: ask user to type "sınav iptal" along with the student's name (case insensitive)
+      const expectedName = toLowerTR(normSpaces(student.studentName));
+      const instruction = `Kayıt silmek için aşağıya <b>${escapeHtml(student.studentName)} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: ${escapeHtml(expectedName)} sınav iptal</span>`;
 
       const res = await Swal.fire({
         title: "Sınav İptali",
@@ -1565,8 +1571,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         cancelButtonText: "Vazgeç",
         preConfirm: (val) => {
           const got = toLowerTR(normSpaces(val || ""));
-          if(got !== expected){
-            Swal.showValidationMessage("Yazı eşleşmedi. Lütfen tam adı doğru yazıp 'sınav iptal' ifadesini ekleyiniz.");
+          // Accept if the input contains "sınav iptal" and includes the student's name (order not important)
+          const hasPhrase = got.includes("sinav iptal");
+          const hasName = expectedName && got.includes(expectedName);
+          if(!hasPhrase || !hasName){
+            Swal.showValidationMessage("Lütfen öğrenci adını ve 'sınav iptal' ifadesini yazınız.");
             return false;
           }
           return true;
@@ -2231,12 +2240,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // --- Printing ---
 
     function openPrintWindow(title, bodyHtml, extraCss=""){
-      const w = window.open("", "_blank", "noopener,noreferrer");
-      if(!w){
-        Swal.fire("Uyarı","Pop-up engellendi. Lütfen tarayıcıda izin veriniz.","warning");
-        return null;
-      }
-
       const css = `
         <style>
           :root{ --fg:#0f172a; --muted:#64748b; }
@@ -2254,7 +2257,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           ${extraCss}
         </style>
       `;
-
+      // Attempt to open a new pop-up window. If blocked, fallback to printing within the current page
+      const w = window.open("", "_blank", "noopener,noreferrer");
+      if(!w){
+        // Pop‑up blocked: create print content in hidden area of current page
+        const area = document.getElementById("printArea");
+        if(area){
+          area.innerHTML = `${css}${bodyHtml}`;
+          // Give the browser a tick to render the content before printing
+          setTimeout(() => {
+            window.print();
+            // Clear after printing
+            setTimeout(() => { area.innerHTML = ""; }, 1000);
+          }, 50);
+        } else {
+          Swal.fire("Uyarı","Pop-up engellendi ve dahili yazdırma alanı bulunamadı.","warning");
+        }
+        return null;
+      }
+      // If pop‑up opens successfully, write the content and return the window handle
       w.document.open();
       w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${css}<title>${escapeHtml(title)}</title></head><body>${bodyHtml}</body></html>`);
       w.document.close();
