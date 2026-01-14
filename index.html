@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Fenomen Eğitim Kurumları - Bursluluk & LGS Provası</title>
 
   <!-- Fonts -->
@@ -22,661 +22,246 @@
   <!-- PapaParse (Google Sheet CSV) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
- <style>
-  :root{
-    --bg:#f4f6f9;
-    --ink:#0f172a;
-    --muted:#64748b;
-    --brand:#2563eb;
-    --brand2:#7c3aed;
-    --ok:#16a34a;
-    --warn:#f59e0b;
-    --bad:#ef4444;
-    --cardShadow: 0 10px 30px rgba(2, 6, 23, .10);
-  }
-
-  /* -----------------------------
-     GLOBAL MOBILE-SAFE BASE
-  ------------------------------*/
-  *, *::before, *::after { box-sizing: border-box; }
-
-  html, body{
-    width:100%;
-    max-width:100%;
-    overflow-x:hidden; /* Telefonlarda yatay kaymayı kökten keser */
-  }
-
-  body{
-    font-family:'Poppins',sans-serif;
-    background:linear-gradient(180deg,#f8fafc 0%, var(--bg) 60%);
-    color:var(--ink);
-    margin:0;
-  }
-
-  img, svg, video, canvas{
-    max-width:100%;
-    height:auto;
-  }
-
-  /* Safe area (çentikli telefonlar) */
-  .safe-pad{
-    padding-left:max(12px, env(safe-area-inset-left));
-    padding-right:max(12px, env(safe-area-inset-right));
-  }
-
-  .hero-section{text-align:center;padding:52px 16px;}
-  .brand-badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    padding:10px 18px;
-    border-radius:999px;
-    background:linear-gradient(135deg,#ea580c,#f59e0b);
-    color:#fff;
-    font-weight:600;
-    margin:0 auto;
-    max-width:100%;
-  }
-
-  .main-btn{
-    width:100%;
-    height:124px;
-    font-size:1.2rem;
-    border-radius:18px;
-    border:none;
-    color:#fff;
-    box-shadow:var(--cardShadow);
-    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-
-    /* mobil güvenlik */
-    max-width:100%;
-  }
-
-  .main-btn:hover{
-    transform:translateY(-3px);
-    filter:saturate(1.05);
-    box-shadow:0 16px 40px rgba(2,6,23,.14);
-  }
-
-  .btn-new{background:linear-gradient(135deg,#2563eb 0%, #7c3aed 100%);}
-  .btn-info{background:linear-gradient(135deg,#0f766e 0%, #22c55e 100%);}
-  .btn-admin{background:linear-gradient(135deg,#ef4444 0%, #f97316 100%);}
-
-  /* Wizard */
-  .wizard-shell{
-    max-width:980px;
-    margin:0 auto 56px;
-
-    /* telefonda sağ/sol taşmayı engeller */
-    padding-left:12px;
-    padding-right:12px;
-  }
-
-  .wizard-card{
-    border:0;
-    border-radius:18px;
-    box-shadow:var(--cardShadow);
-    overflow:hidden;
-    background:#fff;
-
-    max-width:100%;
-  }
-
-  .wizard-head{
-    padding:18px 18px;
-    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(124,58,237,.95));
-    color:#fff;
-  }
-
-  .wizard-sub{opacity:.9;font-size:.95rem}
-  .wizard-body{padding:18px;}
-  .wizard-step{display:none;animation:fadeIn .25s ease;}
-  .wizard-step.active{display:block;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-  /* Progress */
-  .progress-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .step-pill{
-    display:flex;align-items:center;gap:8px;
-    padding:8px 12px;border-radius:999px;
-    background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.25);
-    font-size:.9rem;
-    max-width:100%;
-  }
-
-  .step-pill i{opacity:.9}
-  .step-pill.active{background:#fff;color:var(--brand);border-color:#fff;}
-  .step-pill.done{background:rgba(255,255,255,.32);border-color:rgba(255,255,255,.28);}
-
-  /* Table */
-  .table thead th{font-weight:600}
-  .badge-soft{
-    border-radius:999px;
-    padding:.35rem .6rem;
-    font-weight:600;
-    font-size:.82rem;
-    max-width:100%;
-  }
-  .badge-ok{background:rgba(22,163,74,.12);color:var(--ok);}
-  .badge-warn{background:rgba(245,158,11,.12);color:var(--warn);}
-  .badge-bad{background:rgba(239,68,68,.12);color:var(--bad);}
-  .session-row{vertical-align:middle;}
-  .session-actions .btn{border-radius:12px}
-
-  /* TABLO TAŞMASINI TELEFONDA KONTROLLÜ SCROLL’A AL */
-  .table-responsive{
-    border-radius:16px;
-    overflow-x:auto;               /* tablo genişse kendi içinde kayar */
-    -webkit-overflow-scrolling:touch;
-    border:1px solid rgba(2,6,23,.08);
-    max-width:100%;
-  }
-
-  /* Inputs */
-  .form-control, .form-select{border-radius:14px;max-width:100%}
-  .form-control:focus, .form-select:focus{
-    box-shadow:0 0 0 .25rem rgba(37,99,235,.15);
-    border-color:rgba(37,99,235,.55)
-  }
-  .hint{color:var(--muted);font-size:.92rem}
-  .ai-alert{
-    border:1px solid rgba(37,99,235,.18);
-    background:linear-gradient(180deg, rgba(37,99,235,.06), rgba(124,58,237,.04));
-    border-radius:16px;
-    padding:12px 14px;
-    max-width:100%;
-  }
-
-  /* Card preview (vizit) */
-  .card-preview-wrap{display:flex;justify-content:center;max-width:100%}
-  .exam-card{
-    --c1: rgba(37,99,235,.16);
-    --c2: rgba(124,58,237,.14);
-    --stroke: rgba(2,6,23,.10);
-    --soft: rgba(2,6,23,.06);
-    --radius:16px;
-    --header-gradient: linear-gradient(135deg, rgba(15,23,42,.92), rgba(37,99,235,.92));
-    --mark-gradient: linear-gradient(135deg,#60a5fa,#a78bfa);
-    --no-bg: rgba(37,99,235,.08);
-    --no-border: rgba(37,99,235,.14);
-    --no-color: var(--brand);
-
-    width:90mm;
-    height:55mm;
-
-    border-radius:var(--radius);
-    background:
-      radial-gradient(120mm 70mm at 10% 0%, var(--c1), transparent 60%),
-      radial-gradient(120mm 70mm at 100% 100%, var(--c2), transparent 55%),
-      linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-    border:1px solid var(--stroke);
-    box-shadow:0 14px 34px rgba(2,6,23,.12);
-    padding:10px;
-    position:relative;
-    overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
-
-    max-width:100%;
-  }
-
-  .exam-card:before{
-    content:"";
-    position:absolute;
-    inset:-40px;
-    background:conic-gradient(from 180deg,
-      rgba(37,99,235,.10),
-      rgba(124,58,237,.08),
-      rgba(34,197,94,.06),
-      rgba(37,99,235,.10)
-    );
-    filter:blur(10px);
-    opacity:.55;
-    transform:rotate(6deg);
-    z-index:0;
-  }
-
-  .exam-card:after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0));
-    z-index:0;
-  }
-
-  .exam-card > *{position:relative;z-index:1}
-
-  .exam-card-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:8px 10px;
-    border-radius:14px;
-    background:var(--header-gradient);
-    color:#fff;
-
-    max-width:100%;
-  }
-
-  .card-brand{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;}
-  .card-mark{
-    width:20px;height:20px;border-radius:8px;
-    background:var(--mark-gradient);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
-    flex:0 0 auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#fff;
-    font-size:12px;
-  }
-
-  .card-title{
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.35px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    min-width:0;
-  }
-
-  .card-type{
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:.4px;
-    opacity:.95;
-    white-space:nowrap;
-    padding:4px 8px;
-    border-radius:999px;
-    background:rgba(255,255,255,.14);
-    border:1px solid rgba(255,255,255,.22);
-    flex:0 0 auto;
-  }
-
-  .exam-card-body{
-    margin-top:10px;
-    display:flex;
-    flex-direction:column;
-    gap:7px;
-    max-width:100%;
-  }
-
-  .kv{
-    display:grid;
-    grid-template-columns:72px 1fr;
-    gap:10px;
-    align-items:start;
-    padding-bottom:5px;
-    border-bottom:1px dashed rgba(2,6,23,.10);
-    max-width:100%;
-  }
-
-  .kv .k{
-    color:var(--muted);
-    font-size:10px;
-    font-weight:700;
-    min-width:0;
-  }
-
-  .kv .v{
-    font-size:11px;
-    font-weight:800;
-    text-align:right;
-    min-width:0;
-    overflow-wrap:anywhere;
-    word-break:break-word;
-    line-height:1.15;
-  }
-
-  /* Hide the hidden print area on screen; it will only be used when printing */
-  #printArea{ display:none; }
-  @media print{
-    #printArea{ display:block; }
-  }
-
-  .kv .v.is-name{
-    letter-spacing:.25px;
-    font-size:13px;
-    font-weight:900;
-    color:var(--ink);
-  }
-
-  .kv.is-tc .v{font-size:9px;color:var(--muted);}
-
-  .kv .v.clamp2{
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
-
-  .big-no{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:8px 10px;
-    border-radius:14px;
-    background:var(--no-bg);
-    border:1px solid var(--no-border);
-    max-width:100%;
-  }
-
-  .big-no span{
-    font-weight:800;
-    color:var(--muted);
-    font-size:9.7px;
-    letter-spacing:.25px;
-    min-width:0;
-  }
-
-  .big-no strong{
-    font-size:18px;
-    font-weight:900;
-    color:var(--no-color);
-    letter-spacing:.8px;
-    min-width:0;
-  }
-
-  .exam-card-footer{
-    margin-top:6px;
-    padding-top:6px;
-    border-top:1px dashed rgba(2,6,23,.14);
-    text-align:left;
-    color:var(--muted);
-    font-size:9.6px;
-    line-height:1.25;
-    max-width:100%;
-  }
-
-  .exam-card-footer .footer-row{
-    display:flex;
-    justify-content:space-between;
-    gap:8px;
-    align-items:flex-start;
-    margin-top:3px;
-    max-width:100%;
-  }
-
-  .exam-card-footer .fr-k{
-    font-weight:900;
-    color:var(--ink);
-    font-size:8.8px;
-    text-transform:uppercase;
-    letter-spacing:.10em;
-    opacity:.85;
-    min-width:18mm;
-  }
-
-  .exam-card-footer .fr-v{
-    flex:1;
-    text-align:right;
-    color:var(--ink);
-    font-weight:800;
-    font-size:10.2px;
-    min-width:0;
-    overflow-wrap:anywhere;
-  }
-
-  .exam-card-footer .fr-v.exam-name{
-    font-weight:900;
-    font-size:10.8px;
-  }
-
-  .place-pill{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    padding:4px 9px;
-    border-radius:999px;
-    background:rgba(2,6,23,.04);
-    border:1px solid rgba(2,6,23,.07);
-    margin-top:5px;
-    max-width:100%;
-  }
-
-  .place-pill span{
-    display:-webkit-box;
-    -webkit-line-clamp:1;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-    max-width:100%;
-  }
-
-  /* Themed variations for exam cards */
-  .exam-card.theme-orange{
-    --c1: rgba(253,186,116,.16);
-    --c2: rgba(249,115,22,.14);
-    --stroke: rgba(234,88,12,.15);
-    --header-gradient: linear-gradient(135deg, #ea580c, #f59e0b);
-    --mark-gradient: linear-gradient(135deg,#fdba74,#f97316);
-    --no-bg: rgba(234,88,12,.08);
-    --no-border: rgba(234,88,12,.14);
-    --no-color: #ea580c;
-  }
-
-  .exam-card.theme-bw{
-    --c1: rgba(120,124,136,.12);
-    --c2: rgba(99,105,116,.10);
-    --stroke: rgba(71,85,105,.25);
-    --header-gradient: linear-gradient(135deg, #334155, #1e293b);
-    --mark-gradient: linear-gradient(135deg,#64748b,#475569);
-    --no-bg: rgba(71,85,105,.08);
-    --no-border: rgba(71,85,105,.16);
-    --no-color: #1e293b;
-  }
-
-  /* Sharper on-screen preview */
-  @media screen{
-    .exam-card{
-      width: min(92vw, 520px);
-      height:auto;
-      aspect-ratio: 90 / 55;
-      border-radius:18px;
-      padding:12px;
-    }
-    .exam-card-header{padding:10px 12px;}
-    .card-mark{width:22px;height:22px;border-radius:9px;}
-    .card-title{font-size:12px;}
-    .kv{grid-template-columns:84px 1fr;}
-    .kv .k{font-size:11px;}
-    .kv .v{font-size:12px;}
-    .big-no strong{font-size:22px;}
-    .exam-card-footer{font-size:10.5px;}
-    .exam-card-footer .exam-name{font-size:12.5px;}
-  }
-
-  /* Keep exact physical size in print */
-  @media print{
-    .exam-card{
-      width:90mm;
-      height:auto;
-      min-height:65mm;
-      padding:10px;
-      border-radius:16px;
-      box-shadow:none;
-    }
-  }
-
-  /* Loading overlay */
-  #loadingOverlay{
-    position:fixed;
-    inset:0;
-    background:rgba(255,255,255,.92);
-    z-index:9999;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    backdrop-filter: blur(4px);
-  }
-
-  /* Admin */
-  #adminPanel .card{
-    border:0;
-    border-radius:18px;
-    box-shadow:var(--cardShadow);
-    overflow:hidden;
-    max-width:100%;
-  }
-
-  #adminPanel .card-header{
-    background:linear-gradient(135deg,#111827,#0b1220)
-  }
-
-  .admin-toolbar .btn{border-radius:12px}
-  .table>:not(caption)>*>*{border-color:rgba(2,6,23,.07)}
-
-  /* Main menu layout and footer */
-  #mainMenu{
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
-    max-width:100%;
-  }
-
-  #mainFooter{
-    margin-top:auto;
-    font-size:.85rem;
-    color:var(--muted);
-  }
-
-  /* Print */
-  @media print{
-    body *{visibility:hidden !important;}
-    #printArea, #printArea *{visibility:visible !important;}
-    #printArea{position:absolute;left:0;top:0;width:100%;}
-    .no-print{display:none !important;}
-  }
-
-  /* A4 card sheet */
-  .a4{
-    width:210mm;
-    min-height:297mm;
-    padding:10mm;
-    max-width:100%;
-  }
-
-  .cards-grid{
-    display:grid;
-    grid-template-columns: repeat(2, 95mm);
-    grid-auto-rows: 60mm;
-    gap:6mm;
-    justify-content:center;
-    max-width:100%;
-  }
-
-  .card-cell{
-    position:relative;
-    padding:3mm;
-    border:1px dashed rgba(2,6,23,.25);
-    border-radius:10px;
-    max-width:100%;
-  }
-
-  .cut-hint{
-    position:absolute;
-    inset:auto 6px 6px 6px;
-    font-size:9px;
-    color:rgba(2,6,23,.55);
-    text-align:center;
-  }
-
-  /* -----------------------------
-     EXTRA MOBILE TUNING
-     (küçük ekranlarda kart/tablolar taşmasın)
-  ------------------------------*/
-  @media (max-width: 575.98px){
-    .hero-section{ padding:34px 12px; }
-    .wizard-shell{ padding-left:10px; padding-right:10px; }
-
-    .main-btn{
-      height:auto;       /* sabit yükseklik telefonda gereksiz taşma yapabilir */
-      min-height:104px;
-      font-size:1.05rem;
-      border-radius:16px;
-    }
-
-    .wizard-head{ padding:14px 14px; }
-    .wizard-body{ padding:14px; }
-
-    .kv{
-      grid-template-columns: minmax(70px, 38%) 1fr; /* dar ekranda daha esnek */
-      gap:8px;
-    }
-
-    .kv .k{ font-size:10.5px; }
-    .kv .v{ font-size:11.5px; }
-
-    .exam-card-footer .fr-k{ min-width:16mm; }
-    .exam-card-footer .fr-v{ font-size:10px; }
-
-    /* Telefonlarda A4 grid (print layout) ekrana yansımasın */
-    .a4{ width:auto; min-height:auto; padding:0; }
-    .cards-grid{ grid-template-columns: 1fr; grid-auto-rows:auto; gap:12px; }
-    .card-cell{ padding:0; border:none; }
-    .cut-hint{ display:none; }
-  }
-</style>
-
-</head>
-
-<body>
-  <div id="loadingOverlay">
-    <div class="spinner-border text-primary" role="status"></div>
-    <div class="mt-3 fw-semibold">İşleniyor, lütfen bekleyiniz...</div>
-    <div class="hint mt-1">Veriler kontrol ediliyor ve kayıt güvenli şekilde işleniyor.</div>
-  </div>
-
-  <!-- MAIN MENU -->
-  <div class="container hero-section" id="mainMenu">
-    <div class="brand-badge mb-3">
-      <i class="fa-solid fa-graduation-cap"></i>
-      <span>Fenomen Eğitim Kurumları</span>
-    </div>
-    <h1 class="mb-2" style="font-weight:800;color:var(--brand);">Bursluluk / LGS Provası Başvuru</h1>
-    <div class="text-secondary mb-5">Başvuru, sorgulama ve yönetim işlemleri</div>
-
-    <div class="row g-4 justify-content-center">
-      <div class="col-md-4">
-        <button class="main-btn btn-new" onclick="startNewRegistration()">
-          <i class="fa-solid fa-user-plus fa-2x"></i>
-          <div style="font-weight:700;">Yeni Kayıt</div>
-          <div class="wizard-sub">Sınav seç, seans seç, kaydı tamamla</div>
-        </button>
-      </div>
-      <div class="col-md-4">
-        <button class="main-btn btn-info" onclick="openStudentInfo()">
-          <i class="fa-solid fa-magnifying-glass fa-2x"></i>
-          <div style="font-weight:700;">Kayıtlı Bilgisi</div>
-          <div class="wizard-sub">TC / Öğrenci No ile sorgula ve iptal et</div>
-        </button>
-      </div>
-      <div class="col-md-4">
-        <button class="main-btn btn-admin" onclick="openAdminPanel()">
-          <i class="fa-solid fa-user-shield fa-2x"></i>
-          <div style="font-weight:700;">Yönetici Bölümü</div>
-          <!-- Removed verbose description under admin button -->
-          <div class="wizard-sub"></div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Footer: sits at the bottom of the main menu using flexbox -->
-    <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong>
-</footer>
-
 <style>
+        :root {
+            --bg: #f4f6f9;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --brand: #2563eb;
+            --brand2: #7c3aed;
+            --ok: #16a34a;
+            --warn: #f59e0b;
+            --bad: #ef4444;
+            --cardShadow: 0 10px 30px rgba(2, 6, 23, .10);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 60%);
+            color: var(--ink);
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 40px 16px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ea580c, #f59e0b);
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Ana Butonlar */
+        .main-btn {
+            width: 100%;
+            min-height: 100px;
+            font-size: 1.1rem;
+            border-radius: 18px;
+            border: none;
+            color: #fff;
+            box-shadow: var(--cardShadow);
+            transition: all .2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .main-btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-new { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); }
+        .btn-info { background: linear-gradient(135deg, #0f766e 0%, #22c55e 100%); }
+        .btn-admin { background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); }
+
+        /* Wizard Konteynırı */
+        .wizard-shell {
+            width: 100%;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 15px 50px;
+        }
+
+        .wizard-card {
+            border-radius: 20px;
+            box-shadow: var(--cardShadow);
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .wizard-head {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--brand), var(--brand2));
+            color: #fff;
+        }
+
+        .wizard-sub { opacity: .9; font-size: .85rem; margin-top: 4px; }
+
+        /* Progress Steps */
+        .progress-wrap {
+            display: flex;
+            gap: 8px;
+            padding: 15px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .progress-wrap::-webkit-scrollbar { display: none; }
+
+        .step-pill {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.05);
+            font-size: .8rem;
+            white-space: nowrap;
+        }
+
+        .step-pill.active { background: var(--brand); color: #fff; }
+
+        /* Form Elemanları */
+        .wizard-body { padding: 20px; }
+        .form-control, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-top: 5px;
+            font-size: 16px; /* Mobil odaklanmada zoom yapmaması için */
+        }
+
+        /* Sınav Kartı (Mobil Önizleme) */
+        .card-preview-wrap {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        .exam-card {
+            --radius: 16px;
+            width: 100%;
+            max-width: 450px; /* Mobil için ideal genişlik */
+            min-height: 250px;
+            aspect-ratio: 90/55;
+            border-radius: var(--radius);
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 12px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .exam-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0f172a, #2563eb);
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .card-title { font-size: 11px; font-weight: 700; }
+        .card-type { font-size: 9px; padding: 3px 8px; background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .kv {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .kv .k { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+        .kv .v { font-size: 11px; font-weight: 700; text-align: right; }
+
+        .big-no {
+            margin-top: auto;
+            background: rgba(37,99,235,0.05);
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .big-no strong { font-size: 1.2rem; color: var(--brand); }
+
+        /* Tablo Mobil Görünümü */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        .table { width: 100%; border-collapse: collapse; min-width: 600px; }
+
+        /* Admin & Footer */
+        #mainFooter {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* ÇIKTI / PRINT AYARLARI */
+        @media print {
+            body * { visibility: hidden !important; }
+            #printArea, #printArea * { visibility: visible !important; }
+            #printArea { position: absolute; left: 0; top: 0; width: 210mm; }
+            .a4 { width: 210mm; padding: 10mm; margin: 0 auto; }
+            .cards-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 90mm);
+                gap: 5mm;
+                justify-content: center;
+            }
+            .exam-card { width: 90mm !important; height: 55mm !important; box-shadow: none !important; border: 1px solid #000 !important; }
+        }
+
+        /* Küçük Ekran İyileştirmeleri */
+        @media (max-width: 480px) {
+            .hero-section { padding: 30px 10px; }
+            .wizard-body { padding: 15px; }
+            .main-btn { height: 90px; font-size: 1rem; }
+            .exam-card { aspect-ratio: auto; padding-bottom: 20px; }
+            .card-title { font-size: 10px; }
+        }
+    </style>
   body { padding-bottom: 60px; }
 </style>
 
