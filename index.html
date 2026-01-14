@@ -2895,7 +2895,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Build inner card grid using black-white theme for bulk printing
       const bodyHtml = `
         <div class="cards-grid">
-          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join("")}
+          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'orange'})}</div>`).join("")}
         </div>
       `;
       const extraCss = `
@@ -2914,7 +2914,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           height:74mm;
           box-sizing:border-box;
           padding:2mm;
-          border:1px dashed #777;
+          border:1px dashed rgba(2,6,23,.25);
           border-radius:10px;
           overflow:hidden;
           display:flex;
@@ -2925,89 +2925,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         }
 
         .card-cell .exam-card{ margin:0; }
-
-        /* ---------------------------------------
-           SİYAH-BEYAZ (YÜKSEK KONTRAST) BASKI AYARI
-           - Renk/gradyanları kapatır
-           - Kenarlıkları keskinleştirir
-           - Tüm metni siyaha çeker
-        ----------------------------------------*/
-        .exam-card,
-        .exam-card *{
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-        .exam-card{
-          background:#fff !important;
-          border:1px solid #000 !important;
-          box-shadow:none !important;
-          filter:none !important;
-        }
-        .exam-card:before,
-        .exam-card:after{
-          display:none !important;
-          content:none !important;
-        }
-
-        .exam-card-header{
-          background:#fff !important;
-          color:#000 !important;
-          border:1px solid #000 !important;
-        }
-
-        .card-title,
-        .card-type,
-        .card-sub{
-          color:#000 !important;
-        }
-
-        .exam-card-header .card-type{
-          background:transparent !important;
-          border:1px solid #000 !important;
-        }
-
-        .card-mark{
-          background:transparent !important;
-          border:1px solid #000 !important;
-          box-shadow:none !important;
-          color:#000 !important;
-        }
-
-        .kv{
-          border-bottom:1px solid #000 !important;
-        }
-        .kv.is-tc{
-          border-bottom:none !important;
-        }
-        .kv .k,
-        .kv .v{
-          color:#000 !important;
-        }
-
-        .big-no{
-          background:#fff !important;
-          border:2px solid #000 !important;
-        }
-        .big-no span,
-        .big-no strong{
-          color:#000 !important;
-        }
-
-        .exam-card-footer{
-          border-top:1px solid #000 !important;
-          color:#000 !important;
-        }
-        .exam-card-footer .fr-k,
-        .exam-card-footer .fr-v{
-          color:#000 !important;
-        }
-
-        .place-pill{
-          background:transparent !important;
-          border:1px solid #000 !important;
-          color:#000 !important;
-        }
 
         /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
         @media (max-width: 575.98px){
