@@ -1529,10 +1529,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const school = normSpaces(data.school);
       const tc = String(data.tc || "");
       const no = data.studentNo;
-      const exam = normSpaces(data.examName);
-      const date = data.examDate;
-      const time = data.examTime;
-      const place = normSpaces(data.place || "Fenomen Çocuk Kulübü");
+      // Resolve exam-related fields with sensible fallbacks. Some records may use
+      // different property names (e.g. exam_name, date, time, venue). Normalise
+      // these so the card always shows exam name, date/time and place.
+      const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
+      const date = data.examDate || data.date || data.exam_date || "";
+      const time = data.examTime || data.time || data.exam_time || "";
+      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Çocuk Kulübü");
 
       const tcPretty = (tc.length === 11)
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
@@ -2413,9 +2416,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
      * This approach avoids pop-up blockers and works across mobile/desktop browsers.
      * Pass a title, optional subtitle, inner HTML and optional extra CSS (e.g. for grids).
      */
+    /**
+     * Render a simple printable document in a new window and trigger the browser print dialog.
+     *
+     * The previous implementation injected markup into a hidden <div> on the same page, which
+     * worked only in some browsers. When Chromium-based browsers updated their print preview
+     * behaviour it started generating empty tabs. To make printing more reliable across desktop
+     * and mobile browsers, this function now opens a separate window, writes the full HTML
+     * document with the supplied content and styles, and then calls print() on that window.
+     *
+     * The caller should supply a title (optional), subtitle (optional), the inner body HTML,
+     * and any additional CSS rules. Base A4 styles and colour-adjust rules are provided
+     * automatically.
+     */
     function printInPage({ title, subtitle = "", bodyHtml, extraCss = "" }){
-      const area = el("printArea");
       // Construct a small style block for A4 printing and allow caller to add extra CSS
+      const area = el("printArea");
       const css = `
         <style>
           .a4{ width:210mm; min-height:297mm; padding:10mm; margin:0 auto; }
@@ -2487,14 +2503,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Build inner card grid using black-white theme for bulk printing
       const bodyHtml = `
         <div class="cards-grid">
-          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join("")}
+          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'orange'})}</div>`).join("")}
         </div>
       `;
       const extraCss = `
         .cards-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8mm; }
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
       `;
-      // When printing bulk cards, omit header titles so the sheet only contains cards
+      // When printing bulk cards, omit header titles so the sheet only contains cards.
       printInPage({
         title: "",
         subtitle: "",
@@ -2770,8 +2786,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
       // Determine subtitle: use provided dateLine if exists, else today's date
       const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
+      const titleText = meta.title || "Yoklama Listesi";
       printInPage({
-        title: meta.title || "Yoklama Listesi",
+        title: titleText,
         subtitle: subtitleLine,
         bodyHtml: bodyHtml,
         extraCss: extraCss
