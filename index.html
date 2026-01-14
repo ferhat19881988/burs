@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -568,31 +567,46 @@
     min-height:297mm;
     padding:10mm;
     max-width:100%;
+    box-sizing:border-box;
   }
 
+  /* 2x2 kart düzeni: ölçüler A4 içine taşmadan sığacak şekilde ayarlı */
   .cards-grid{
     display:grid;
-    grid-template-columns: repeat(2, 95mm);
-    grid-auto-rows: 60mm;
-    gap:6mm;
+    grid-template-columns:repeat(2, 94mm);
+    column-gap:2mm;
+    row-gap:4mm;
     justify-content:center;
+    align-items:start;
     max-width:100%;
   }
 
   .card-cell{
+    width:94mm;
+    height:74mm;                 /* kart + kesim payı */
+    box-sizing:border-box;
     position:relative;
-    padding:3mm;
+    padding:2mm;
     border:1px dashed rgba(2,6,23,.25);
     border-radius:10px;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    break-inside:avoid;
+    page-break-inside:avoid;
     max-width:100%;
   }
 
+  .card-cell .exam-card{ margin:0; }
+
   .cut-hint{
     position:absolute;
-    inset:auto 6px 6px 6px;
+    left:6px; right:6px; bottom:6px;
     font-size:9px;
     color:rgba(2,6,23,.55);
     text-align:center;
+    pointer-events:none;
   }
 
   /* -----------------------------
@@ -644,9 +658,28 @@
     .modal-header{ padding:12px 12px !important; }
 
     /* Öğrenci kartı: telefonda ortalı ve taşmasız */
-    .exam-card{ margin-left:auto; margin-right:auto; width:100%; max-width:520px; }
+    .exam-card{
+      margin-left:auto;
+      margin-right:auto;
+      width:100%;
+      max-width:520px;
 
-  }
+      /* içerik uzayınca sıkışıp taşmasın */
+      aspect-ratio:auto !important;
+      height:auto !important;
+    }
+
+    /* Kart başlığında uzun metinlerde taşma olmasın */
+    .exam-card-header{ flex-wrap:wrap; }
+    .card-title{ white-space:normal; }
+
+    /* Footer satırları telefonda sarılsın */
+    .exam-card-footer .footer-row{ flex-wrap:wrap; }
+
+    /* Modallar: telefonda tam genişlik */
+    .modal-dialog{ margin:10px; max-width:calc(100% - 20px); }
+    .modal-dialog.modal-xl{ max-width:calc(100% - 20px); }
+}
 </style>
 
 </head>
@@ -2844,13 +2877,37 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </div>
       `;
       const extraCss = `
-        .cards-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8mm; }
-        .card-cell{ break-inside:avoid; page-break-inside:avoid; }
+        /* Kartların birbirine girmemesi için fiziksel (mm) ölçüler */
+        .cards-grid{
+          display:grid;
+          grid-template-columns:repeat(2, 94mm);
+          column-gap:2mm;
+          row-gap:4mm;
+          justify-content:center;
+          align-items:start;
+        }
+
+        .card-cell{
+          width:94mm;
+          height:74mm;
+          box-sizing:border-box;
+          padding:2mm;
+          border:1px dashed rgba(2,6,23,.25);
+          border-radius:10px;
+          overflow:hidden;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          break-inside:avoid;
+          page-break-inside:avoid;
+        }
+
+        .card-cell .exam-card{ margin:0; }
 
         /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
         @media (max-width: 575.98px){
           .cards-grid{ grid-template-columns: 1fr; gap:12px; }
-          .card-cell{ border:none !important; padding:0 !important; }
+          .card-cell{ border:none !important; padding:0 !important; height:auto !important; width:auto !important; }
         }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
