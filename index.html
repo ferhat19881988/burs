@@ -33,6 +33,36 @@
       --warn:#f59e0b;
       --bad:#ef4444;
       --cardShadow: 0 10px 30px rgba(2, 6, 23, .10);
+      /* Card theme variables (can be overridden via [data-card-theme]) */
+      --card-primary:#2563eb;
+      --card-secondary:#7c3aed;
+    }
+
+    /* Alternate card themes using data attributes on body */
+    /* Orange theme */
+    body[data-card-theme="orange"]{
+      --card-primary:#f97316;
+      --card-secondary:#fbbf24;
+    }
+    /* Green theme */
+    body[data-card-theme="green"]{
+      --card-primary:#10b981;
+      --card-secondary:#22c55e;
+    }
+    /* Red theme */
+    body[data-card-theme="red"]{
+      --card-primary:#ef4444;
+      --card-secondary:#f87171;
+    }
+    /* Purple theme */
+    body[data-card-theme="purple"]{
+      --card-primary:#8b5cf6;
+      --card-secondary:#d946ef;
+    }
+    /* Gray theme for print (black & white) */
+    body[data-card-theme="bw"]{
+      --card-primary:#000;
+      --card-secondary:#333;
     }
     body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f8fafc 0%, var(--bg) 60%);color:var(--ink);}
     .hero-section{text-align:center;padding:52px 16px;}
@@ -104,15 +134,21 @@
     /* Card preview (vizit) */
     .card-preview-wrap{display:flex;justify-content:center}
     .exam-card{
-      /* Redefined variables for simplified card styling */
+      --c1: rgba(37,99,235,.16);
+      --c2: rgba(124,58,237,.14);
+      --stroke: rgba(2,6,23,.10);
+      --soft: rgba(2,6,23,.06);
       --radius:16px;
+
       width:90mm;
       height:55mm;
       border-radius:var(--radius);
-      /* Use a light gradient background instead of busy radial patterns */
-      background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-      border:1px solid rgba(2,6,23,.08);
-      box-shadow:0 8px 24px rgba(2,6,23,.10);
+      background:
+        radial-gradient(120mm 70mm at 10% 0%, var(--c1), transparent 60%),
+        radial-gradient(120mm 70mm at 100% 100%, var(--c2), transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border:1px solid var(--stroke);
+      box-shadow:0 14px 34px rgba(2,6,23,.12);
       padding:10px;
       position:relative;
       overflow:hidden;
@@ -120,19 +156,35 @@
       text-rendering:optimizeLegibility;
     }
     .exam-card:before{
-      /* Remove decorative conic gradient */
-      display:none;
+      content:"";position:absolute;inset:-40px;
+      background:conic-gradient(from 180deg,
+        rgba(37,99,235,.10),
+        rgba(124,58,237,.08),
+        rgba(34,197,94,.06),
+        rgba(37,99,235,.10)
+      );
+      filter:blur(10px);
+      opacity:.55;
+      transform:rotate(6deg);
+      z-index:0;
     }
     .exam-card:after{
-      /* Hide overlay */
-      display:none;
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0));
+      z-index:0;
     }
     .exam-card > *{position:relative;z-index:1}
 
-    .exam-card-header{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:8px 10px;border-radius:14px;
-      background:linear-gradient(135deg, rgba(15,23,42,.92), rgba(37,99,235,.92));
+    /* Card header: support both .exam-card-header (legacy) and .exam-card-head (current) */
+    .exam-card-header,
+    .exam-card-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:14px;
+      background:linear-gradient(135deg, var(--card-primary, rgba(15,23,42,.92)), var(--card-secondary, rgba(37,99,235,.92)));
       color:#fff;
     }
     .card-brand{display:flex;align-items:center;gap:8px;min-width:0;}
@@ -178,8 +230,19 @@
       background:rgba(37,99,235,.08);
       border:1px solid rgba(37,99,235,.14);
     }
-    .big-no span{font-weight:800;color:var(--muted);font-size:9.7px;letter-spacing:.25px}
-    .big-no strong{font-size:18px;font-weight:900;color:var(--brand);letter-spacing:.8px}
+    .big-no span{
+      font-weight:800;
+      color:var(--muted);
+      font-size:9.7px;
+      letter-spacing:.25px;
+    }
+    .big-no strong{
+      font-size:18px;
+      font-weight:900;
+      /* colour controlled by theme */
+      color:var(--card-primary, var(--brand));
+      letter-spacing:.8px;
+    }
 
     .exam-card-footer{
       margin-top:6px;
@@ -197,25 +260,26 @@
       align-items:flex-start;
       margin-top:3px;
     }
+    /* enlarge exam/time/place area on card */
     .exam-card-footer .fr-k{
       font-weight:900;
       color:var(--ink);
-      font-size:8.8px;
+      font-size:10px;
       text-transform:uppercase;
       letter-spacing:.10em;
       opacity:.85;
-      min-width:18mm;
+      min-width:20mm;
     }
     .exam-card-footer .fr-v{
       flex:1;
       text-align:right;
       color:var(--ink);
-      font-weight:800;
-      font-size:10.2px;
+      font-weight:900;
+      font-size:12px;
     }
     .exam-card-footer .fr-v.exam-name{
       font-weight:900;
-      font-size:10.8px;
+      font-size:14px;
     }
     .place-pill{
       display:inline-flex;align-items:center;gap:6px;
@@ -244,8 +308,8 @@
       .kv .k{font-size:11px;}
       .kv .v{font-size:12px;}
       .big-no strong{font-size:22px;}
-      .exam-card-footer{font-size:10.5px;}
-      .exam-card-footer .exam-name{font-size:12.5px;}
+      .exam-card-footer{font-size:11px;}
+      .exam-card-footer .exam-name{font-size:14px;}
     }
 
     /* Keep exact physical size in print */
@@ -328,6 +392,11 @@
           <div class="wizard-sub">Sınav seç, seans seç, kaydı tamamla</div>
         </button>
       </div>
+
+    <!-- Footer credit -->
+    <footer class="mt-5 text-center text-secondary" style="font-style: italic; font-size: 0.9rem;">
+      Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong>
+    </footer>
       <div class="col-md-4">
         <button class="main-btn btn-info" onclick="openStudentInfo()">
           <i class="fa-solid fa-magnifying-glass fa-2x"></i>
@@ -339,7 +408,7 @@
         <button class="main-btn btn-admin" onclick="openAdminPanel()">
           <i class="fa-solid fa-user-shield fa-2x"></i>
           <div style="font-weight:700;">Yönetici Bölümü</div>
-          <div class="wizard-sub">Liste, filtre, çıktı, kart basım</div>
+          <!-- Removed descriptive subtitle for a cleaner look -->
         </button>
       </div>
     </div>
@@ -500,7 +569,7 @@
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Veli Telefon 1</label>
                 <input type="text" class="form-control phone-mask" id="phone1" placeholder="(5XX) XXX XX XX" required />
-                <div class="hint mt-1">Yazdıkça otomatik formatlanır.</div>
+                <!-- Removed auto-formatting hint per user request -->
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Veli Telefon 2</label>
@@ -556,16 +625,15 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <!-- Redesigned search area for student info: label on top, unified input + button -->
-          <div>
-            <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
-            <div class="input-group input-group-lg mb-2">
-              <input type="text" class="form-control" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
-              <button class="btn btn-primary" type="button" onclick="searchStudentInfo()">
-                <i class="fa-solid fa-magnifying-glass me-1"></i> Sorgula
-              </button>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-9">
+              <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
+              <input type="text" class="form-control form-control-lg" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
+              <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
             </div>
-            <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
+            <div class="col-md-3 d-grid">
+              <button class="btn btn-primary btn-lg" onclick="searchStudentInfo()"><i class="fa-solid fa-magnifying-glass"></i> Sorgula</button>
+            </div>
           </div>
 
           <hr class="my-4" />
@@ -592,7 +660,7 @@
         <div class="row g-2 mb-3 admin-toolbar no-print">
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Sınav</label>
-            <select class="form-select" id="adminExamFilter" onchange="renderAdminTable()">
+            <select class="form-select" id="adminExamFilter" onchange="updateAdminSessionFilter()">
               <option value="all">Tüm Sınavlar</option>
             </select>
           </div>
@@ -640,6 +708,17 @@
 
         <div class="hint mt-3">
           İpucu: Liste çıktısı ve yoklama listesinde hangi alanların görüneceğini seçebilirsiniz.
+        </div>
+
+        <!-- Card design selection panel -->
+        <div class="card mt-4" id="cardDesignPanel">
+          <div class="card-header text-white" style="background:linear-gradient(135deg,#111827,#0b1220);">
+            <div class="h5 mb-0" style="font-weight:900;">Kart Tasarımı</div>
+            <div class="small">Kullanılacak kart temasını seçin</div>
+          </div>
+          <div class="card-body">
+            <div id="cardDesignOptions" class="row g-3"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -877,15 +956,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           ex.dates = pad(ex.dates, ex.dates[0] || "");
           ex.times = pad(ex.times, ex.times[0] || "");
           ex.quotas = pad(ex.quotas, ex.quotas[0] ?? 0);
-
-        // Build a "sessions" array combining date, time and quota.  Many parts of the app rely on
-        // exam.sessions but it was never set previously, causing quick registration and edit flows
-        // to fail (no seans list).  Each session object has a date, time and maxQuota.
-        ex.sessions = ex.dates.map((d,i) => ({
-          date: d || ex.dates[0] || "",
-          time: ex.times[i] || ex.times[0] || "",
-          maxQuota: ex.quotas[i] ?? 0
-        }));
         });
 
         populateExamDropdown();
@@ -918,28 +988,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         examSel.innerHTML += `<option value="${exam.name}">${exam.name}</option>`;
       });
 
-      // Session filter options will be populated dynamically based on the selected exam.
+      // Session filter (dynamic based on available times across exams)
       const sesSel = el("adminSessionFilter");
-      // Function to populate session (time) options based on the selected exam filter.
-      const updateSessionOptions = () => {
-        const selectedExamName = examSel.value;
-        const times = new Set();
-        window.examData.forEach(ex => {
-          // If "all" exams are selected include all times, otherwise only include times for the selected exam.
-          if(selectedExamName === 'all' || ex.name === selectedExamName){
-            (ex.times || []).forEach(t => times.add(t));
-          }
-        });
-        // Populate the session select element
-        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
-        Array.from(times).sort().forEach(t => {
-          sesSel.innerHTML += `<option value="${t}">${t}</option>`;
-        });
-      };
-      // Attach change handler on exam filter to update session options when selection changes
-      examSel.addEventListener('change', updateSessionOptions);
-      // Populate initial session options
-      updateSessionOptions();
+      const times = new Set();
+      window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      Array.from(times).sort().forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+
+      // Disable session filter until specific exam selected
+      sesSel.disabled = true;
     }
 
     // --- Navigation ---
@@ -1416,12 +1475,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       return `
         <div class="exam-card" aria-label="Öğrenci giriş kartı önizleme">
           <div class="exam-card-inner">
-            <div class="exam-card-header">
-              <div class="card-brand">
-                <div class="card-mark"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div class="card-title">FENOMEN ÇOCUK KULÜBÜ</div>
+            <div class="exam-card-head">
+              <div class="brand">
+                <div class="logo-badge"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div>
+                  <div class="brand-title">FENOMEN ÇOCUK KULÜBÜ</div>
+                  <div class="brand-sub">Öğrenci Giriş Belgesi</div>
+                </div>
               </div>
-              <div class="card-type">ÖĞRENCİ GİRİŞ KARTI</div>
+              <div class="card-type">GİRİŞ KARTI</div>
             </div>
 
             <div class="exam-card-body">
@@ -1557,25 +1619,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         showLoading(false);
       }
 
-      // Prepare instruction: ask user to type "sınav iptal" along with the student's name (case insensitive)
-      const expectedName = toLowerTR(normSpaces(student.studentName));
-      const instruction = `Kayıt silmek için aşağıya <b>${escapeHtml(student.studentName)} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: ${escapeHtml(expectedName)} sınav iptal</span>`;
+      const expected = toLowerTR(normSpaces(`${student.studentName} sınav iptal`));
+      const instruction = `Kayıt silmek için aşağıya <b>${student.studentName} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: necla sıza sınav iptal</span>`;
 
       const res = await Swal.fire({
         title: "Sınav İptali",
         html: instruction + "<hr><div class='text-danger fw-semibold'>Bu işlem geri alınamaz.</div>",
         input: "text",
         inputPlaceholder: "Tam ad + 'sınav iptal'",
+        inputAttributes: { autocapitalize:'off', autocorrect:'off', spellcheck:'false' },
         showCancelButton: true,
         confirmButtonText: "Onaylıyorum, Sil",
         cancelButtonText: "Vazgeç",
+        didOpen: (modal) => {
+          const inp = modal.querySelector('input');
+          if(inp){ inp.removeAttribute('readonly'); inp.focus(); }
+        },
         preConfirm: (val) => {
           const got = toLowerTR(normSpaces(val || ""));
-          // Accept if the input contains "sınav iptal" and includes the student's name (order not important)
-          const hasPhrase = got.includes("sinav iptal");
-          const hasName = expectedName && got.includes(expectedName);
-          if(!hasPhrase || !hasName){
-            Swal.showValidationMessage("Lütfen öğrenci adını ve 'sınav iptal' ifadesini yazınız.");
+          if(got !== expected){
+            Swal.showValidationMessage("Yazı eşleşmedi. Lütfen tam adı doğru yazıp 'sınav iptal' ifadesini ekleyiniz.");
             return false;
           }
           return true;
@@ -1652,6 +1715,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         await fetchAdminData();
         populateAdminFilters();
         renderAdminTable();
+        // Initialize card design selector and apply saved theme
+        initCardDesignPanel();
+        applyCardTheme(localStorage.getItem('cardTheme') || 'orange');
       } finally {
         showLoading(false);
       }
@@ -1746,7 +1812,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
           const fillSessions = () => {
             const e = window.examData[parseInt(ex.value,10)];
-            const opts = (e?.sessions || []).map((s, i) => `<option value="${i}">${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kontenjan: ${s.maxQuota})</option>`).join("");
+            if(!e || !(e.sessions || []).length){
+              se.innerHTML = `<option value="">Seans bulunamadı</option>`;
+              return;
+            }
+            const opts = (e.sessions || []).map((s, i) => {
+              // Compute remaining seats by subtracting current registered students
+              let used = 0;
+              try{
+                used = dbStudents.filter(st => st.examKey === e.key && parseInt(st.sessionIndex,10) === i).length;
+              }catch(_){ used = 0; }
+              const remaining = Math.max((s.maxQuota || 0) - used, 0);
+              return `<option value="${i}">${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kalan: ${remaining} / ${s.maxQuota})</option>`;
+            }).join("");
             se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
           };
           ex.addEventListener("change", fillSessions);
@@ -2240,6 +2318,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // --- Printing ---
 
     function openPrintWindow(title, bodyHtml, extraCss=""){
+      const w = window.open("", "_blank", "noopener,noreferrer");
+      if(!w){
+        Swal.fire("Uyarı","Pop-up engellendi. Lütfen tarayıcıda izin veriniz.","warning");
+        return null;
+      }
+
       const css = `
         <style>
           :root{ --fg:#0f172a; --muted:#64748b; }
@@ -2257,30 +2341,105 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           ${extraCss}
         </style>
       `;
-      // Attempt to open a new pop-up window. If blocked, fallback to printing within the current page
-      const w = window.open("", "_blank", "noopener,noreferrer");
-      if(!w){
-        // Pop‑up blocked: create print content in hidden area of current page
-        const area = document.getElementById("printArea");
-        if(area){
-          area.innerHTML = `${css}${bodyHtml}`;
-          // Give the browser a tick to render the content before printing
-          setTimeout(() => {
-            window.print();
-            // Clear after printing
-            setTimeout(() => { area.innerHTML = ""; }, 1000);
-          }, 50);
-        } else {
-          Swal.fire("Uyarı","Pop-up engellendi ve dahili yazdırma alanı bulunamadı.","warning");
-        }
-        return null;
-      }
-      // If pop‑up opens successfully, write the content and return the window handle
+
       w.document.open();
       w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${css}<title>${escapeHtml(title)}</title></head><body>${bodyHtml}</body></html>`);
       w.document.close();
       return w;
     }
+
+    // --- Card theme management ---
+    /**
+     * Apply a card theme by setting a data attribute on the body element.  All
+     * exam cards use CSS variables controlled by this attribute.  The choice
+     * persists via localStorage.
+     * @param {string} theme The theme key, e.g. "orange", "green", "red", "purple" or "blue".
+     */
+    window.applyCardTheme = (theme) => {
+      try{
+        const allowed = ["orange","green","red","purple","blue","bw"];
+        if(!allowed.includes(theme)) theme = "orange";
+        document.body.setAttribute("data-card-theme", theme);
+        // Persist choice unless printing black and white
+        if(theme !== "bw") localStorage.setItem("cardTheme", theme);
+        // Optionally refresh generated card previews
+        if(document.getElementById("finalCardPreview")){
+          // regenerate final preview if it exists
+          // As generateCardHTML already pulls current CSS variables, no action needed
+        }
+      }catch(_){ /* ignore */ }
+    };
+
+    /**
+     * Build the card design chooser in the admin panel.  Each option shows a
+     * miniature card preview and allows the admin to select it.  When clicked,
+     * applyCardTheme() is called with the appropriate key.
+     */
+    window.initCardDesignPanel = () => {
+      const container = document.getElementById("cardDesignOptions");
+      if(!container) return;
+      const themes = [
+        { key: "orange", label: "Turuncu" },
+        { key: "blue", label: "Mavi" },
+        { key: "green", label: "Yeşil" },
+        { key: "red", label: "Kırmızı" },
+        { key: "purple", label: "Mor" }
+      ];
+      const sampleData = {
+        studentName: "SERKAZ SÖZ",
+        school: "ATA",
+        tc: "44444444444",
+        studentNo: "6001",
+        examName: "Bursluluk 6.SINIF",
+        examDate: "04.04.2026",
+        examTime: "10:00-11:15",
+        place: "Fenomen Çocuk Kulübü"
+      };
+      container.innerHTML = themes.map(t => {
+        const cardHtml = generateCardHTML(sampleData);
+        return `
+          <div class="col-12 col-sm-6 col-lg-4">
+            <div class="p-2 border rounded h-100" style="cursor:pointer;" onclick="applyCardTheme('${t.key}')">
+              <div style="width:100%;height:auto;pointer-events:none;">
+                ${cardHtml}
+              </div>
+              <div class="mt-2 text-center fw-semibold">${t.label}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    };
+
+    /**
+     * Update the admin session filter based on the currently selected exam.  If
+     * 'Tüm Sınavlar' is chosen, the session selector is disabled and reset.
+     * Otherwise it lists the times available for the chosen exam.  After
+     * updating, the admin table is re-rendered.
+     */
+    window.updateAdminSessionFilter = () => {
+      const examSel = el("adminExamFilter");
+      const sesSel = el("adminSessionFilter");
+      if(!examSel || !sesSel) return;
+      const examName = examSel.value;
+      // Remove all options
+      sesSel.innerHTML = '';
+      if(examName === 'all'){
+        sesSel.disabled = true;
+        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      } else {
+        sesSel.disabled = false;
+        const exam = window.examData.find(ex => ex.name === examName);
+        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+        if(exam && Array.isArray(exam.times)){
+          // Use unique times
+          const uniq = Array.from(new Set(exam.times));
+          uniq.forEach(t => {
+            sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+          });
+        }
+      }
+      renderAdminTable();
+    };
 
     function getAdminFilteredList(){
       const filterExam = el("adminExamFilter").value;
@@ -2326,8 +2485,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
 
       const extraCss = `
+        /* Layout for bulk cards */
         .cards-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; }
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
+        /* Force black & white print theme for cards */
+        .exam-card{ background:#fff !important; border:1px solid #000 !important; box-shadow:none !important; }
+        .exam-card-head{ background:#000 !important; color:#fff !important; }
+        .exam-card-head .logo-badge{ background:#000 !important; color:#fff !important; }
+        .exam-card-head .card-type{ background:#fff !important; color:#000 !important; border:1px solid #000 !important; }
+        .big-no span{ color:#000 !important; }
+        .big-no strong{ color:#000 !important; }
+        .exam-card-body .k,
+        .exam-card-body .v{ color:#000 !important; }
+        .exam-card-footer{ border-top:1px dashed #000 !important; color:#000 !important; }
+        .exam-card-footer .fr-k{ color:#000 !important; }
+        .exam-card-footer .fr-v{ color:#000 !important; }
+        .cards-grid .card-cell{ border:1px dashed #000 !important; }
+        .exam-card-footer i{ display:none !important; }
       `;
 
       const w = openPrintWindow("Toplu Kart Basımı", body, extraCss);
@@ -2597,6 +2771,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     };
 
     // --- Initial silent load ---
+
+    // Apply previously selected card theme on initial load
+    try{
+      const savedTheme = localStorage.getItem('cardTheme') || 'orange';
+      applyCardTheme(savedTheme);
+    }catch(_){ /* ignore */ }
+
     fetchExamData(false);
 
     // Restrict TC input to digits
