@@ -220,7 +220,10 @@
     .kv.is-tc .v{font-size:9px;color:var(--muted);}
 
     .kv .v.clamp2{
-      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+      /* Allow more text lines on the card to better accommodate long names and school fields */
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
       overflow:hidden;
     }
 
@@ -229,6 +232,14 @@
       padding:8px 10px;border-radius:14px;
       background:rgba(37,99,235,.08);
       border:1px solid rgba(37,99,235,.14);
+    }
+
+    /* Small credit line added below buttons to credit the creator */
+    .credit-line{
+      font-size:0.6rem;
+      color:var(--muted);
+      text-align:center;
+      margin-top:2px;
     }
     .big-no span{
       font-weight:800;
@@ -1060,10 +1071,31 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       window.selectedExam = window.examData[parseInt(idx,10)];
       window.selectedSession = null;
 
-      // Minimal data sanity
+      // Minimal data sanity.  If seansCount is missing or zero, attempt to derive it from
+      // available dates, times or quotas.  This prevents the "seans bulunamadı" error when
+      // spreadsheet columns are incomplete.
       if(!window.selectedExam || !window.selectedExam.seansCount){
-        tbody.innerHTML = '<tr><td colspan="4"><span class="text-danger">Bu sınav için seans bilgisi bulunamadı.</span></td></tr>';
-        return;
+        const ex = window.selectedExam;
+        const derivedCount = Math.max(
+          Array.isArray(ex?.dates) ? ex.dates.length : 0,
+          Array.isArray(ex?.times) ? ex.times.length : 0,
+          Array.isArray(ex?.quotas) ? ex.quotas.length : 0
+        );
+        if(derivedCount > 0){
+          window.selectedExam.seansCount = derivedCount;
+          // Ensure arrays padded to this new count
+          const padArr = (arr, fill) => {
+            const out = Array.isArray(arr) ? arr.slice() : [];
+            while(out.length < derivedCount) out.push(fill);
+            return out;
+          };
+          ex.dates = padArr(ex.dates, ex.dates?.[0] || "");
+          ex.times = padArr(ex.times, ex.times?.[0] || "");
+          ex.quotas = padArr(ex.quotas, ex.quotas?.[0] ?? 0);
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4"><span class="text-danger">Bu sınav için seans bilgisi bulunamadı.</span></td></tr>';
+          return;
+        }
       }
 
       // Fetch counts once
@@ -1622,12 +1654,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const expected = toLowerTR(normSpaces(`${student.studentName} sınav iptal`));
       const instruction = `Kayıt silmek için aşağıya <b>${student.studentName} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: necla sıza sınav iptal</span>`;
 
-      const res = await Swal.fire({
+        const res = await Swal.fire({
         title: "Sınav İptali",
         html: instruction + "<hr><div class='text-danger fw-semibold'>Bu işlem geri alınamaz.</div>",
         input: "text",
         inputPlaceholder: "Tam ad + 'sınav iptal'",
-        inputAttributes: { autocapitalize:'off', autocorrect:'off', spellcheck:'false' },
+        // Allow typing by explicitly disabling readonly on the SweetAlert input
+        inputAttributes: { autocapitalize:'off', autocorrect:'off', spellcheck:'false', readonly:false },
         showCancelButton: true,
         confirmButtonText: "Onaylıyorum, Sil",
         cancelButtonText: "Vazgeç",
@@ -2345,6 +2378,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       w.document.open();
       w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${css}<title>${escapeHtml(title)}</title></head><body>${bodyHtml}</body></html>`);
       w.document.close();
+      // Ensure print dialog opens after the new window content is fully loaded.  In some
+      // browsers, immediate calls to print() may be ignored.  Attach a load handler
+      // that triggers print once rendering has completed.
+      w.addEventListener('load', () => {
+        try{
+          w.print();
+        }catch(_){ /* ignore */ }
+      });
       return w;
     }
 
@@ -2360,8 +2401,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         const allowed = ["orange","green","red","purple","blue","bw"];
         if(!allowed.includes(theme)) theme = "orange";
         document.body.setAttribute("data-card-theme", theme);
-        // Persist choice unless printing black and white
+        // Persist choice locally (for offline fallback) unless printing black and white
         if(theme !== "bw") localStorage.setItem("cardTheme", theme);
+        // Also persist globally in Firebase (for other users).  Ignore errors silently.
+        (async ()=>{
+          try{
+            if(theme !== "bw"){
+              await set(ref(db, 'bursluluk/config/cardTheme'), theme);
+            }
+          }catch(_){/* ignore */}
+        })();
         // Optionally refresh generated card previews
         if(document.getElementById("finalCardPreview")){
           // regenerate final preview if it exists
@@ -2378,12 +2427,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     window.initCardDesignPanel = () => {
       const container = document.getElementById("cardDesignOptions");
       if(!container) return;
+      // Define available themes and sample data for preview
       const themes = [
-        { key: "orange", label: "Turuncu" },
-        { key: "blue", label: "Mavi" },
-        { key: "green", label: "Yeşil" },
-        { key: "red", label: "Kırmızı" },
-        { key: "purple", label: "Mor" }
+        { key: "orange", label: "Turuncu", color: "#f97316" },
+        { key: "blue",   label: "Mavi",    color: "#2563eb" },
+        { key: "green",  label: "Yeşil",   color: "#10b981" },
+        { key: "red",    label: "Kırmızı", color: "#ef4444" },
+        { key: "purple", label: "Mor",    color: "#8b5cf6" }
       ];
       const sampleData = {
         studentName: "SERKAZ SÖZ",
@@ -2395,19 +2445,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         examTime: "10:00-11:15",
         place: "Fenomen Çocuk Kulübü"
       };
-      container.innerHTML = themes.map(t => {
-        const cardHtml = generateCardHTML(sampleData);
-        return `
-          <div class="col-12 col-sm-6 col-lg-4">
-            <div class="p-2 border rounded h-100" style="cursor:pointer;" onclick="applyCardTheme('${t.key}')">
-              <div style="width:100%;height:auto;pointer-events:none;">
-                ${cardHtml}
-              </div>
-              <div class="mt-2 text-center fw-semibold">${t.label}</div>
-            </div>
-          </div>
-        `;
+      // Build a single preview area and swatch selector to improve the design
+      const previewId = 'cardThemePreview';
+      const previewHtml = `<div id="${previewId}" class="d-flex justify-content-center mb-3">${generateCardHTML(sampleData)}</div>`;
+      const swatches = themes.map(t => {
+        return `<button type="button" class="btn btn-sm" data-theme="${t.key}" style="background:${t.color};color:#fff;border-radius:8px;min-width:60px;margin:2px;">${t.label}</button>`;
       }).join("");
+      container.innerHTML = previewHtml + `<div class="d-flex flex-wrap justify-content-center">${swatches}</div>`;
+      // Attach click handlers to each swatch button
+      container.querySelectorAll('button[data-theme]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const theme = btn.getAttribute('data-theme');
+          applyCardTheme(theme);
+          // Update preview HTML to reflect the newly selected colors
+          const preview = document.getElementById(previewId);
+          if(preview) preview.innerHTML = generateCardHTML(sampleData);
+        });
+      });
     };
 
     /**
@@ -2507,7 +2561,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const w = openPrintWindow("Toplu Kart Basımı", body, extraCss);
       if(!w) return;
       w.focus();
-      w.print();
     };
 
     window.printListOutput = async () => {
@@ -2641,7 +2694,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const w = openPrintWindow("Liste Çıktısı", body);
       if(!w) return;
       w.focus();
-      w.print();
     };
 
     window.printAttendanceOutput = async () => {
@@ -2767,21 +2819,50 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const w = openPrintWindow("Yoklama Çıktısı", body);
       if(!w) return;
       w.focus();
-      w.print();
     };
 
     // --- Initial silent load ---
 
-    // Apply previously selected card theme on initial load
-    try{
-      const savedTheme = localStorage.getItem('cardTheme') || 'orange';
-      applyCardTheme(savedTheme);
-    }catch(_){ /* ignore */ }
+    // Fetch the globally saved card theme from Firebase and apply it.  If not available,
+    // fallback to localStorage and finally to "orange".  This ensures that all users see
+    // the same card theme selection stored centrally rather than per-device.
+    async function initCardTheme(){
+      try{
+        // Attempt to load theme from Firebase
+        const snap = await get(child(ref(db), 'bursluluk/config/cardTheme'));
+        let theme = null;
+        if(snap.exists()) theme = snap.val();
+        if(!theme){
+          // fallback to localStorage
+          theme = localStorage.getItem('cardTheme') || 'orange';
+        }
+        applyCardTheme(theme);
+      }catch(e){
+        // In case of error, default to localStorage or orange
+        const theme = localStorage.getItem('cardTheme') || 'orange';
+        applyCardTheme(theme);
+      }
+    }
+    initCardTheme();
 
+    // Kick off exam data loading on initial load
     fetchExamData(false);
 
     // Restrict TC input to digits
     el("tcCheckInput").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
+
+    // Append credit lines below all buttons on the page to attribute the creator.  This runs
+    // once on page load and will add a small text element after every <button> element.
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('button').forEach(btn => {
+        // Avoid adding duplicate credits if re-run
+        if(btn.nextElementSibling && btn.nextElementSibling.classList && btn.nextElementSibling.classList.contains('credit-line')) return;
+        const credit = document.createElement('div');
+        credit.className = 'credit-line';
+        credit.textContent = 'Bu programı tasarlayan ve dizayn eden Ferhat Karagöz';
+        btn.insertAdjacentElement('afterend', credit);
+      });
+    });
 </script>
 </body>
 </html>
