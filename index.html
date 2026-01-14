@@ -199,6 +199,12 @@
       font-size:11px;font-weight:800;text-align:right;min-width:0;
       overflow-wrap:anywhere;word-break:break-word;line-height:1.15;
     }
+
+    /* Hide the hidden print area on screen; it will only be used when printing */
+    #printArea{ display:none; }
+    @media print{
+      #printArea{ display:block; }
+    }
     .kv .v.is-name{letter-spacing:.25px;font-size:13px;font-weight:900;color:var(--ink);}
     .kv.is-tc .v{font-size:9px;color:var(--muted);}
 
@@ -2412,6 +2418,60 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
     /**
+     * Render a printable document in a separate window and trigger the browser print dialog.
+     *
+     * This helper uses the openPrintWindow() function to construct a new window with
+     * the supplied title, subtitle, body content and extra CSS rules. Once the new
+     * window loads, it calls print() on that window. This approach is more reliable
+     * across desktop and mobile browsers (including iOS and Android) than printing
+     * inline within the existing page. The optional subtitle will be placed directly
+     * beneath the main title if provided.
+     *
+     * @param {Object} opts – Options for rendering the document
+     * @param {string} opts.title – Main title for the document
+     * @param {string} [opts.subtitle] – Secondary subtitle shown below the title
+     * @param {string} opts.bodyHtml – Inner HTML that forms the body of the printout
+     * @param {string} [opts.extraCss] – Additional CSS rules injected into the document
+     */
+    function printDocument({ title = "", subtitle = "", bodyHtml = "", extraCss = "" }){
+      // Reuse the hidden printArea to render a full A4 document and call window.print().
+      // This approach avoids pop-up blockers and works reliably across desktop and mobile browsers.
+      const area = el("printArea");
+      // Base styles for A4 printing and optional custom CSS
+      const css = `
+        <style>
+          .a4{ width:210mm; min-height:297mm; padding:10mm; margin:0 auto; }
+          .title{ text-align:center; font-weight:900; font-size:18px; margin:0 0 8mm; }
+          .sub{ text-align:center; color:var(--muted); margin:-6mm 0 6mm; font-size:12px; }
+          @media print{
+            @page{ size:A4; margin:0; }
+            body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            .no-print{ display:none !important; }
+            .a4{ width:auto; min-height:auto; padding:10mm; }
+          }
+          ${extraCss}
+        </style>
+      `;
+      // Build header markup conditionally
+      let headerHtml;
+      if(title && title.trim()){
+        headerHtml = `<div class="a4"><div class="title">${escapeHtml(title)}</div>` +
+          (subtitle && subtitle.trim() ? `<div class="sub">${escapeHtml(subtitle)}</div>` : "");
+      } else {
+        headerHtml = `<div class="a4">`;
+      }
+      // Inject styles and content into print area
+      area.innerHTML = `${css}${headerHtml}${bodyHtml}</div>`;
+      // Trigger print and clean up afterwards
+      window.print();
+      const cleanup = () => {
+        area.innerHTML = "";
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+    }
+
+    /**
      * Print the given HTML content inside the hidden #printArea element on the same page.
      * This approach avoids pop-up blockers and works across mobile/desktop browsers.
      * Pass a title, optional subtitle, inner HTML and optional extra CSS (e.g. for grids).
@@ -2511,7 +2571,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
-      printInPage({
+      printDocument({
         title: "",
         subtitle: "",
         bodyHtml: bodyHtml,
@@ -2654,7 +2714,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
       `;
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
-      printInPage({
+      printDocument({
         title: "Liste Çıktısı",
         subtitle: subtitleStr,
         bodyHtml: bodyHtml,
@@ -2787,7 +2847,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Determine subtitle: use provided dateLine if exists, else today's date
       const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
       const titleText = meta.title || "Yoklama Listesi";
-      printInPage({
+      printDocument({
         title: titleText,
         subtitle: subtitleLine,
         bodyHtml: bodyHtml,
