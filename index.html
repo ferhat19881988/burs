@@ -22,6 +22,9 @@
   <!-- PapaParse (Google Sheet CSV) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
+  <!-- SheetJS (XLSX export - Turkish chars safe) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
  <style>
   :root{
     --bg:#f4f6f9;
@@ -625,6 +628,23 @@
     .cards-grid{ grid-template-columns: 1fr; grid-auto-rows:auto; gap:12px; }
     .card-cell{ padding:0; border:none; }
     .cut-hint{ display:none; }
+
+    /* Admin aksiyonları telefonda tam genişlik ve hizalı */
+    .admin-toolbar .btn-group{
+      width:100%;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .admin-toolbar .btn-group .btn{ width:100%; }
+
+    /* Modallar telefonda daha ferah */
+    .modal-body{ padding:12px !important; }
+    .modal-header{ padding:12px 12px !important; }
+
+    /* Öğrenci kartı: telefonda ortalı ve taşmasız */
+    .exam-card{ margin-left:auto; margin-right:auto; width:100%; max-width:520px; }
+
   }
 </style>
 
@@ -885,7 +905,7 @@
 
   <!-- STUDENT INFO MODAL -->
   <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-sm-down">
       <div class="modal-content" style="border-radius:18px;overflow:hidden;border:0;box-shadow:var(--cardShadow);">
         <div class="modal-header" style="background:linear-gradient(135deg, rgba(15,118,110,.95), rgba(34,197,94,.95));color:#fff;">
           <h5 class="modal-title" style="font-weight:800;"><i class="fa-solid fa-magnifying-glass me-2"></i>Öğrenci Kayıt Sorgulama</h5>
@@ -2825,6 +2845,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const extraCss = `
         .cards-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8mm; }
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
+
+        /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
+        @media (max-width: 575.98px){
+          .cards-grid{ grid-template-columns: 1fr; gap:12px; }
+          .card-cell{ border:none !important; padding:0 !important; }
+        }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
       printDocument({
@@ -3117,51 +3143,69 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // values (TSV) string with column headers, then triggers a download using
     // a Blob and a temporary anchor. Excel can open TSV/CSV directly and will
     // preserve Turkish characters. Selected rows take precedence over filters.
+    
     window.exportToExcel = () => {
       const ids = selectedAdminIds();
       const filtered = getAdminFilteredList();
       const list = ids.length ? filtered.filter(s => ids.includes(s.id)) : filtered;
+
       if(list.length === 0){
         Swal.fire("Uyarı","Liste boş. Önce filtre/arama yapın veya seçim yapın.","warning");
         return;
       }
-      // Define column headers. Include exam date/time separately and exam place.
+
+      if(typeof XLSX === "undefined" || !XLSX?.utils){
+        Swal.fire("Hata","Excel aktarımı için gerekli kütüphane yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyiniz.","error");
+        return;
+      }
+
       const headers = [
         "Öğrenci No","T.C.","Ad Soyad","Veli Adı","Telefon 1","Telefon 2",
         "Okul","Sınav","Sınav Tarihi","Seans Saati","Yer"
       ];
-      const rows = list.map(s => [
-        s.studentNo || "",
-        s.tc || "",
-        s.studentName || "",
-        s.parentName || "",
-        s.phone1 || "",
-        s.phone2 || "",
-        s.school || "",
-        s.examName || "",
-        s.examDate || "",
-        s.examTime || "",
-        s.place || s.examPlace || s.location || ""
-      ]);
-      // Build TSV data. Escape tabs/newlines.
-      let tsv = "";
-      tsv += headers.join("\t") + "\n";
-      rows.forEach(r => {
-        tsv += r.map(v => String(v).replace(/\t/g,' ').replace(/\n/g,' ')).join("\t") + "\n";
+
+      const rows = list.map(s => ([
+        String(s.studentNo || ""),
+        String(s.tc || ""),
+        String(s.studentName || ""),
+        String(s.parentName || ""),
+        String(s.phone1 || ""),
+        String(s.phone2 || ""),
+        String(s.school || ""),
+        String(s.examName || ""),
+        String(s.examDate || ""),
+        String(s.examTime || ""),
+        String(s.place || s.examPlace || s.location || "")
+      ]));
+
+      const aoa = [headers, ...rows];
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      // Basit sütun genişliği (Excel'de okunabilirlik)
+      ws["!cols"] = headers.map((h, i) => {
+        const maxLen = Math.min(
+          40,
+          Math.max(
+            h.length,
+            ...rows.slice(0, 500).map(r => String(r[i] || "").length)
+          )
+        );
+        return { wch: maxLen + 2 };
       });
-      const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Liste");
+
       const dateStr = new Date().toISOString().slice(0,10);
-      a.download = `liste_${dateStr}.xls`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const fileName = `liste_${dateStr}.xlsx`;
+
+      // writeFile: Unicode (Türkçe karakterler) sorunsuz
+      XLSX.writeFile(wb, fileName);
     };
 
     // --- Initial silent load ---
+
     fetchExamData(false);
 
     // Restrict TC input to digits
@@ -3169,4 +3213,3 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 </script>
 </body>
 </html>
-
