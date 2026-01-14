@@ -667,7 +667,7 @@
 
   <!-- APP -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, set, get, child, update, remove, runTransaction, push } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     // --- Firebase Config (user provided) ---
@@ -1915,123 +1915,6 @@
       }
     };
 
-          refreshSeans();
-          examSel.addEventListener("change", refreshSeans);
-
-          const maskIt = (inp) => inp.addEventListener("input", (e)=> e.target.value = formatPhoneTR(e.target.value));
-          maskIt(phone1); maskIt(phone2);
-        },
-        showCancelButton: true,
-        confirmButtonText: "Kaydet",
-        cancelButtonText: "Vazgeç",
-        focusConfirm: false,
-        preConfirm: async () => {
-          const exIdx = parseInt(document.getElementById("q_exam").value,10);
-          const ex = window.examData[exIdx];
-          const sessionIndex = parseInt(document.getElementById("q_session").value,10);
-
-          const tc = digitsOnly(document.getElementById("q_tc").value);
-          const name = normSpaces(document.getElementById("q_name").value);
-          const school = normSpaces(document.getElementById("q_school").value);
-          const parent = normSpaces(document.getElementById("q_parent").value);
-          const phone1 = document.getElementById("q_phone1").value;
-          const phone2 = document.getElementById("q_phone2").value;
-
-          const errs = [];
-          if(!isValidTC(tc)) errs.push("T.C. 11 haneli olmalıdır.");
-          if(!isTwoWords(name)) errs.push("Öğrenci tam adı en az 2 kelime olmalıdır.");
-          if(school.length < 2) errs.push("Okul boş olamaz.");
-          if(!isTwoWords(parent)) errs.push("Veli tam adı en az 2 kelime olmalıdır.");
-          if(!isPhoneComplete(phone1)) errs.push("Telefon 1 eksik veya hatalı.");
-
-          if(errs.length){
-            Swal.showValidationMessage(errs.join("<br>"));
-            return;
-          }
-
-          return { exIdx, sessionIndex, tc, name, school, parent, phone1, phone2 };
-        }
-      });
-
-      if(!data) return;
-
-      const ex = window.examData[data.exIdx];
-      const sessionIndex = data.sessionIndex;
-
-      // emulate wizard registration using same atomic flow
-      const sessionDate = ex.dates[sessionIndex] || ex.dates[0] || "Tarih Yok";
-      const sessionTime = ex.times[sessionIndex] || "Saat Yok";
-      const maxQuota = ex.quotas[sessionIndex] ?? 0;
-
-      showLoading(true);
-      const newStudentRef = push(ref(db, "bursluluk/students"));
-      const studentId = newStudentRef.key;
-
-      try{
-        // check TC duplicate for this exam
-        const snapAll = await get(child(ref(db), "bursluluk/students"));
-        const list = snapAll.exists() ? Object.values(snapAll.val()) : [];
-        const exists = list.some(s => s.tc === data.tc && s.examName === ex.name);
-        if(exists){
-          Swal.fire("Zaten Kayıtlı","Bu T.C. ile aynı sınava daha önce başvuru yapılmış.","info");
-          return;
-        }
-
-        const seatOk = await reserveSeat(ex.key, sessionIndex, maxQuota);
-        if(!seatOk){
-          Swal.fire("Kontenjan Dolu","Bu seans dolu. Lütfen farklı seans seçiniz.","error");
-          return;
-        }
-
-        let used = await getUsedNumbers(ex.key);
-        let candidate = pickSmallestAvailable(ex.startNo, used);
-
-        let locked = false, tries = 0;
-        while(!locked && tries < 60){
-          locked = await reserveNumberLock(ex.key, candidate, studentId);
-          if(locked) break;
-          candidate++; tries++;
-        }
-
-        if(!locked){
-          await releaseSeat(ex.key, sessionIndex);
-          Swal.fire("Sistem Yoğun","Öğrenci numarası atanamadı. Lütfen tekrar deneyiniz.","error");
-          return;
-        }
-
-        const studentData = {
-          id: studentId,
-          tc: data.tc,
-          studentName: data.name,
-          school: data.school,
-          parentName: data.parent,
-          phone1: data.phone1,
-          phone2: data.phone2 || "",
-          examName: ex.name,
-          examKey: ex.key,
-          examDate: sessionDate,
-          examTime: sessionTime,
-          sessionIndex: sessionIndex,
-          studentNo: candidate,
-          regTs: Date.now(),
-          regDate: new Date().toLocaleString("tr-TR"),
-          place: "Fenomen Çocuk Kulübü"
-        };
-
-        await set(newStudentRef, studentData);
-
-        Swal.fire("Kaydedildi","Hızlı kayıt başarıyla oluşturuldu.","success");
-        await refreshAdminData();
-
-      } catch(e){
-        console.error(e);
-        try{ await releaseSeat(ex.key, sessionIndex); } catch(_){}
-        try{ await releaseNumberLock(ex.key, candidate, studentId); } catch(_){}
-        Swal.fire("Hata","Hızlı kayıt sırasında hata oluştu: " + (e?.message || e),"error");
-      } finally {
-        showLoading(false);
-      }
-    };
 
     // --- Admin delete (with seat/number release) ---
     window.bulkDelete = async () => {
@@ -2697,6 +2580,6 @@
 
     // Restrict TC input to digits
     el("tcCheckInput").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
-  </script>
+</script>
 </body>
 </html>
