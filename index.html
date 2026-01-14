@@ -33,36 +33,6 @@
       --warn:#f59e0b;
       --bad:#ef4444;
       --cardShadow: 0 10px 30px rgba(2, 6, 23, .10);
-      /* Card theme variables (can be overridden via [data-card-theme]) */
-      --card-primary:#2563eb;
-      --card-secondary:#7c3aed;
-    }
-
-    /* Alternate card themes using data attributes on body */
-    /* Orange theme */
-    body[data-card-theme="orange"]{
-      --card-primary:#f97316;
-      --card-secondary:#fbbf24;
-    }
-    /* Green theme */
-    body[data-card-theme="green"]{
-      --card-primary:#10b981;
-      --card-secondary:#22c55e;
-    }
-    /* Red theme */
-    body[data-card-theme="red"]{
-      --card-primary:#ef4444;
-      --card-secondary:#f87171;
-    }
-    /* Purple theme */
-    body[data-card-theme="purple"]{
-      --card-primary:#8b5cf6;
-      --card-secondary:#d946ef;
-    }
-    /* Gray theme for print (black & white) */
-    body[data-card-theme="bw"]{
-      --card-primary:#000;
-      --card-secondary:#333;
     }
     body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f8fafc 0%, var(--bg) 60%);color:var(--ink);}
     .hero-section{text-align:center;padding:52px 16px;}
@@ -175,16 +145,10 @@
     }
     .exam-card > *{position:relative;z-index:1}
 
-    /* Card header: support both .exam-card-header (legacy) and .exam-card-head (current) */
-    .exam-card-header,
-    .exam-card-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:8px 10px;
-      border-radius:14px;
-      background:linear-gradient(135deg, var(--card-primary, rgba(15,23,42,.92)), var(--card-secondary, rgba(37,99,235,.92)));
+    .exam-card-header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:8px 10px;border-radius:14px;
+      background:linear-gradient(135deg, rgba(15,23,42,.92), rgba(37,99,235,.92));
       color:#fff;
     }
     .card-brand{display:flex;align-items:center;gap:8px;min-width:0;}
@@ -220,10 +184,7 @@
     .kv.is-tc .v{font-size:9px;color:var(--muted);}
 
     .kv .v.clamp2{
-      /* Allow more text lines on the card to better accommodate long names and school fields */
-      display:-webkit-box;
-      -webkit-line-clamp:3;
-      -webkit-box-orient:vertical;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
       overflow:hidden;
     }
 
@@ -233,27 +194,8 @@
       background:rgba(37,99,235,.08);
       border:1px solid rgba(37,99,235,.14);
     }
-
-    /* Small credit line added below buttons to credit the creator */
-    .credit-line{
-      font-size:0.6rem;
-      color:var(--muted);
-      text-align:center;
-      margin-top:2px;
-    }
-    .big-no span{
-      font-weight:800;
-      color:var(--muted);
-      font-size:9.7px;
-      letter-spacing:.25px;
-    }
-    .big-no strong{
-      font-size:18px;
-      font-weight:900;
-      /* colour controlled by theme */
-      color:var(--card-primary, var(--brand));
-      letter-spacing:.8px;
-    }
+    .big-no span{font-weight:800;color:var(--muted);font-size:9.7px;letter-spacing:.25px}
+    .big-no strong{font-size:18px;font-weight:900;color:var(--brand);letter-spacing:.8px}
 
     .exam-card-footer{
       margin-top:6px;
@@ -271,26 +213,25 @@
       align-items:flex-start;
       margin-top:3px;
     }
-    /* enlarge exam/time/place area on card */
     .exam-card-footer .fr-k{
       font-weight:900;
       color:var(--ink);
-      font-size:10px;
+      font-size:8.8px;
       text-transform:uppercase;
       letter-spacing:.10em;
       opacity:.85;
-      min-width:20mm;
+      min-width:18mm;
     }
     .exam-card-footer .fr-v{
       flex:1;
       text-align:right;
       color:var(--ink);
-      font-weight:900;
-      font-size:12px;
+      font-weight:800;
+      font-size:10.2px;
     }
     .exam-card-footer .fr-v.exam-name{
       font-weight:900;
-      font-size:14px;
+      font-size:10.8px;
     }
     .place-pill{
       display:inline-flex;align-items:center;gap:6px;
@@ -319,8 +260,8 @@
       .kv .k{font-size:11px;}
       .kv .v{font-size:12px;}
       .big-no strong{font-size:22px;}
-      .exam-card-footer{font-size:11px;}
-      .exam-card-footer .exam-name{font-size:14px;}
+      .exam-card-footer{font-size:10.5px;}
+      .exam-card-footer .exam-name{font-size:12.5px;}
     }
 
     /* Keep exact physical size in print */
@@ -403,11 +344,6 @@
           <div class="wizard-sub">Sınav seç, seans seç, kaydı tamamla</div>
         </button>
       </div>
-
-    <!-- Footer credit -->
-    <footer class="mt-5 text-center text-secondary" style="font-style: italic; font-size: 0.9rem;">
-      Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong>
-    </footer>
       <div class="col-md-4">
         <button class="main-btn btn-info" onclick="openStudentInfo()">
           <i class="fa-solid fa-magnifying-glass fa-2x"></i>
@@ -419,7 +355,7 @@
         <button class="main-btn btn-admin" onclick="openAdminPanel()">
           <i class="fa-solid fa-user-shield fa-2x"></i>
           <div style="font-weight:700;">Yönetici Bölümü</div>
-          <!-- Removed descriptive subtitle for a cleaner look -->
+          <div class="wizard-sub">Liste, filtre, çıktı, kart basım</div>
         </button>
       </div>
     </div>
@@ -580,7 +516,7 @@
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Veli Telefon 1</label>
                 <input type="text" class="form-control phone-mask" id="phone1" placeholder="(5XX) XXX XX XX" required />
-                <!-- Removed auto-formatting hint per user request -->
+                <div class="hint mt-1">Yazdıkça otomatik formatlanır.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Veli Telefon 2</label>
@@ -671,7 +607,7 @@
         <div class="row g-2 mb-3 admin-toolbar no-print">
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Sınav</label>
-            <select class="form-select" id="adminExamFilter" onchange="updateAdminSessionFilter()">
+            <select class="form-select" id="adminExamFilter" onchange="renderAdminTable()">
               <option value="all">Tüm Sınavlar</option>
             </select>
           </div>
@@ -719,17 +655,6 @@
 
         <div class="hint mt-3">
           İpucu: Liste çıktısı ve yoklama listesinde hangi alanların görüneceğini seçebilirsiniz.
-        </div>
-
-        <!-- Card design selection panel -->
-        <div class="card mt-4" id="cardDesignPanel">
-          <div class="card-header text-white" style="background:linear-gradient(135deg,#111827,#0b1220);">
-            <div class="h5 mb-0" style="font-weight:900;">Kart Tasarımı</div>
-            <div class="small">Kullanılacak kart temasını seçin</div>
-          </div>
-          <div class="card-body">
-            <div id="cardDesignOptions" class="row g-3"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -1007,9 +932,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       Array.from(times).sort().forEach(t => {
         sesSel.innerHTML += `<option value="${t}">${t}</option>`;
       });
-
-      // Disable session filter until specific exam selected
-      sesSel.disabled = true;
     }
 
     // --- Navigation ---
@@ -1071,31 +993,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       window.selectedExam = window.examData[parseInt(idx,10)];
       window.selectedSession = null;
 
-      // Minimal data sanity.  If seansCount is missing or zero, attempt to derive it from
-      // available dates, times or quotas.  This prevents the "seans bulunamadı" error when
-      // spreadsheet columns are incomplete.
+      // Minimal data sanity
       if(!window.selectedExam || !window.selectedExam.seansCount){
-        const ex = window.selectedExam;
-        const derivedCount = Math.max(
-          Array.isArray(ex?.dates) ? ex.dates.length : 0,
-          Array.isArray(ex?.times) ? ex.times.length : 0,
-          Array.isArray(ex?.quotas) ? ex.quotas.length : 0
-        );
-        if(derivedCount > 0){
-          window.selectedExam.seansCount = derivedCount;
-          // Ensure arrays padded to this new count
-          const padArr = (arr, fill) => {
-            const out = Array.isArray(arr) ? arr.slice() : [];
-            while(out.length < derivedCount) out.push(fill);
-            return out;
-          };
-          ex.dates = padArr(ex.dates, ex.dates?.[0] || "");
-          ex.times = padArr(ex.times, ex.times?.[0] || "");
-          ex.quotas = padArr(ex.quotas, ex.quotas?.[0] ?? 0);
-        } else {
-          tbody.innerHTML = '<tr><td colspan="4"><span class="text-danger">Bu sınav için seans bilgisi bulunamadı.</span></td></tr>';
-          return;
-        }
+        tbody.innerHTML = '<tr><td colspan="4"><span class="text-danger">Bu sınav için seans bilgisi bulunamadı.</span></td></tr>';
+        return;
       }
 
       // Fetch counts once
@@ -1654,20 +1555,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const expected = toLowerTR(normSpaces(`${student.studentName} sınav iptal`));
       const instruction = `Kayıt silmek için aşağıya <b>${student.studentName} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: necla sıza sınav iptal</span>`;
 
-        const res = await Swal.fire({
+      const res = await Swal.fire({
         title: "Sınav İptali",
         html: instruction + "<hr><div class='text-danger fw-semibold'>Bu işlem geri alınamaz.</div>",
         input: "text",
         inputPlaceholder: "Tam ad + 'sınav iptal'",
-        // Allow typing by explicitly disabling readonly on the SweetAlert input
-        inputAttributes: { autocapitalize:'off', autocorrect:'off', spellcheck:'false', readonly:false },
         showCancelButton: true,
         confirmButtonText: "Onaylıyorum, Sil",
         cancelButtonText: "Vazgeç",
-        didOpen: (modal) => {
-          const inp = modal.querySelector('input');
-          if(inp){ inp.removeAttribute('readonly'); inp.focus(); }
-        },
         preConfirm: (val) => {
           const got = toLowerTR(normSpaces(val || ""));
           if(got !== expected){
@@ -1748,9 +1643,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         await fetchAdminData();
         populateAdminFilters();
         renderAdminTable();
-        // Initialize card design selector and apply saved theme
-        initCardDesignPanel();
-        applyCardTheme(localStorage.getItem('cardTheme') || 'orange');
       } finally {
         showLoading(false);
       }
@@ -1845,19 +1737,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
           const fillSessions = () => {
             const e = window.examData[parseInt(ex.value,10)];
-            if(!e || !(e.sessions || []).length){
-              se.innerHTML = `<option value="">Seans bulunamadı</option>`;
-              return;
-            }
-            const opts = (e.sessions || []).map((s, i) => {
-              // Compute remaining seats by subtracting current registered students
-              let used = 0;
-              try{
-                used = dbStudents.filter(st => st.examKey === e.key && parseInt(st.sessionIndex,10) === i).length;
-              }catch(_){ used = 0; }
-              const remaining = Math.max((s.maxQuota || 0) - used, 0);
-              return `<option value="${i}">${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kalan: ${remaining} / ${s.maxQuota})</option>`;
-            }).join("");
+            const opts = (e?.sessions || []).map((s, i) => `<option value="${i}">${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kontenjan: ${s.maxQuota})</option>`).join("");
             se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
           };
           ex.addEventListener("change", fillSessions);
@@ -2378,122 +2258,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       w.document.open();
       w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${css}<title>${escapeHtml(title)}</title></head><body>${bodyHtml}</body></html>`);
       w.document.close();
-      // Ensure print dialog opens after the new window content is fully loaded.  In some
-      // browsers, immediate calls to print() may be ignored.  Attach a load handler
-      // that triggers print once rendering has completed.
-      w.addEventListener('load', () => {
-        try{
-          w.print();
-        }catch(_){ /* ignore */ }
-      });
       return w;
     }
-
-    // --- Card theme management ---
-    /**
-     * Apply a card theme by setting a data attribute on the body element.  All
-     * exam cards use CSS variables controlled by this attribute.  The choice
-     * persists via localStorage.
-     * @param {string} theme The theme key, e.g. "orange", "green", "red", "purple" or "blue".
-     */
-    window.applyCardTheme = (theme) => {
-      try{
-        const allowed = ["orange","green","red","purple","blue","bw"];
-        if(!allowed.includes(theme)) theme = "orange";
-        document.body.setAttribute("data-card-theme", theme);
-        // Persist choice locally (for offline fallback) unless printing black and white
-        if(theme !== "bw") localStorage.setItem("cardTheme", theme);
-        // Also persist globally in Firebase (for other users).  Ignore errors silently.
-        (async ()=>{
-          try{
-            if(theme !== "bw"){
-              await set(ref(db, 'bursluluk/config/cardTheme'), theme);
-            }
-          }catch(_){/* ignore */}
-        })();
-        // Optionally refresh generated card previews
-        if(document.getElementById("finalCardPreview")){
-          // regenerate final preview if it exists
-          // As generateCardHTML already pulls current CSS variables, no action needed
-        }
-      }catch(_){ /* ignore */ }
-    };
-
-    /**
-     * Build the card design chooser in the admin panel.  Each option shows a
-     * miniature card preview and allows the admin to select it.  When clicked,
-     * applyCardTheme() is called with the appropriate key.
-     */
-    window.initCardDesignPanel = () => {
-      const container = document.getElementById("cardDesignOptions");
-      if(!container) return;
-      // Define available themes and sample data for preview
-      const themes = [
-        { key: "orange", label: "Turuncu", color: "#f97316" },
-        { key: "blue",   label: "Mavi",    color: "#2563eb" },
-        { key: "green",  label: "Yeşil",   color: "#10b981" },
-        { key: "red",    label: "Kırmızı", color: "#ef4444" },
-        { key: "purple", label: "Mor",    color: "#8b5cf6" }
-      ];
-      const sampleData = {
-        studentName: "SERKAZ SÖZ",
-        school: "ATA",
-        tc: "44444444444",
-        studentNo: "6001",
-        examName: "Bursluluk 6.SINIF",
-        examDate: "04.04.2026",
-        examTime: "10:00-11:15",
-        place: "Fenomen Çocuk Kulübü"
-      };
-      // Build a single preview area and swatch selector to improve the design
-      const previewId = 'cardThemePreview';
-      const previewHtml = `<div id="${previewId}" class="d-flex justify-content-center mb-3">${generateCardHTML(sampleData)}</div>`;
-      const swatches = themes.map(t => {
-        return `<button type="button" class="btn btn-sm" data-theme="${t.key}" style="background:${t.color};color:#fff;border-radius:8px;min-width:60px;margin:2px;">${t.label}</button>`;
-      }).join("");
-      container.innerHTML = previewHtml + `<div class="d-flex flex-wrap justify-content-center">${swatches}</div>`;
-      // Attach click handlers to each swatch button
-      container.querySelectorAll('button[data-theme]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const theme = btn.getAttribute('data-theme');
-          applyCardTheme(theme);
-          // Update preview HTML to reflect the newly selected colors
-          const preview = document.getElementById(previewId);
-          if(preview) preview.innerHTML = generateCardHTML(sampleData);
-        });
-      });
-    };
-
-    /**
-     * Update the admin session filter based on the currently selected exam.  If
-     * 'Tüm Sınavlar' is chosen, the session selector is disabled and reset.
-     * Otherwise it lists the times available for the chosen exam.  After
-     * updating, the admin table is re-rendered.
-     */
-    window.updateAdminSessionFilter = () => {
-      const examSel = el("adminExamFilter");
-      const sesSel = el("adminSessionFilter");
-      if(!examSel || !sesSel) return;
-      const examName = examSel.value;
-      // Remove all options
-      sesSel.innerHTML = '';
-      if(examName === 'all'){
-        sesSel.disabled = true;
-        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
-      } else {
-        sesSel.disabled = false;
-        const exam = window.examData.find(ex => ex.name === examName);
-        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
-        if(exam && Array.isArray(exam.times)){
-          // Use unique times
-          const uniq = Array.from(new Set(exam.times));
-          uniq.forEach(t => {
-            sesSel.innerHTML += `<option value="${t}">${t}</option>`;
-          });
-        }
-      }
-      renderAdminTable();
-    };
 
     function getAdminFilteredList(){
       const filterExam = el("adminExamFilter").value;
@@ -2539,28 +2305,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
 
       const extraCss = `
-        /* Layout for bulk cards */
         .cards-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; }
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
-        /* Force black & white print theme for cards */
-        .exam-card{ background:#fff !important; border:1px solid #000 !important; box-shadow:none !important; }
-        .exam-card-head{ background:#000 !important; color:#fff !important; }
-        .exam-card-head .logo-badge{ background:#000 !important; color:#fff !important; }
-        .exam-card-head .card-type{ background:#fff !important; color:#000 !important; border:1px solid #000 !important; }
-        .big-no span{ color:#000 !important; }
-        .big-no strong{ color:#000 !important; }
-        .exam-card-body .k,
-        .exam-card-body .v{ color:#000 !important; }
-        .exam-card-footer{ border-top:1px dashed #000 !important; color:#000 !important; }
-        .exam-card-footer .fr-k{ color:#000 !important; }
-        .exam-card-footer .fr-v{ color:#000 !important; }
-        .cards-grid .card-cell{ border:1px dashed #000 !important; }
-        .exam-card-footer i{ display:none !important; }
       `;
 
       const w = openPrintWindow("Toplu Kart Basımı", body, extraCss);
       if(!w) return;
       w.focus();
+      w.print();
     };
 
     window.printListOutput = async () => {
@@ -2694,6 +2446,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const w = openPrintWindow("Liste Çıktısı", body);
       if(!w) return;
       w.focus();
+      w.print();
     };
 
     window.printAttendanceOutput = async () => {
@@ -2819,51 +2572,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const w = openPrintWindow("Yoklama Çıktısı", body);
       if(!w) return;
       w.focus();
+      w.print();
     };
 
     // --- Initial silent load ---
-
-    // Fetch the globally saved card theme from Firebase and apply it.  If not available,
-    // fallback to localStorage and finally to "orange".  This ensures that all users see
-    // the same card theme selection stored centrally rather than per-device.
-    async function initCardTheme(){
-      try{
-        // Attempt to load theme from Firebase
-        const snap = await get(child(ref(db), 'bursluluk/config/cardTheme'));
-        let theme = null;
-        if(snap.exists()) theme = snap.val();
-        if(!theme){
-          // fallback to localStorage
-          theme = localStorage.getItem('cardTheme') || 'orange';
-        }
-        applyCardTheme(theme);
-      }catch(e){
-        // In case of error, default to localStorage or orange
-        const theme = localStorage.getItem('cardTheme') || 'orange';
-        applyCardTheme(theme);
-      }
-    }
-    initCardTheme();
-
-    // Kick off exam data loading on initial load
     fetchExamData(false);
 
     // Restrict TC input to digits
     el("tcCheckInput").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
-
-    // Append credit lines below all buttons on the page to attribute the creator.  This runs
-    // once on page load and will add a small text element after every <button> element.
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('button').forEach(btn => {
-        // Avoid adding duplicate credits if re-run
-        if(btn.nextElementSibling && btn.nextElementSibling.classList && btn.nextElementSibling.classList.contains('credit-line')) return;
-        const credit = document.createElement('div');
-        credit.className = 'credit-line';
-        credit.textContent = 'Bu programı tasarlayan ve dizayn eden Ferhat Karagöz';
-        btn.insertAdjacentElement('afterend', credit);
-      });
-    });
 </script>
 </body>
 </html>
-
