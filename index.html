@@ -104,12 +104,17 @@
     /* Card preview (vizit) */
     .card-preview-wrap{display:flex;justify-content:center}
     .exam-card{
-      /* Orange themed background for the exam card */
-      --c1: rgba(255, 179, 64, .16);
-      --c2: rgba(255, 140, 35, .14);
+      --c1: rgba(37,99,235,.16);
+      --c2: rgba(124,58,237,.14);
       --stroke: rgba(2,6,23,.10);
       --soft: rgba(2,6,23,.06);
       --radius:16px;
+      /* Additional CSS variables controlling header gradient, logo badge gradient and number styling */
+      --header-gradient: linear-gradient(135deg, rgba(15,23,42,.92), rgba(37,99,235,.92));
+      --mark-gradient: linear-gradient(135deg,#60a5fa,#a78bfa);
+      --no-bg: rgba(37,99,235,.08);
+      --no-border: rgba(37,99,235,.14);
+      --no-color: var(--brand);
 
       width:90mm;
       height:55mm;
@@ -149,16 +154,20 @@
     .exam-card-header{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       padding:8px 10px;border-radius:14px;
-      /* Orange gradient header for exam card */
-      background:linear-gradient(135deg, rgba(245, 158, 11, .92), rgba(249, 115, 22, .92));
+      background:var(--header-gradient);
       color:#fff;
     }
     .card-brand{display:flex;align-items:center;gap:8px;min-width:0;}
     .card-mark{
       width:20px;height:20px;border-radius:8px;
-      background:linear-gradient(135deg,#60a5fa,#a78bfa);
+      background:var(--mark-gradient);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
       flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-size:12px;
     }
     .card-title{
       font-size:11px;font-weight:800;letter-spacing:.35px;
@@ -193,11 +202,11 @@
     .big-no{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       padding:8px 10px;border-radius:14px;
-      background:rgba(37,99,235,.08);
-      border:1px solid rgba(37,99,235,.14);
+      background:var(--no-bg);
+      border:1px solid var(--no-border);
     }
     .big-no span{font-weight:800;color:var(--muted);font-size:9.7px;letter-spacing:.25px}
-    .big-no strong{font-size:18px;font-weight:900;color:var(--brand);letter-spacing:.8px}
+    .big-no strong{font-size:18px;font-weight:900;color:var(--no-color);letter-spacing:.8px}
 
     .exam-card-footer{
       margin-top:6px;
@@ -246,6 +255,28 @@
       display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
     }
 
+    /* Themed variations for exam cards */
+    .exam-card.theme-orange{
+      --c1: rgba(253,186,116,.16);
+      --c2: rgba(249,115,22,.14);
+      --stroke: rgba(234,88,12,.15);
+      --header-gradient: linear-gradient(135deg, #ea580c, #f59e0b);
+      --mark-gradient: linear-gradient(135deg,#fdba74,#f97316);
+      --no-bg: rgba(234,88,12,.08);
+      --no-border: rgba(234,88,12,.14);
+      --no-color: #ea580c;
+    }
+    .exam-card.theme-bw{
+      --c1: rgba(120,124,136,.12);
+      --c2: rgba(99,105,116,.10);
+      --stroke: rgba(71,85,105,.25);
+      --header-gradient: linear-gradient(135deg, #334155, #1e293b);
+      --mark-gradient: linear-gradient(135deg,#64748b,#475569);
+      --no-bg: rgba(71,85,105,.08);
+      --no-border: rgba(71,85,105,.16);
+      --no-color: #1e293b;
+    }
+
     /* Sharper on-screen preview */
     @media screen{
       .exam-card{
@@ -288,6 +319,18 @@
     .admin-toolbar .btn{border-radius:12px}
     .table-responsive{border-radius:16px;overflow:hidden;border:1px solid rgba(2,6,23,.08)}
     .table>:not(caption)>*>*{border-color:rgba(2,6,23,.07)}
+
+    /* Main menu layout and footer */
+    #mainMenu{
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
+    #mainFooter{
+      margin-top:auto;
+      font-size:.85rem;
+      color:var(--muted);
+    }
 
     /* Print */
     @media print{
@@ -357,17 +400,18 @@
         <button class="main-btn btn-admin" onclick="openAdminPanel()">
           <i class="fa-solid fa-user-shield fa-2x"></i>
           <div style="font-weight:700;">Yönetici Bölümü</div>
-          <!-- Yönetici buton alt açıklama removed as per user request -->
+          <!-- Removed verbose description under admin button -->
           <div class="wizard-sub"></div>
         </button>
       </div>
     </div>
-    <!-- Footer tagline for program designer -->
-    <div class="mt-5 text-center small text-secondary">
-      Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong>
-    </div>
 
-      </div>
+    <!-- Footer: sits at the bottom of the main menu using flexbox -->
+    <footer id="mainFooter" class="no-print text-center pt-4">
+      Bu programı tasarlayan ve dizayn eden Ferhat Karagöz
+    </footer>
+
+  </div>
 
   <!-- WIZARD -->
   <div class="container wizard-shell" id="wizardContainer" style="display:none;">
@@ -579,15 +623,16 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-9">
-              <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
-              <input type="text" class="form-control form-control-lg" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
-              <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
+            <div class="input-group input-group-lg">
+              <input type="text" class="form-control" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
+              <button class="btn btn-primary" type="button" onclick="searchStudentInfo()">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span class="d-none d-md-inline"> Sorgula</span>
+              </button>
             </div>
-            <div class="col-md-3 d-grid">
-              <button class="btn btn-primary btn-lg" onclick="searchStudentInfo()"><i class="fa-solid fa-magnifying-glass"></i> Sorgula</button>
-            </div>
+            <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
           </div>
 
           <hr class="my-4" />
@@ -614,13 +659,15 @@
         <div class="row g-2 mb-3 admin-toolbar no-print">
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Sınav</label>
-            <select class="form-select" id="adminExamFilter" onchange="renderAdminTable()">
+            <!-- Call syncAdminSessionFilter on change to update session options and disabled state -->
+            <select class="form-select" id="adminExamFilter" onchange="syncAdminSessionFilter(); renderAdminTable()">
               <option value="all">Tüm Sınavlar</option>
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Seans Saati</label>
-            <select class="form-select" id="adminSessionFilter" onchange="renderAdminTable()">
+            <!-- Session filter will be disabled when all exams selected -->
+            <select class="form-select" id="adminSessionFilter" onchange="renderAdminTable()" disabled>
               <option value="all">Tüm Seanslar</option>
             </select>
           </div>
@@ -651,9 +698,9 @@
                 <th style="width:110px;">Öğrenci No</th>
                 <th style="width:140px;">T.C.</th>
                 <th>Ad Soyad</th>
-                <th>Veli Adı</th>
-                <th>Veli Telefonu</th>
-                <th style="width:200px;">Sınav</th>
+                <th style="width:200px;">Veli Adı</th>
+                <th style="width:140px;">Telefon</th>
+                <th style="width:220px;">Sınav</th>
                 <th style="width:170px;">Tarih/Saat</th>
                 <th style="width:120px;">İşlemler</th>
               </tr>
@@ -903,6 +950,33 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           ex.quotas = pad(ex.quotas, ex.quotas[0] ?? 0);
         });
 
+        // Build sessions array for each exam with live quota info
+        for (const ex of window.examData) {
+          try{
+            const counts = await getSessionCounts(ex.key);
+            ex.sessions = [];
+            const total = ex.seansCount || 0;
+            for(let i=0; i<total; i++){
+              const date = ex.dates[i] || ex.dates[0] || "";
+              const time = ex.times[i] || ex.times[0] || "";
+              const maxQuota = ex.quotas[i] ?? 0;
+              const used = parseInt((counts && counts[i]) ?? 0, 10) || 0;
+              const remaining = Math.max(maxQuota - used, 0);
+              ex.sessions.push({ index:i, date, time, maxQuota, used, remaining });
+            }
+          } catch(_){
+            // Fallback: still build sessions without counts
+            ex.sessions = [];
+            const total = ex.seansCount || 0;
+            for(let i=0; i<total; i++){
+              const date = ex.dates[i] || ex.dates[0] || "";
+              const time = ex.times[i] || ex.times[0] || "";
+              const maxQuota = ex.quotas[i] ?? 0;
+              ex.sessions.push({ index:i, date, time, maxQuota, used:0, remaining:maxQuota });
+            }
+          }
+        }
+
         populateExamDropdown();
         populateAdminFilters();
         return true;
@@ -933,39 +1007,53 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         examSel.innerHTML += `<option value="${exam.name}">${exam.name}</option>`;
       });
 
-      // Session filter (will be populated based on exam selection)
+      // Session filter (dynamic based on available times across exams)
       const sesSel = el("adminSessionFilter");
-      // Set up change handler on exam selector to update session options
-      examSel.onchange = () => {
-        const val = examSel.value;
-        // reset default option
-        sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
-        if(val === "all"){
-          // when all exams selected, disable session selection
-          sesSel.disabled = true;
-        } else {
-          sesSel.disabled = false;
-          const examObj = window.examData.find(ex => ex.name === val);
-          if(examObj){
-            (examObj.times || []).forEach(t => {
-              sesSel.innerHTML += `<option value="${t}">${t}</option>`;
-            });
-          }
-        }
-        // refresh admin table when filter changes
-        renderAdminTable();
-      };
-
-      // Populate session filter for initial state (all times across exams)
-      sesSel.disabled = false;
       const times = new Set();
       window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
       Array.from(times).sort().forEach(t => {
         sesSel.innerHTML += `<option value="${t}">${t}</option>`;
       });
-      // Trigger change once to set initial disabled state
-      examSel.dispatchEvent(new Event('change'));
+
+    // After initial populate, sync session filter disabled state
+    if (typeof window.syncAdminSessionFilter === 'function') {
+      window.syncAdminSessionFilter();
     }
+    }
+
+  /**
+   * Synchronize session dropdown based on selected exam.
+   * When "Tüm Sınavlar" is selected, the session dropdown is disabled
+   * and populated with all available session times. When a specific exam
+   * is selected, only that exam's session times are shown and the control
+   * is enabled.
+   */
+  window.syncAdminSessionFilter = () => {
+    const examSel = el('adminExamFilter');
+    const sesSel = el('adminSessionFilter');
+    if(!examSel || !sesSel) return;
+    const selected = examSel.value;
+    // If "all", show all times and disable dropdown
+    if(selected === 'all'){
+      const times = new Set();
+      window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      Array.from(times).sort().forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+      sesSel.value = 'all';
+      sesSel.disabled = true;
+    } else {
+      const exam = window.examData.find(ex => String(ex.name) === String(selected));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      (exam?.times || []).forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+      sesSel.disabled = false;
+      sesSel.value = 'all';
+    }
+  };
 
     // --- Navigation ---
     window.startNewRegistration = () => {
@@ -1424,7 +1512,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     };
 
     // --- Card generator ---
-    function generateCardHTML(data){
+    function generateCardHTML(data, opts = {}){
+      // Determine theme (default orange, 'bw' for black-white variant)
+      const themeClass = (opts.theme === 'bw') ? 'theme-bw' : 'theme-orange';
       const studentName = toUpperTR(data.studentName);
       const school = normSpaces(data.school);
       const tc = String(data.tc || "");
@@ -1439,53 +1529,51 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         : tc;
 
       return `
-        <div class="exam-card" aria-label="Öğrenci giriş kartı önizleme">
-          <div class="exam-card-inner">
-            <div class="exam-card-head">
-              <div class="brand">
-                <div class="logo-badge"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div>
-                  <div class="brand-title">FENOMEN ÇOCUK KULÜBÜ</div>
-                  <div class="brand-sub">Öğrenci Giriş Belgesi</div>
-                </div>
+        <div class="exam-card ${themeClass}" aria-label="Öğrenci giriş kartı önizleme">
+          <div class="exam-card-header">
+            <div class="card-brand">
+              <div class="card-mark"><i class="fa-solid fa-graduation-cap"></i></div>
+              <div>
+                <div class="card-title">FENOMEN ÇOCUK KULÜBÜ</div>
+                <div class="card-type" style="font-size:9px;">Öğrenci Giriş Belgesi</div>
               </div>
-              <div class="card-type">GİRİŞ KARTI</div>
+            </div>
+            <div class="card-type">GİRİŞ KARTI</div>
+          </div>
+
+          <div class="exam-card-body">
+            <div class="kv">
+              <div class="k">Öğrenci</div>
+              <div class="v is-name clamp2" title="${escapeHtml(studentName)}">${studentName}</div>
             </div>
 
-            <div class="exam-card-body">
-              <div class="kv">
-                <div class="k">Öğrenci</div>
-                <div class="v is-name clamp2" title="${escapeHtml(studentName)}">${studentName}</div>
-              </div>
+            <div class="kv">
+              <div class="k">Okul</div>
+              <div class="v clamp2" title="${escapeHtml(school)}">${school}</div>
+            </div>
 
-              <div class="kv">
-                <div class="k">Okul</div>
-                <div class="v clamp2" title="${escapeHtml(school)}">${school}</div>
-              </div>
+            <div class="kv is-tc" style="border-bottom:none;padding-bottom:0;">
+              <div class="k">T.C.</div>
+              <div class="v" title="${escapeHtml(tc)}">${tcPretty}</div>
+            </div>
 
-              <div class="kv is-tc" style="border-bottom:none;padding-bottom:0;">
-                <div class="k">T.C.</div>
-                <div class="v" title="${escapeHtml(tc)}">${tcPretty}</div>
-              </div>
+            <div class="big-no">
+              <span>ÖĞRENCİ NUMARASI</span>
+              <strong>${no}</strong>
+            </div>
 
-              <div class="big-no">
-                <span>ÖĞRENCİ NUMARASI</span>
-                <strong>${no}</strong>
+            <div class="exam-card-footer">
+              <div class="footer-row">
+                <span class="fr-k"><i class="fa-solid fa-award"></i> Sınav</span>
+                <span class="fr-v exam-name" title="${escapeHtml(exam)}">${exam}</span>
               </div>
-
-              <div class="exam-card-footer">
-                <div class="footer-row">
-                  <span class="fr-k"><i class="fa-solid fa-award"></i> Sınav</span>
-                  <span class="fr-v exam-name" title="${escapeHtml(exam)}">${exam}</span>
-                </div>
-                <div class="footer-row">
-                  <span class="fr-k"><i class="fa-regular fa-clock"></i> Saat</span>
-                  <span class="fr-v">${escapeHtml(date)} • ${escapeHtml(time)}</span>
-                </div>
-                <div class="footer-row">
-                  <span class="fr-k"><i class="fa-solid fa-location-dot"></i> Yer</span>
-                  <span class="fr-v">${escapeHtml(place)}</span>
-                </div>
+              <div class="footer-row">
+                <span class="fr-k"><i class="fa-regular fa-clock"></i> Saat</span>
+                <span class="fr-v">${escapeHtml(date)} • ${escapeHtml(time)}</span>
+              </div>
+              <div class="footer-row">
+                <span class="fr-k"><i class="fa-solid fa-location-dot"></i> Yer</span>
+                <span class="fr-v">${escapeHtml(place)}</span>
               </div>
             </div>
           </div>
@@ -1495,7 +1583,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     // --- Student Info ---
     window.openStudentInfo = () => {
-      const m = new bootstrap.Modal(document.getElementById("infoModal"));
+      const modalEl = document.getElementById("infoModal");
+      // Disable focus trap to allow SweetAlert inputs to receive focus
+      const m = new bootstrap.Modal(modalEl, { focus: false });
       el("studentInfoResult").innerHTML = "";
       el("searchInfoInput").value = "";
       m.show();
@@ -1588,7 +1678,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const expected = toLowerTR(normSpaces(`${student.studentName} sınav iptal`));
       const instruction = `Kayıt silmek için aşağıya <b>${student.studentName} sınav iptal</b> yazınız.<br><span class="text-secondary">Örnek: necla sıza sınav iptal</span>`;
 
-      const { value: confirmInput, isConfirmed } = await Swal.fire({
+      const res = await Swal.fire({
         title: "Sınav İptali",
         html: instruction + "<hr><div class='text-danger fw-semibold'>Bu işlem geri alınamaz.</div>",
         input: "text",
@@ -1596,24 +1686,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         showCancelButton: true,
         confirmButtonText: "Onaylıyorum, Sil",
         cancelButtonText: "Vazgeç",
-        inputValidator: (val) => {
+        preConfirm: (val) => {
           const got = toLowerTR(normSpaces(val || ""));
           if(got !== expected){
-            return "Yazı eşleşmedi. Lütfen tam adı doğru yazıp 'sınav iptal' ifadesini ekleyiniz.";
+            Swal.showValidationMessage("Yazı eşleşmedi. Lütfen tam adı doğru yazıp 'sınav iptal' ifadesini ekleyiniz.");
+            return false;
           }
-          return null;
-        },
-        didOpen: () => {
-          // ensure input can be focused and typed
-          const inp = Swal.getInput();
-          if(inp){
-            inp.focus();
-            inp.removeAttribute("readonly");
-          }
+          return true;
         }
       });
 
-      if(!isConfirmed) return;
+      if(!res.isConfirmed) return;
 
       showLoading(true);
       try{
@@ -1712,7 +1795,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       });
 
       if(filtered.length === 0){
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-secondary py-4">Kayıt bulunamadı.</td></tr>`;
+        // Adjust colspan to match number of columns (checkbox + eight data columns)
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-secondary py-4">Kayıt bulunamadı.</td></tr>`;
         return;
       }
 
@@ -1720,13 +1804,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         tbody.innerHTML += `
           <tr>
             <td><input type="checkbox" class="admin-chk" value="${s.id}"></td>
-            <td class="fw-semibold">${s.studentNo}</td>
-            <td>${s.tc}</td>
-            <td>${s.studentName}</td>
-            <td>${s.parentName || ""}</td>
-            <td>${s.phone1 || ""}</td>
-            <td>${s.examName}</td>
-            <td>${s.examDate} ${s.examTime}</td>
+            <td class="fw-semibold">${escapeHtml(String(s.studentNo ?? ""))}</td>
+            <td>${escapeHtml(String(s.tc ?? ""))}</td>
+            <td>${escapeHtml(String(s.studentName ?? ""))}</td>
+            <td>${escapeHtml(String(s.parentName ?? ""))}</td>
+            <td>${escapeHtml(String(s.phone1 ?? ""))}</td>
+            <td>${escapeHtml(String(s.examName ?? ""))}</td>
+            <td>${escapeHtml(`${s.examDate || ''}`)} ${escapeHtml(`${s.examTime || ''}`)}</td>
             <td>
               <div class="btn-group" role="group">
                 <button class="btn btn-sm btn-outline-warning" title="Düzenle" onclick="editStudent('${s.id}')"><i class="fa-solid fa-pen"></i></button>
@@ -1779,7 +1863,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
           const fillSessions = () => {
             const e = window.examData[parseInt(ex.value,10)];
-            const opts = (e?.sessions || []).map((s, i) => `<option value="${i}">${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kontenjan: ${s.maxQuota})</option>`).join("");
+            const opts = (e?.sessions || []).map((s, i) => {
+              const disabled = (s.remaining <= 0) ? 'disabled' : '';
+              const label = `${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kalan: ${s.remaining}/${s.maxQuota})`;
+              return `<option value="${i}" ${disabled}>${label}</option>`;
+            }).join("");
             se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
           };
           ex.addEventListener("change", fillSessions);
@@ -2102,7 +2190,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
           const fillSessions = () => {
             const exam = window.examData[parseInt(ex.value,10)];
-            const opts = (exam?.sessions || []).map((ss, i) => `<option value="${i}" ${(exam.key===s.examKey && i===s.sessionIndex)?'selected':''}>${escapeHtml(ss.date)} • ${escapeHtml(ss.time)} (Kontenjan: ${ss.maxQuota})</option>`).join("");
+            const opts = (exam?.sessions || []).map((ss, i) => {
+              // Disable session if no remaining quota, except allow selecting current session for editing
+              const isCurrent = (exam.key === s.examKey && i === s.sessionIndex);
+              const disabled = (ss.remaining <= 0 && !isCurrent) ? 'disabled' : '';
+              const selected = isCurrent ? 'selected' : '';
+              const label = `${escapeHtml(ss.date)} • ${escapeHtml(ss.time)} (Kalan: ${ss.remaining}/${ss.maxQuota})`;
+              return `<option value="${i}" ${selected} ${disabled}>${label}</option>`;
+            }).join("");
             se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
           };
           ex.addEventListener("change", fillSessions);
@@ -2303,6 +2398,41 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       return w;
     }
 
+    /**
+     * Print the given HTML content inside the hidden #printArea element on the same page.
+     * This approach avoids pop-up blockers and works across mobile/desktop browsers.
+     * Pass a title, optional subtitle, inner HTML and optional extra CSS (e.g. for grids).
+     */
+    function printInPage({ title, subtitle = "", bodyHtml, extraCss = "" }){
+      const area = el("printArea");
+      // Construct a small style block for A4 printing and allow caller to add extra CSS
+      const css = `
+        <style>
+          .a4{ width:210mm; min-height:297mm; padding:10mm; margin:0 auto; }
+          .title{ text-align:center; font-weight:900; font-size:18px; margin:0 0 8mm; }
+          .sub{ text-align:center; color:var(--muted); margin:-6mm 0 6mm; font-size:12px; }
+          @media print{
+            @page{ size:A4; margin:0; }
+            body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            .no-print{ display:none !important; }
+            .a4{ width:auto; min-height:auto; padding:10mm; }
+          }
+          ${extraCss}
+        </style>
+      `;
+      const headerHtml = `<div class="a4"><div class="title">${escapeHtml(title)}</div>` +
+        (subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : "");
+      // Fill print area with CSS and content
+      area.innerHTML = `${css}${headerHtml}${bodyHtml}</div>`;
+      // Trigger print and cleanup afterwards
+      window.print();
+      const cleanup = () => {
+        area.innerHTML = "";
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+    }
+
     function getAdminFilteredList(){
       const filterExam = el("adminExamFilter").value;
       const filterSession = el("adminSessionFilter").value;
@@ -2334,30 +2464,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       }
 
       const selected = dbStudents.filter(s => ids.includes(s.id));
-      const body = `
-        <div class="a4">
-          <div class="title">Toplu Öğrenci Giriş Kartı</div>
-          <div class="sub">${escapeHtml(new Date().toLocaleString("tr-TR"))}</div>
-
-          <div class="cards-grid">
-            ${selected.map(s => `<div class="card-cell">${generateCardHTML(s)}</div>`).join("")}
-          </div>
+      if(selected.length === 0){
+        Swal.fire("Uyarı","Seçilen kayıt bulunamadı.","warning");
+        return;
+      }
+      // Build inner card grid using black-white theme for bulk printing
+      const bodyHtml = `
+        <div class="cards-grid">
+          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join("")}
         </div>
-        <div class="no-print" style="text-align:center;margin:14px 0;color:#64748b;">Açılan pencereden yazdırabilirsiniz.</div>
       `;
-
       const extraCss = `
-        .cards-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; }
+        .cards-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8mm; }
         .card-cell{ break-inside:avoid; page-break-inside:avoid; }
-        /* Print cards in grayscale for bulk prints */
-        .exam-card{ filter: grayscale(1); }
-        .exam-card *{ color:#000 !important; }
       `;
-
-      const w = openPrintWindow("Toplu Kart Basımı", body, extraCss);
-      if(!w) return;
-      w.focus();
-      w.print();
+      printInPage({
+        title: "Toplu Öğrenci Giriş Kartı",
+        subtitle: new Date().toLocaleString("tr-TR"),
+        bodyHtml: bodyHtml,
+        extraCss: extraCss
+      });
     };
 
     window.printListOutput = async () => {
@@ -2474,24 +2600,33 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </table>
       `;
 
-      let body = `<div class="a4"><div class="title">Liste Çıktısı</div><div class="sub">${escapeHtml(new Date().toLocaleString("tr-TR"))} • Kayıt: ${rows.length}</div>`;
+      // Build body HTML without outer A4 wrapper – printInPage will handle it
+      let bodyHtml = "";
       if(cfg.group){
         const by = {};
         rows.forEach(s => { (by[s.examName] ||= []).push(s); });
-        Object.keys(by).sort((a,b)=>a.localeCompare(b,"tr-TR")).forEach((k, idx)=>{
-          body += `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
-          body += makeTable(by[k]);
-          if(idx < Object.keys(by).length-1) body += `<div style="page-break-after:always;"></div>`;
+        const keys = Object.keys(by).sort((a,b)=> a.localeCompare(b, "tr-TR"));
+        keys.forEach((k, idx) => {
+          bodyHtml += `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+          bodyHtml += makeTable(by[k]);
+          if(idx < keys.length - 1) bodyHtml += `<div style="page-break-after:always;"></div>`;
         });
       } else {
-        body += makeTable(rows);
+        bodyHtml = makeTable(rows);
       }
-      body += `</div>`;
-
-      const w = openPrintWindow("Liste Çıktısı", body);
-      if(!w) return;
-      w.focus();
-      w.print();
+      // Define basic table styles for printing
+      const extraCss = `
+        table{ width:100%; border-collapse:collapse; font-size:12px; }
+        th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
+        td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
+      `;
+      const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
+      printInPage({
+        title: "Liste Çıktısı",
+        subtitle: subtitleStr,
+        bodyHtml: bodyHtml,
+        extraCss: extraCss
+      });
     };
 
     window.printAttendanceOutput = async () => {
@@ -2590,34 +2725,40 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </table>
       `;
 
-      let body = `<div class="a4">
-        <div class="title">${escapeHtml(meta.title || "Yoklama Listesi")}</div>
-        ${dateLine ? `<div class="sub">${escapeHtml(dateLine)}</div>` : `<div class="sub">${escapeHtml(new Date().toLocaleDateString("tr-TR"))}</div>`}
-        ${nextNo ? `<div style="border:1px dashed #94a3b8;border-radius:10px;padding:8px;margin:0 0 6mm;color:#334155;">
+      // Build body HTML (without outer A4 wrapper); printInPage will wrap
+      let bodyHtml = "";
+      // Add note about highest student number if available
+      if(nextNo){
+        bodyHtml += `<div style="border:1px dashed #94a3b8;border-radius:10px;padding:8px;margin:0 0 6mm;color:#334155;">
           <b>Not:</b> Bu listede en yüksek öğrenci no <b>${maxNo}</b>. Yeni kayıt için sıradaki öneri: <b>${nextNo}</b>.
-        </div>` : ``}
-      `;
-
+        </div>`;
+      }
       // Group by exam+time to make it usable when multiple sessions selected
       const by = {};
       rows.forEach(s => {
         const key = `${s.examName} • ${s.examDate} • ${s.examTime}`;
         (by[key] ||= []).push(s);
       });
-
-      const keys = Object.keys(by).sort((a,b)=>a.localeCompare(b,"tr-TR"));
-      keys.forEach((k, idx)=>{
-        body += `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
-        body += makeTable(by[k].sort((a,b)=> String(a.studentName).localeCompare(String(b.studentName), "tr-TR")));
-        if(idx < keys.length-1) body += `<div style="page-break-after:always;"></div>`;
+      const keys = Object.keys(by).sort((a,b)=> a.localeCompare(b, "tr-TR"));
+      keys.forEach((k, idx) => {
+        bodyHtml += `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+        bodyHtml += makeTable(by[k].sort((a,b)=> String(a.studentName).localeCompare(String(b.studentName), "tr-TR")));
+        if(idx < keys.length - 1) bodyHtml += `<div style="page-break-after:always;"></div>`;
       });
-
-      body += `</div>`;
-
-      const w = openPrintWindow("Yoklama Çıktısı", body);
-      if(!w) return;
-      w.focus();
-      w.print();
+      // Define extra CSS for printing
+      const extraCss = `
+        table{ width:100%; border-collapse:collapse; font-size:12px; }
+        th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; }
+        td{ border:1px solid #cbd5e1; padding:6px; }
+      `;
+      // Determine subtitle: use provided dateLine if exists, else today's date
+      const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
+      printInPage({
+        title: meta.title || "Yoklama Listesi",
+        subtitle: subtitleLine,
+        bodyHtml: bodyHtml,
+        extraCss: extraCss
+      });
     };
 
     // --- Initial silent load ---
