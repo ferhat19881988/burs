@@ -1075,6 +1075,7 @@
           <div id="excelStudentList"></div>
           <div class="mt-3 d-flex gap-2" id="bulkSaveArea" style="display:none;">
             <button class="btn btn-success" onclick="saveBulkStudents()"><i class="fa-solid fa-save"></i> Kaydet</button>
+            <button class="btn btn-warning" onclick="clearSelectedBulk()"><i class="fa-solid fa-xmark"></i> Seçimi Kaldır</button>
             <button class="btn btn-danger" onclick="deleteSelectedBulk()"><i class="fa-solid fa-trash"></i> Seçilenleri Sil</button>
             <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
           </div>
@@ -1130,6 +1131,7 @@
               <!-- Yeni: Excel Yükleme modülünü aç -->
               <button class="btn btn-info" onclick="openExcelUploadModal()"><i class="fa-solid fa-file-import"></i> Excel Yükle</button>
               <button class="btn btn-outline-danger" onclick="bulkDelete()"><i class="fa-solid fa-trash"></i> Seçileni Sil</button>
+              <button class="btn btn-outline-warning" onclick="clearAdminSelection()"><i class="fa-solid fa-xmark"></i> Seçimi Kaldır</button>
               <button class="btn btn-outline-dark" onclick="refreshAdminData()"><i class="fa-solid fa-rotate"></i> Yenile</button>
             </div>
           </div>
@@ -1197,6 +1199,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     window.bulkPageSize = 20;
     let dbStudents = [];             // admin cache
     let currentWizardStep = 1;
+
+    // Track last selected index for admin list shift-range selection
+    window.adminLastSelectIndex = null;
 
     const SHEET_ID = "1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg";
     const SHEET_NAME = "Bursluluk-Lgs";
@@ -2253,10 +2258,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         return;
       }
 
-      filtered.forEach(s => {
+      filtered.forEach((s, idx) => {
         tbody.innerHTML += `
           <tr>
-            <td><input type="checkbox" class="admin-chk" value="${s.id}"></td>
+            <td><input type="checkbox" class="admin-chk" data-index="${idx}" value="${s.id}"></td>
             <td class="fw-semibold">${escapeHtml(String(s.studentNo ?? ""))}</td>
             <td>${escapeHtml(String(s.tc ?? ""))}</td>
             <td>${escapeHtml(String(s.studentName ?? ""))}</td>
@@ -2273,11 +2278,52 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           </tr>
         `;
       });
+
+      // Attach shift-range selection events to admin checkboxes
+      const adminCheckboxes = document.querySelectorAll('.admin-chk');
+      adminCheckboxes.forEach(cb => {
+        cb.addEventListener('click', (ev) => {
+          const idx = parseInt(cb.getAttribute('data-index'),10);
+          if(Number.isNaN(idx)) return;
+          if(ev.shiftKey && window.adminLastSelectIndex !== null && window.adminLastSelectIndex !== undefined){
+            ev.preventDefault();
+            const newVal = !cb.checked;
+            const start = Math.min(idx, window.adminLastSelectIndex);
+            const end = Math.max(idx, window.adminLastSelectIndex);
+            for(let j=start; j<=end; j++){
+              const targetCb = document.querySelector(`.admin-chk[data-index="${j}"]`);
+              if(targetCb){ targetCb.checked = newVal; }
+            }
+            window.adminLastSelectIndex = idx;
+            updateAdminMasterCheckbox();
+            return;
+          }
+          // normal click: set last selected index
+          window.adminLastSelectIndex = idx;
+        });
+        cb.addEventListener('change', () => {
+          updateAdminMasterCheckbox();
+        });
+      });
+
+      // Helper to update master checkbox state
+      window.updateAdminMasterCheckbox = () => {
+        const masterCb = el('selectAll');
+        if(masterCb){ masterCb.checked = Array.from(document.querySelectorAll('.admin-chk')).every(c => c.checked); }
+      };
     };
 
     window.toggleSelectAll = () => {
       const master = el("selectAll").checked;
       document.querySelectorAll(".admin-chk").forEach(c => c.checked = master);
+    };
+
+    // Admin list: clears all selected checkboxes
+    window.clearAdminSelection = () => {
+      document.querySelectorAll('.admin-chk').forEach(cb => cb.checked = false);
+      const master = el('selectAll');
+      if(master) master.checked = false;
+      window.adminLastSelectIndex = null;
     };
 
     function selectedAdminIds(){
@@ -3624,13 +3670,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const startIndex = (window.bulkPage - 1) * pageSize;
       const slice = window.bulkStudents.slice(startIndex, startIndex + pageSize);
 
-      let html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th><th>Durum</th></tr></thead><tbody>';
+      // Use no table-striped to ensure all rows have same background. Assignment rows will be colored separately.
+      let html = '<div class="table-responsive"><table class="table table-bordered align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th><th>Durum</th></tr></thead><tbody>';
       slice.forEach((s, idx) => {
         const globalIdx = startIndex + idx;
         const examName = s.examName || '';
         const examTime = (s.examDate && s.examTime) ? `${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}` : '';
         const checkedAttr = s.selected ? 'checked' : '';
-        const rowClass = (s.errors && s.errors.length) ? 'table-danger' : '';
+        // Determine row class: errors -> danger; assigned exam -> info; otherwise none
+        let rowClass = '';
+        if(s.errors && s.errors.length){ rowClass = 'table-danger'; }
+        else if(s.examIdx !== undefined && s.sessionIdx !== undefined){ rowClass = 'table-info'; }
         let statusCell;
         if(s.errors && s.errors.length){
           const msg = escapeHtml(s.errors.join(', '));
@@ -3638,7 +3688,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         } else {
           statusCell = '<span class="text-success">OK</span>';
         }
-        html += `<tr class="${rowClass}" data-idx="${globalIdx}"><td><input type="checkbox" class="bulk-chk" data-idx="${globalIdx}" ${checkedAttr} /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td><td>${statusCell}</td></tr>`;
+        // Add plus marker for assigned exam/seans
+        const assignMark = (s.examIdx !== undefined && s.sessionIdx !== undefined) ? '<span class="text-primary fw-bold me-1">+</span>' : '';
+        html += `<tr class="${rowClass}" data-idx="${globalIdx}"><td><input type="checkbox" class="bulk-chk" data-idx="${globalIdx}" ${checkedAttr} /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${assignMark}${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td><td>${statusCell}</td></tr>`;
       });
       html += '</tbody></table></div>';
       // Pagination navigation controls
@@ -3912,6 +3964,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           Swal.fire('Başarılı','Seçilen kayıtlar silindi.','success');
         }
       });
+    };
+
+    // Seçili öğrenci işaretlerini kaldırır (seçimi iptal)
+    window.clearSelectedBulk = () => {
+      // If no students loaded, nothing to do
+      if(!window.bulkStudents || window.bulkStudents.length === 0) return;
+      let changed = false;
+      (window.bulkStudents || []).forEach(rec => {
+        if(rec.selected){ rec.selected = false; changed = true; }
+      });
+      if(changed){
+        // Update master checkbox state and redraw list
+        window.bulkLastSelectIndex = null;
+        displayBulkList();
+        updateBulkQuotaDisplay();
+      }
     };
 
     // Toplu kayıtları Firebase'e kaydeder
