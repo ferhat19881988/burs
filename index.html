@@ -3493,6 +3493,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
             phone1: formatPhoneTR(String(row[colIndex.phone1] || '')),
             phone2: formatPhoneTR(String(row[colIndex.phone2] || ''))
           };
+          // Varsayılan olarak seçili yap ve doğrulama hatalarını hesapla
+          rec.selected = true;
+          rec.errors = validateBulkRecord(rec);
           list.push(rec);
         }
         window.bulkStudents = list;
@@ -3507,6 +3510,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       }
     };
 
+    // Bir toplu kaydın geçerli olup olmadığını kontrol eder ve hataları döndürür
+    function validateBulkRecord(rec){
+      const errs = [];
+      try{
+        if(!isValidTC(rec.tc)) errs.push('TC geçersiz veya 11 haneli değil');
+        if(!isTwoWords(rec.studentName)) errs.push('Öğrenci adı en az 2 kelime olmalı');
+        if(!isTwoWords(rec.parentName)) errs.push('Veli adı en az 2 kelime olmalı');
+        if(!isPhoneComplete(rec.phone1)) errs.push('Telefon 1 eksik veya hatalı');
+      }catch(_e){/* ignore */}
+      return errs;
+    }
+
     // Yüklenen öğrencileri tablo halinde gösterir
     function displayBulkList(){
       const container = document.getElementById('excelStudentList');
@@ -3515,20 +3530,78 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         container.innerHTML = '<div class="alert alert-warning">Listelenecek öğrenci bulunamadı.</div>';
         return;
       }
-      let html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th></tr></thead><tbody>';
+      let html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th><th>Durum</th></tr></thead><tbody>';
       window.bulkStudents.forEach((s, idx) => {
         const examName = s.examName || '';
         const examTime = (s.examDate && s.examTime) ? `${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}` : '';
-        html += `<tr><td><input type="checkbox" class="bulk-chk" data-idx="${idx}" checked /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td></tr>`;
+        const checkedAttr = s.selected ? 'checked' : '';
+        const rowClass = (s.errors && s.errors.length) ? 'table-danger' : '';
+        let statusCell;
+        if(s.errors && s.errors.length){
+          const msg = escapeHtml(s.errors.join(', '));
+          statusCell = `<span class="text-danger" title="${msg}">Hata (${s.errors.length})</span>`;
+        } else {
+          statusCell = '<span class="text-success">OK</span>';
+        }
+        html += `<tr class="${rowClass}" data-idx="${idx}"><td><input type="checkbox" class="bulk-chk" data-idx="${idx}" ${checkedAttr} /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td><td>${statusCell}</td></tr>`;
       });
       html += '</tbody></table></div>';
       container.innerHTML = html;
       const master = document.getElementById('bulkSelectAll');
       if(master){
+        // Master checkbox should reflect current state: checked only if all rows selected
+        master.checked = (window.bulkStudents || []).every(r => r.selected === true);
         master.addEventListener('change', () => {
-          document.querySelectorAll('.bulk-chk').forEach(c => c.checked = master.checked);
+          const newVal = master.checked;
+          document.querySelectorAll('.bulk-chk').forEach(cb => {
+            cb.checked = newVal;
+            const i = parseInt(cb.getAttribute('data-idx'),10);
+            if(!Number.isNaN(i)) window.bulkStudents[i].selected = newVal;
+          });
+          updateBulkQuotaDisplay();
         });
       }
+      // Tek tek seçme: seçim sınırı kontenjanı aşıyorsa engelle
+      document.querySelectorAll('.bulk-chk').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const i = parseInt(cb.getAttribute('data-idx'),10);
+          if(Number.isNaN(i)) return;
+          const newVal = cb.checked;
+          // Geçerli seçim sayısını hesaplarken bu öğrenciyi yeni haliyle dahil et
+          window.bulkStudents[i].selected = newVal;
+          // Kontenjan aşımı kontrolü: sadece sınav+seans seçiliyken yapılır
+          const examSelEl = document.getElementById('bulkExamSelect');
+          const sessionSelEl = document.getElementById('bulkSessionSelect');
+          const examIdx = examSelEl ? parseInt(examSelEl.value,10) : NaN;
+          const sessIdx = sessionSelEl ? parseInt(sessionSelEl.value,10) : NaN;
+          if(!Number.isNaN(examIdx) && !Number.isNaN(sessIdx) && window.examData && window.examData[examIdx]){
+            const sess = window.examData[examIdx].sessions && window.examData[examIdx].sessions[sessIdx];
+            if(sess){
+              const selectedCount = (window.bulkStudents || []).filter(r => r.selected).length;
+              const after = sess.remaining - selectedCount;
+              if(after < 0){
+                // revert selection and alert user
+                window.bulkStudents[i].selected = false;
+                cb.checked = false;
+                Swal.fire('Uyarı','Seçili öğrenci sayısı kalan kontenjanı aşıyor. Daha fazla seçim yapamazsınız.','warning');
+              }
+            }
+          }
+          // master checkbox state update
+          const masterCb = document.getElementById('bulkSelectAll');
+          if(masterCb){ masterCb.checked = (window.bulkStudents || []).every(r => r.selected === true); }
+          updateBulkQuotaDisplay();
+        });
+      });
+      // Çift tıklama ile düzenle
+      document.querySelectorAll('#excelStudentList tbody tr').forEach(tr => {
+        tr.addEventListener('dblclick', () => {
+          const i = parseInt(tr.getAttribute('data-idx'),10);
+          if(!Number.isNaN(i)) editBulkRecord(i);
+        });
+      });
+      // Kontenjanı güncelle
+      updateBulkQuotaDisplay();
     }
 
     // Sınav seçildiğinde seans listesini doldurur
@@ -3560,9 +3633,24 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const exam = window.examData[examIdx];
       if(exam && exam.sessions && !Number.isNaN(sessionIdx)){
         const s = exam.sessions[sessionIdx];
-        quotaDiv.textContent = `${s.remaining}/${s.maxQuota}`;
+        // Seçili öğrenci sayısını hesaplarken seçili bayrağı kullan
+        const selectedCount = (window.bulkStudents || []).filter(rec => rec.selected).length;
+        const remaining = s.remaining;
+        const after = remaining - selectedCount;
+        // Metin oluştur: Kalan / Max, Seçili, Yeni Kalan
+        let text = `${remaining}/${s.maxQuota}`;
+        if(!isNaN(selectedCount) && selectedCount > 0){
+          text += `, Seçili: ${selectedCount}, Kalan Sonrası: ${after}`;
+        }
+        quotaDiv.textContent = text;
+        // Renk güncelle: kapasite aşıldıysa kırmızı
+        quotaDiv.classList.remove('text-danger');
+        if(after < 0){
+          quotaDiv.classList.add('text-danger');
+        }
       } else {
         quotaDiv.textContent = '-';
+        quotaDiv.classList.remove('text-danger');
       }
     };
 
@@ -3578,11 +3666,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         Swal.fire('Uyarı','Lütfen sınav ve seans seçiniz.','warning');
         return;
       }
-      const checkboxes = document.querySelectorAll('.bulk-chk');
-      checkboxes.forEach(c => {
-        if(c.checked){
-          const idx = parseInt(c.getAttribute('data-idx'),10);
-          const stu = window.bulkStudents[idx];
+      // Sadece seçili öğrenciler için sınav/seans ata
+      (window.bulkStudents || []).forEach((stu) => {
+        if(stu.selected){
           stu.examIdx = examIdx;
           stu.sessionIdx = sessionIdx;
           stu.examName = exam.name;
@@ -3592,22 +3678,53 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           stu.examTime = sess.time;
         }
       });
+      // Listeyi yeniden çiz ve kontenjan bilgisini güncelle
       displayBulkList();
+      updateBulkQuotaDisplay();
     };
 
     // Toplu kayıtları Firebase'e kaydeder
     window.saveBulkStudents = async () => {
-      const boxes = Array.from(document.querySelectorAll('.bulk-chk'));
-      const ids = boxes.filter(c => c.checked).map(c => parseInt(c.getAttribute('data-idx'),10));
+      // Seçili öğrencilerin indekslerini topla
+      const ids = (window.bulkStudents || []).map((rec, idx) => rec.selected ? idx : null).filter(i => i !== null);
       if(ids.length === 0){
         Swal.fire('Uyarı','Kayıt edilecek öğrenci seçmediniz.','warning');
         return;
       }
-      // Atanmamış kayıt kontrolü
+      // Önce seçili kayıtlar içinde hatalı olanları kontrol et
+      const errorRecords = ids.filter(i => window.bulkStudents[i].errors && window.bulkStudents[i].errors.length > 0);
+      if(errorRecords.length > 0){
+        const msg = errorRecords.map(i => `${escapeHtml(window.bulkStudents[i].studentName || '')}: ${escapeHtml(window.bulkStudents[i].errors.join(', '))}`).join('<br>');
+        Swal.fire({ title:'Hatalı Kayıtlar', html:`Aşağıdaki kayıtlar hatalı:<br>${msg}<br>Lütfen düzenleyin.`, icon:'error' });
+        return;
+      }
+      // Sınav/seans atanmayan kayıt kontrolü
+      const missing = [];
       for(const idx of ids){
         const s = window.bulkStudents[idx];
-        if(s.examIdx === undefined || s.sessionIdx === undefined){
-          Swal.fire('Uyarı','Seçili öğrencilerde sınav veya seans bilgisi eksik. Önce uygulayın.','warning');
+        if(s.examIdx === undefined || s.sessionIdx === undefined){ missing.push(s); }
+      }
+      if(missing.length){
+        const msgList = missing.map(r => `${escapeHtml(r.studentName || '')} (${escapeHtml(r.tc||'')})`).join('<br>');
+        Swal.fire({ title:'Eksik Bilgi', html:`Aşağıdaki seçili kayıtların sınav veya seans bilgisi eksik:<br>${msgList}<br>Lütfen önce sınav ve seans atayın.`, icon:'warning' });
+        return;
+      }
+      // Kontenjan aşımı kontrolü: her sınav/seans için seçili adet <= remaining olmalı
+      const groupCounts = {};
+      ids.forEach(i => {
+        const rec = window.bulkStudents[i];
+        const key = `${rec.examKey}__${rec.sessionIdx}`;
+        groupCounts[key] = (groupCounts[key] || 0) + 1;
+      });
+      for(const key in groupCounts){
+        const [examKey, sessionIdxStr] = key.split('__');
+        const sessionIdx = parseInt(sessionIdxStr,10);
+        const exam = window.examData.find(e => e.key === examKey);
+        if(!exam || !exam.sessions || exam.sessions[sessionIdx] === undefined){ continue; }
+        const s = exam.sessions[sessionIdx];
+        const remaining = s.remaining;
+        if(groupCounts[key] > remaining){
+          Swal.fire('Uyarı', `Seçilen ${groupCounts[key]} kayıt, seçilen sınav/seans için kalan kontenjan (${remaining}) sayısını aşıyor. Lütfen seçimleri azaltın veya farklı seans seçiniz.`, 'warning');
           return;
         }
       }
@@ -3700,6 +3817,60 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const modalEl2 = document.getElementById('excelUploadModal');
       const inst = bootstrap.Modal.getInstance(modalEl2);
       if(inst) inst.hide();
+    };
+
+    // Bir satırı düzenlemek için çift tıklama ile çağrılır
+    window.editBulkRecord = async (idx) => {
+      const rec = (window.bulkStudents || [])[idx];
+      if(!rec) return;
+      const { value: form } = await Swal.fire({
+        title: 'Kaydı Düzenle',
+        html: `
+          <div class="text-start">
+            <label class="form-label fw-semibold">T.C.</label>
+            <input id="edit_tc" class="form-control mb-2" maxlength="11" value="${escapeHtml(rec.tc)}" inputmode="numeric" />
+            <label class="form-label fw-semibold">Öğrenci Tam Adı</label>
+            <input id="edit_name" class="form-control mb-2" value="${escapeHtml(rec.studentName)}" />
+            <label class="form-label fw-semibold">Okul</label>
+            <input id="edit_school" class="form-control mb-2" value="${escapeHtml(rec.school)}" />
+            <label class="form-label fw-semibold">Veli Tam Adı</label>
+            <input id="edit_parent" class="form-control mb-2" value="${escapeHtml(rec.parentName)}" />
+            <label class="form-label fw-semibold">Telefon 1</label>
+            <input id="edit_phone1" class="form-control mb-2" value="${escapeHtml(rec.phone1)}" />
+            <label class="form-label fw-semibold">Telefon 2</label>
+            <input id="edit_phone2" class="form-control" value="${escapeHtml(rec.phone2)}" />
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'Vazgeç',
+        preConfirm: () => {
+          const tc = String(document.getElementById('edit_tc').value || '').replace(/\D/g,'').slice(0,11);
+          const name = toUpperTR(normSpaces(document.getElementById('edit_name').value || ''));
+          const school = toUpperTR(normSpaces(document.getElementById('edit_school').value || ''));
+          const parent = toUpperTR(normSpaces(document.getElementById('edit_parent').value || ''));
+          const phone1 = formatPhoneTR(String(document.getElementById('edit_phone1').value || ''));
+          const phone2 = formatPhoneTR(String(document.getElementById('edit_phone2').value || ''));
+          const tmpRec = { tc, studentName: name, school: school, parentName: parent, phone1, phone2 };
+          const errs = validateBulkRecord(tmpRec);
+          if(errs.length){
+            Swal.showValidationMessage(errs.join('<br>'));
+            return false;
+          }
+          return tmpRec;
+        }
+      });
+      if(!form) return;
+      // Güncellemeleri uygula
+      rec.tc = form.tc;
+      rec.studentName = form.studentName;
+      rec.school = form.school;
+      rec.parentName = form.parentName;
+      rec.phone1 = form.phone1;
+      rec.phone2 = form.phone2;
+      // Doğrulamayı yeniden hesapla
+      rec.errors = validateBulkRecord(rec);
+      displayBulkList();
     };
 
     // --- Initial silent load ---
