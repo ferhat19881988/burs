@@ -1024,6 +1024,51 @@
                 <button class="btn btn-outline-primary" onclick="applyBulkExamSession()"><i class="fa-solid fa-check-double"></i> Seçilen Öğrencilere Uygula</button>
               </div>
             </div>
+
+  <!-- BULK EDIT MODAL -->
+  <div class="modal fade" id="bulkEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:18px;overflow:hidden;border:0;box-shadow:var(--cardShadow);">
+        <div class="modal-header" style="background:linear-gradient(135deg, rgba(2,132,199,.95), rgba(59,130,246,.95));color:#fff;">
+          <h5 class="modal-title" style="font-weight:800;">
+            <i class="fa-solid fa-pen-to-square me-2"></i>Kaydı Düzenle
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="bulkEditAlert" class="alert alert-danger d-none"></div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">T.C.</label>
+            <input type="text" class="form-control" id="bulkEdit_tc" autocomplete="off" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Öğrenci Tam Adı</label>
+            <input type="text" class="form-control" id="bulkEdit_name" autocomplete="off" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Okul</label>
+            <input type="text" class="form-control" id="bulkEdit_school" autocomplete="off" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Veli Tam Adı</label>
+            <input type="text" class="form-control" id="bulkEdit_parent" autocomplete="off" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Telefon 1</label>
+            <input type="text" class="form-control" id="bulkEdit_phone1" autocomplete="off" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Telefon 2</label>
+            <input type="text" class="form-control" id="bulkEdit_phone2" autocomplete="off" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+          <button type="button" class="btn btn-primary" id="bulkEditSaveBtn">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
           </div>
           <div id="excelStudentList"></div>
           <div class="mt-3 d-flex gap-2" id="bulkSaveArea" style="display:none;">
@@ -3463,6 +3508,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         return;
       }
       try{
+        // Ensure we have the latest list of existing students so we can check duplicates
+        // with previously registered records. Only fetch if not already available to avoid
+        // unnecessary network calls that may slow down Excel loading.
+        if((!Array.isArray(dbStudents) || dbStudents.length === 0) && typeof fetchAdminData === 'function'){
+          try{
+            await fetchAdminData();
+          }catch(_err){ /* ignore fetch errors here */ }
+        }
         const arrayBuffer = await file.arrayBuffer();
         const wb = XLSX.read(arrayBuffer, {type:'array'});
         const sheetName = wb.SheetNames[0];
@@ -3497,6 +3550,30 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           rec.selected = true;
           rec.errors = validateBulkRecord(rec);
           list.push(rec);
+        }
+        // Aynı TC ile birden fazla kayıt varsa hata ekle
+        const counts = {};
+        list.forEach(r => {
+          if(r.tc){ counts[r.tc] = (counts[r.tc] || 0) + 1; }
+        });
+        list.forEach(r => {
+          if(r.tc && counts[r.tc] > 1){
+            if(!Array.isArray(r.errors)) r.errors = [];
+            // aynı tc olduğu için hata ekle
+            r.errors.push('Aynı TC birden fazla satırda var');
+          }
+        });
+        // Daha önce veritabanında aynı TC ile bir öğrenci varsa hata ekle
+        if(typeof dbStudents !== 'undefined' && Array.isArray(dbStudents)){
+          list.forEach(r => {
+            if(!r.tc) return;
+            const existsInDb = dbStudents.some(s => String(s.tc) === String(r.tc));
+            if(existsInDb){
+              if(!Array.isArray(r.errors)) r.errors = [];
+              // Mark that this TC has already been registered
+              r.errors.push('Bu TC ile öğrenci zaten kaydedilmiş');
+            }
+          });
         }
         window.bulkStudents = list;
         displayBulkList();
@@ -3539,7 +3616,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         let statusCell;
         if(s.errors && s.errors.length){
           const msg = escapeHtml(s.errors.join(', '));
-          statusCell = `<span class="text-danger" title="${msg}">Hata (${s.errors.length})</span>`;
+          // Hatanın ne olduğunu açıkça göster
+          statusCell = `<span class="text-danger" title="${msg}">${msg}</span>`;
         } else {
           statusCell = '<span class="text-success">OK</span>';
         }
@@ -3746,9 +3824,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         let seatCandidate;
         let newRef;
         try{
-          // tekrar kayıt kontrolü
-          const exists = dbStudents.some(x => String(x.tc) === String(rec.tc) && String(x.examName) === String(rec.examName));
-          if(exists){ failures.push({rec, reason:'Bu T.C. ile bu sınava kayıt mevcut'}); continue; }
+        // tekrar kayıt kontrolü: aynı TC varsa daha önce kaydedilmiştir
+        const exists = dbStudents.some(x => String(x.tc) === String(rec.tc));
+        if(exists){ failures.push({rec, reason:'Bu T.C. ile kayıt mevcut'}); continue; }
           const exam = window.examData[rec.examIdx];
           const sessionIdx = rec.sessionIdx;
           const session = exam.sessions[sessionIdx];
@@ -3820,62 +3898,113 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     };
 
     // Bir satırı düzenlemek için çift tıklama ile çağrılır
-    window.editBulkRecord = async (idx) => {
+    window.editBulkRecord = (idx) => {
       const rec = (window.bulkStudents || [])[idx];
       if(!rec) return;
-      const { value: form } = await Swal.fire({
-        title: 'Kaydı Düzenle',
-        html: `
-          <div class="text-start">
-            <label class="form-label fw-semibold">T.C.</label>
-            <input id="edit_tc" class="form-control mb-2" maxlength="11" value="${escapeHtml(rec.tc)}" inputmode="numeric" />
-            <label class="form-label fw-semibold">Öğrenci Tam Adı</label>
-            <input id="edit_name" class="form-control mb-2" value="${escapeHtml(rec.studentName)}" />
-            <label class="form-label fw-semibold">Okul</label>
-            <input id="edit_school" class="form-control mb-2" value="${escapeHtml(rec.school)}" />
-            <label class="form-label fw-semibold">Veli Tam Adı</label>
-            <input id="edit_parent" class="form-control mb-2" value="${escapeHtml(rec.parentName)}" />
-            <label class="form-label fw-semibold">Telefon 1</label>
-            <input id="edit_phone1" class="form-control mb-2" value="${escapeHtml(rec.phone1)}" />
-            <label class="form-label fw-semibold">Telefon 2</label>
-            <input id="edit_phone2" class="form-control" value="${escapeHtml(rec.phone2)}" />
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Kaydet',
-        cancelButtonText: 'Vazgeç',
-        preConfirm: () => {
-          const tc = String(document.getElementById('edit_tc').value || '').replace(/\D/g,'').slice(0,11);
-          const name = toUpperTR(normSpaces(document.getElementById('edit_name').value || ''));
-          const school = toUpperTR(normSpaces(document.getElementById('edit_school').value || ''));
-          const parent = toUpperTR(normSpaces(document.getElementById('edit_parent').value || ''));
-          const phone1 = formatPhoneTR(String(document.getElementById('edit_phone1').value || ''));
-          const phone2 = formatPhoneTR(String(document.getElementById('edit_phone2').value || ''));
-          const tmpRec = { tc, studentName: name, school: school, parentName: parent, phone1, phone2 };
-          const errs = validateBulkRecord(tmpRec);
-          if(errs.length){
-            Swal.showValidationMessage(errs.join('<br>'));
-            return false;
-          }
-          return tmpRec;
-        }
-      });
-      if(!form) return;
-      // Güncellemeleri uygula
-      rec.tc = form.tc;
-      rec.studentName = form.studentName;
-      rec.school = form.school;
-      rec.parentName = form.parentName;
-      rec.phone1 = form.phone1;
-      rec.phone2 = form.phone2;
-      // Doğrulamayı yeniden hesapla
-      rec.errors = validateBulkRecord(rec);
-      displayBulkList();
+      // Kaydedilecek indexi küresel değişkende sakla
+      window.currentBulkEditIndex = idx;
+      // Alanları doldur
+      const tcEl = document.getElementById('bulkEdit_tc');
+      const nameEl = document.getElementById('bulkEdit_name');
+      const schoolEl = document.getElementById('bulkEdit_school');
+      const parentEl = document.getElementById('bulkEdit_parent');
+      const phone1El = document.getElementById('bulkEdit_phone1');
+      const phone2El = document.getElementById('bulkEdit_phone2');
+      if(tcEl){ tcEl.value = rec.tc || ''; }
+      if(nameEl){ nameEl.value = rec.studentName || ''; }
+      if(schoolEl){ schoolEl.value = rec.school || ''; }
+      if(parentEl){ parentEl.value = rec.parentName || ''; }
+      if(phone1El){ phone1El.value = rec.phone1 || ''; }
+      if(phone2El){ phone2El.value = rec.phone2 || ''; }
+      // Hide previous alert
+      const alertEl = document.getElementById('bulkEditAlert');
+      if(alertEl){ alertEl.classList.add('d-none'); alertEl.textContent = ''; }
+      const modalEl = document.getElementById('bulkEditModal');
+      const m = new bootstrap.Modal(modalEl);
+      m.show();
     };
 
     // --- Initial silent load ---
 
     fetchExamData(false);
+
+    // Kaydı düzenle modalindeki Kaydet butonuna olay ekle
+    (function(){
+      const saveBtn = document.getElementById('bulkEditSaveBtn');
+      if(saveBtn){
+        saveBtn.addEventListener('click', async () => {
+          const idx = window.currentBulkEditIndex;
+          if(idx === undefined || !window.bulkStudents || !window.bulkStudents[idx]) return;
+          // Ensure we have up-to-date list of existing students for duplicate checks. Only fetch
+          // when we do not already have any cached students. This avoids repeated network calls
+          // that can slow down the edit dialog.
+          if((!Array.isArray(dbStudents) || dbStudents.length === 0) && typeof fetchAdminData === 'function'){
+            try{
+              await fetchAdminData();
+            }catch(_err){/* ignore errors here */}
+          }
+          const rec = window.bulkStudents[idx];
+          // Okunan değerleri al ve doğrula
+          const tc = String(document.getElementById('bulkEdit_tc').value || '').replace(/\D/g,'').slice(0,11);
+          const name = toUpperTR(normSpaces(document.getElementById('bulkEdit_name').value || ''));
+          const school = toUpperTR(normSpaces(document.getElementById('bulkEdit_school').value || ''));
+          const parent = toUpperTR(normSpaces(document.getElementById('bulkEdit_parent').value || ''));
+          const phone1 = formatPhoneTR(String(document.getElementById('bulkEdit_phone1').value || ''));
+          const phone2 = formatPhoneTR(String(document.getElementById('bulkEdit_phone2').value || ''));
+          const tmpRec = { tc, studentName:name, school:school, parentName:parent, phone1, phone2 };
+          const errs = validateBulkRecord(tmpRec);
+          const alertEl = document.getElementById('bulkEditAlert');
+          if(errs.length){
+            if(alertEl){
+              alertEl.textContent = errs.join(' , ');
+              alertEl.classList.remove('d-none');
+            }
+            return;
+          } else {
+            if(alertEl){ alertEl.classList.add('d-none'); alertEl.textContent = ''; }
+          }
+          // Güncelle
+          rec.tc = tc;
+          rec.studentName = name;
+          rec.school = school;
+          rec.parentName = parent;
+          rec.phone1 = phone1;
+          rec.phone2 = phone2;
+          // Hataları yeniden hesapla ve tekrar duplicate kontrolü
+          rec.errors = validateBulkRecord(rec);
+          // İlk olarak tüm kayıtların duplicate hatalarını sıfırla
+          (window.bulkStudents || []).forEach(r => {
+            if(Array.isArray(r.errors)){
+              r.errors = r.errors.filter(e => e !== 'Aynı TC birden fazla satırda var' && e !== 'Bu TC ile öğrenci zaten kaydedilmiş');
+            }
+          });
+          // Duplicate kontrolü: diğer kayıtlarla aynı TC varsa hata ekle
+          const counts = {};
+          (window.bulkStudents || []).forEach(r => {
+            if(r.tc){ counts[r.tc] = (counts[r.tc] || 0) + 1; }
+          });
+          (window.bulkStudents || []).forEach(r => {
+            if(!Array.isArray(r.errors)) r.errors = [];
+            if(r.tc && counts[r.tc] > 1){
+              r.errors.push('Aynı TC birden fazla satırda var');
+            }
+            // Kontrol: mevcut veritabanındaki öğrencilerle aynı TC varsa
+            if(r.tc && typeof dbStudents !== 'undefined' && Array.isArray(dbStudents)){
+              const existsInDb = dbStudents.some(s => String(s.tc) === String(r.tc));
+              if(existsInDb){
+                r.errors.push('Bu TC ile öğrenci zaten kaydedilmiş');
+              }
+            }
+          });
+          // Modalı kapat
+          const modalEl = document.getElementById('bulkEditModal');
+          const inst = bootstrap.Modal.getInstance(modalEl);
+          if(inst) inst.hide();
+          // Listeyi güncelle
+          displayBulkList();
+        });
+      }
+    })();
 
     // Restrict TC input to digits
     el("tcCheckInput").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
