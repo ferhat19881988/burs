@@ -989,7 +989,8 @@
 
   <!-- BULK EXCEL UPLOAD MODAL -->
   <div class="modal fade" id="excelUploadModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-sm-down">
+    <!-- Widen the modal: set max-width to 95% of viewport on large screens; on small screens it falls back to full screen -->
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down" style="max-width:95vw;width:95vw;">
       <div class="modal-content" style="border-radius:18px;overflow:hidden;border:0;box-shadow:var(--cardShadow);">
         <div class="modal-header" style="background:linear-gradient(135deg, rgba(2,132,199,.95), rgba(59,130,246,.95));color:#fff;">
           <h5 class="modal-title" style="font-weight:800;"><i class="fa-solid fa-file-import me-2"></i>Toplu Excel Yükle</h5>
@@ -1020,8 +1021,9 @@
                 <label class="form-label fw-semibold">Kalan Kontenjan</label>
                 <div id="bulkQuotaDisplay" class="fw-bold">-</div>
               </div>
-              <div class="col-12 mt-2">
+              <div class="col-12 mt-2 d-flex flex-wrap gap-2">
                 <button class="btn btn-outline-primary" onclick="applyBulkExamSession()"><i class="fa-solid fa-check-double"></i> Seçilen Öğrencilere Uygula</button>
+                <button class="btn btn-outline-danger" onclick="clearBulkExamSession()"><i class="fa-solid fa-xmark"></i> Atamayı İptal Et</button>
               </div>
             </div>
 
@@ -1073,6 +1075,7 @@
           <div id="excelStudentList"></div>
           <div class="mt-3 d-flex gap-2" id="bulkSaveArea" style="display:none;">
             <button class="btn btn-success" onclick="saveBulkStudents()"><i class="fa-solid fa-save"></i> Kaydet</button>
+            <button class="btn btn-danger" onclick="deleteSelectedBulk()"><i class="fa-solid fa-trash"></i> Seçilenleri Sil</button>
             <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
           </div>
         </div>
@@ -1188,6 +1191,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     window.examData = [];            // from Google Sheet
     window.selectedExam = null;
     window.selectedSession = null;
+    // Bulk list pagination settings: how many records per page and current page index.
+    // These control how the Excel upload list is displayed when there are many students.
+    window.bulkPage = 1;
+    window.bulkPageSize = 20;
     let dbStudents = [];             // admin cache
     let currentWizardStep = 1;
 
@@ -3607,8 +3614,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         container.innerHTML = '<div class="alert alert-warning">Listelenecek öğrenci bulunamadı.</div>';
         return;
       }
+      // Pagination calculations: determine which page and slice of students to show
+      const total = window.bulkStudents.length;
+      const pageSize = window.bulkPageSize || 20;
+      let totalPages = Math.ceil(total / pageSize);
+      if(totalPages <= 0) totalPages = 1;
+      if(!window.bulkPage || window.bulkPage < 1) window.bulkPage = 1;
+      if(window.bulkPage > totalPages) window.bulkPage = totalPages;
+      const startIndex = (window.bulkPage - 1) * pageSize;
+      const slice = window.bulkStudents.slice(startIndex, startIndex + pageSize);
+
       let html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th><th>Durum</th></tr></thead><tbody>';
-      window.bulkStudents.forEach((s, idx) => {
+      slice.forEach((s, idx) => {
+        const globalIdx = startIndex + idx;
         const examName = s.examName || '';
         const examTime = (s.examDate && s.examTime) ? `${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}` : '';
         const checkedAttr = s.selected ? 'checked' : '';
@@ -3616,38 +3634,48 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         let statusCell;
         if(s.errors && s.errors.length){
           const msg = escapeHtml(s.errors.join(', '));
-          // Hatanın ne olduğunu açıkça göster
           statusCell = `<span class="text-danger" title="${msg}">${msg}</span>`;
         } else {
           statusCell = '<span class="text-success">OK</span>';
         }
-        html += `<tr class="${rowClass}" data-idx="${idx}"><td><input type="checkbox" class="bulk-chk" data-idx="${idx}" ${checkedAttr} /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td><td>${statusCell}</td></tr>`;
+        html += `<tr class="${rowClass}" data-idx="${globalIdx}"><td><input type="checkbox" class="bulk-chk" data-idx="${globalIdx}" ${checkedAttr} /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td><td>${statusCell}</td></tr>`;
       });
       html += '</tbody></table></div>';
+      // Pagination navigation controls
+      html += '<nav class="mt-2"><ul class="pagination pagination-sm justify-content-center">';
+      if(totalPages > 1){
+        const prevDisabled = (window.bulkPage <= 1) ? ' disabled' : '';
+        html += `<li class="page-item${prevDisabled}"><a class="page-link bulk-page-link" data-page="${window.bulkPage - 1}">&laquo;</a></li>`;
+        for(let p=1; p<= totalPages; p++){
+          const active = (p === window.bulkPage) ? ' active' : '';
+          html += `<li class="page-item${active}"><a class="page-link bulk-page-link" data-page="${p}">${p}</a></li>`;
+        }
+        const nextDisabled = (window.bulkPage >= totalPages) ? ' disabled' : '';
+        html += `<li class="page-item${nextDisabled}"><a class="page-link bulk-page-link" data-page="${window.bulkPage + 1}">&raquo;</a></li>`;
+      }
+      html += '</ul></nav>';
       container.innerHTML = html;
+      // Master checkbox should reflect current state: checked only if all rows selected
       const master = document.getElementById('bulkSelectAll');
       if(master){
-        // Master checkbox should reflect current state: checked only if all rows selected
         master.checked = (window.bulkStudents || []).every(r => r.selected === true);
         master.addEventListener('change', () => {
           const newVal = master.checked;
-          document.querySelectorAll('.bulk-chk').forEach(cb => {
-            cb.checked = newVal;
-            const i = parseInt(cb.getAttribute('data-idx'),10);
-            if(!Number.isNaN(i)) window.bulkStudents[i].selected = newVal;
-          });
+          // Apply new selection state to all students, not just those displayed on current page
+          (window.bulkStudents || []).forEach(r => { r.selected = newVal; });
+          // Reflect selection on visible checkboxes
+          document.querySelectorAll('.bulk-chk').forEach(cb => { cb.checked = newVal; });
           updateBulkQuotaDisplay();
         });
       }
-      // Tek tek seçme: seçim sınırı kontenjanı aşıyorsa engelle
+      // Single row selection: enforce quota check per exam/session when necessary
       document.querySelectorAll('.bulk-chk').forEach(cb => {
         cb.addEventListener('change', () => {
           const i = parseInt(cb.getAttribute('data-idx'),10);
           if(Number.isNaN(i)) return;
           const newVal = cb.checked;
-          // Geçerli seçim sayısını hesaplarken bu öğrenciyi yeni haliyle dahil et
           window.bulkStudents[i].selected = newVal;
-          // Kontenjan aşımı kontrolü: sadece sınav+seans seçiliyken yapılır
+          // Quota check only if exam+session selected
           const examSelEl = document.getElementById('bulkExamSelect');
           const sessionSelEl = document.getElementById('bulkSessionSelect');
           const examIdx = examSelEl ? parseInt(examSelEl.value,10) : NaN;
@@ -3655,30 +3683,49 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           if(!Number.isNaN(examIdx) && !Number.isNaN(sessIdx) && window.examData && window.examData[examIdx]){
             const sess = window.examData[examIdx].sessions && window.examData[examIdx].sessions[sessIdx];
             if(sess){
-              const selectedCount = (window.bulkStudents || []).filter(r => r.selected).length;
-              const after = sess.remaining - selectedCount;
+              // Determine how many seats will be used by selected but not yet assigned records, and how many already assigned to this seans.
+              // `sess.remaining` indicates available seats after remote assignments; we still need to subtract local assignments and newly selected ones.
+              const assignedCount = (window.bulkStudents || []).filter(r => r.examIdx === examIdx && r.sessionIdx === sessIdx).length;
+              const toAssign = (window.bulkStudents || []).filter(r => r.selected && !(r.examIdx === examIdx && r.sessionIdx === sessIdx)).length;
+              const after = sess.remaining - assignedCount - toAssign;
               if(after < 0){
-                // revert selection and alert user
+                // Revert selection and alert user if quota would be exceeded
                 window.bulkStudents[i].selected = false;
                 cb.checked = false;
                 Swal.fire('Uyarı','Seçili öğrenci sayısı kalan kontenjanı aşıyor. Daha fazla seçim yapamazsınız.','warning');
               }
             }
           }
-          // master checkbox state update
+          // Update master checkbox state
           const masterCb = document.getElementById('bulkSelectAll');
           if(masterCb){ masterCb.checked = (window.bulkStudents || []).every(r => r.selected === true); }
           updateBulkQuotaDisplay();
         });
       });
-      // Çift tıklama ile düzenle
+      // Double-click to open edit dialog
       document.querySelectorAll('#excelStudentList tbody tr').forEach(tr => {
         tr.addEventListener('dblclick', () => {
           const i = parseInt(tr.getAttribute('data-idx'),10);
           if(!Number.isNaN(i)) editBulkRecord(i);
         });
       });
-      // Kontenjanı güncelle
+      // Pagination link events
+      document.querySelectorAll('.bulk-page-link').forEach(link => {
+        link.addEventListener('click', (ev) => {
+          const targetPage = parseInt(link.getAttribute('data-page'),10);
+          if(!Number.isNaN(targetPage)){
+            // clamp page within valid range
+            const total = window.bulkStudents.length;
+            const pageSize = window.bulkPageSize || 20;
+            const maxPage = Math.ceil(total / pageSize) || 1;
+            if(targetPage >= 1 && targetPage <= maxPage){
+              window.bulkPage = targetPage;
+              displayBulkList();
+            }
+          }
+        });
+      });
+      // Update quota display after rendering
       updateBulkQuotaDisplay();
     }
 
@@ -3711,17 +3758,21 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const exam = window.examData[examIdx];
       if(exam && exam.sessions && !Number.isNaN(sessionIdx)){
         const s = exam.sessions[sessionIdx];
-        // Seçili öğrenci sayısını hesaplarken seçili bayrağı kullan
-        const selectedCount = (window.bulkStudents || []).filter(rec => rec.selected).length;
+        // Calculate counts.  `assignedCount` is the number of local records already assigned to this exam/session; `toAssignCount` is the number of selected
+        // records that would newly be assigned.  Remaining seats after both sets would be deducted from s.remaining.
+        const assignedCount = (window.bulkStudents || []).filter(rec => rec.examIdx === examIdx && rec.sessionIdx === sessionIdx).length;
+        const toAssignCount = (window.bulkStudents || []).filter(rec => rec.selected && !(rec.examIdx === examIdx && rec.sessionIdx === sessionIdx)).length;
         const remaining = s.remaining;
-        const after = remaining - selectedCount;
-        // Metin oluştur: Kalan / Max, Seçili, Yeni Kalan
+        const after = remaining - assignedCount - toAssignCount;
+        // Build text: Remaining / Max; show numbers.
         let text = `${remaining}/${s.maxQuota}`;
-        if(!isNaN(selectedCount) && selectedCount > 0){
-          text += `, Seçili: ${selectedCount}, Kalan Sonrası: ${after}`;
+        if(assignedCount > 0){
+          text += `, Atanmış: ${assignedCount}`;
+        }
+        if(toAssignCount > 0){
+          text += `, Seçili: ${toAssignCount}, Kalan Sonrası: ${after}`;
         }
         quotaDiv.textContent = text;
-        // Renk güncelle: kapasite aşıldıysa kırmızı
         quotaDiv.classList.remove('text-danger');
         if(after < 0){
           quotaDiv.classList.add('text-danger');
@@ -3759,6 +3810,57 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Listeyi yeniden çiz ve kontenjan bilgisini güncelle
       displayBulkList();
       updateBulkQuotaDisplay();
+    };
+
+    // Seçili öğrencilerin sınav/seans atamasını iptal eder
+    window.clearBulkExamSession = () => {
+      let any = false;
+      (window.bulkStudents || []).forEach((stu) => {
+        if(stu.selected && (stu.examIdx !== undefined || stu.sessionIdx !== undefined)){
+          delete stu.examIdx;
+          delete stu.sessionIdx;
+          delete stu.examName;
+          delete stu.examKey;
+          delete stu.examDate;
+          delete stu.examTime;
+          any = true;
+        }
+      });
+      if(!any){
+        Swal.fire('Bilgi','Seçili öğrencilerde iptal edilecek bir atama bulunamadı.','info');
+        return;
+      }
+      displayBulkList();
+      updateBulkQuotaDisplay();
+    };
+
+    // Seçili öğrencileri listeden siler
+    window.deleteSelectedBulk = () => {
+      const selectedCount = (window.bulkStudents || []).filter(r => r.selected).length;
+      if(selectedCount === 0){
+        Swal.fire('Uyarı','Silmek için en az bir öğrenci seçiniz.','warning');
+        return;
+      }
+      Swal.fire({
+        title: 'Seçili Kayıtları Sil',
+        text: `${selectedCount} öğrenci silinecek. Devam etmek istiyor musunuz?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'Vazgeç'
+      }).then((result) => {
+        if(result.isConfirmed){
+          window.bulkStudents = (window.bulkStudents || []).filter(r => !r.selected);
+          // Reset pagination to last page if current page beyond new max page
+          const total = window.bulkStudents.length;
+          const pageSize = window.bulkPageSize || 20;
+          const maxPage = Math.ceil((total || 1) / pageSize) || 1;
+          if(window.bulkPage > maxPage) window.bulkPage = maxPage;
+          displayBulkList();
+          updateBulkQuotaDisplay();
+          Swal.fire('Başarılı','Seçilen kayıtlar silindi.','success');
+        }
+      });
     };
 
     // Toplu kayıtları Firebase'e kaydeder
