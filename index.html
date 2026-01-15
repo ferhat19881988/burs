@@ -987,6 +987,54 @@
     </div>
   </div>
 
+  <!-- BULK EXCEL UPLOAD MODAL -->
+  <div class="modal fade" id="excelUploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-sm-down">
+      <div class="modal-content" style="border-radius:18px;overflow:hidden;border:0;box-shadow:var(--cardShadow);">
+        <div class="modal-header" style="background:linear-gradient(135deg, rgba(2,132,199,.95), rgba(59,130,246,.95));color:#fff;">
+          <h5 class="modal-title" style="font-weight:800;"><i class="fa-solid fa-file-import me-2"></i>Toplu Excel Yükle</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="downloadSampleExcel()"><i class="fa-solid fa-download"></i> Örnek Dosyayı İndir</button>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Excel Dosyası Seç</label>
+            <input type="file" id="excelFileInput" accept=".xls,.xlsx" class="form-control" />
+            <div class="hint mt-1">Dosya formatı .xlsx veya .xls olmalıdır.</div>
+            <button class="btn btn-success mt-2" onclick="loadExcelFile()"><i class="fa-solid fa-upload"></i> Listeyi Yükle</button>
+          </div>
+          <!-- Controls to apply exam and session to selected students -->
+          <div id="bulkAssignControls" class="border rounded p-3 mb-3" style="display:none;">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Sınav Seç</label>
+                <select id="bulkExamSelect" class="form-select" onchange="populateBulkSessionOptions()"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Seans Seç</label>
+                <select id="bulkSessionSelect" class="form-select" onchange="updateBulkQuotaDisplay()"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Kalan Kontenjan</label>
+                <div id="bulkQuotaDisplay" class="fw-bold">-</div>
+              </div>
+              <div class="col-12 mt-2">
+                <button class="btn btn-outline-primary" onclick="applyBulkExamSession()"><i class="fa-solid fa-check-double"></i> Seçilen Öğrencilere Uygula</button>
+              </div>
+            </div>
+          </div>
+          <div id="excelStudentList"></div>
+          <div class="mt-3 d-flex gap-2" id="bulkSaveArea" style="display:none;">
+            <button class="btn btn-success" onclick="saveBulkStudents()"><i class="fa-solid fa-save"></i> Kaydet</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ADMIN -->
   <!-- Changed to container-fluid to allow the admin panel table to stretch full width for better readability -->
   <div class="container-fluid mt-4" id="adminPanel" style="display:none;">
@@ -1031,6 +1079,8 @@
               <button class="btn btn-secondary" onclick="printAttendanceOutput()"><i class="fa-solid fa-clipboard-check"></i> Yoklama Çıktısı</button>
               <button class="btn btn-warning" onclick="printBulkCards()"><i class="fa-solid fa-id-card"></i> Toplu Kart Bas</button>
               <button class="btn btn-info" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> Excel'e Aktar</button>
+              <!-- Yeni: Excel Yükleme modülünü aç -->
+              <button class="btn btn-info" onclick="openExcelUploadModal()"><i class="fa-solid fa-file-import"></i> Excel Yükle</button>
               <button class="btn btn-outline-danger" onclick="bulkDelete()"><i class="fa-solid fa-trash"></i> Seçileni Sil</button>
               <button class="btn btn-outline-dark" onclick="refreshAdminData()"><i class="fa-solid fa-rotate"></i> Yenile</button>
             </div>
@@ -3365,6 +3415,291 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
       // writeFile: Unicode (Türkçe karakterler) sorunsuz
       XLSX.writeFile(wb, fileName);
+    };
+
+    // --- Toplu Excel Yükleme (Yönetici) ---
+    // Admin panelinde Excel yükleme modülünü açar ve arayüz öğelerini sıfırlar
+    window.openExcelUploadModal = async () => {
+      // Gerekli listeleri sıfırla ve arayüzü hazırla
+      const fileInput = document.getElementById('excelFileInput');
+      if(fileInput) fileInput.value = '';
+      const list = document.getElementById('excelStudentList');
+      if(list) list.innerHTML = '';
+      const assign = document.getElementById('bulkAssignControls');
+      const saveArea = document.getElementById('bulkSaveArea');
+      if(assign) assign.style.display = 'none';
+      if(saveArea) saveArea.style.display = 'none';
+      window.bulkStudents = [];
+      // Sınav seçeneklerini doldur (varsa)
+      const examSel = document.getElementById('bulkExamSelect');
+      if(examSel && window.examData && window.examData.length){
+        examSel.innerHTML = window.examData.map((e, idx) => `<option value="${idx}">${escapeHtml(e.name)}</option>`).join('');
+      }
+      // Seans seçeneklerini doldur
+      if(typeof populateBulkSessionOptions === 'function'){
+        populateBulkSessionOptions();
+      }
+      // Modalı göster
+      const modalEl = document.getElementById('excelUploadModal');
+      const m = new bootstrap.Modal(modalEl);
+      m.show();
+    };
+
+    // Örnek Excel dosyasını indirir (başlık satırı)
+    window.downloadSampleExcel = () => {
+      const wb = XLSX.utils.book_new();
+      const wsData = [["TC","Ad Soyad","Okul","Veli Adı","Telefon1","Telefon2"]];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, "Örnek");
+      XLSX.writeFile(wb, "orneksel_ogrenciler.xlsx");
+    };
+
+    // Seçilen Excel dosyasını okuyup bulkStudents dizisine aktarır
+    window.loadExcelFile = async () => {
+      const input = document.getElementById('excelFileInput');
+      const file = input && input.files ? input.files[0] : null;
+      if(!file){
+        Swal.fire("Uyarı","Lütfen bir Excel dosyası seçiniz.","warning");
+        return;
+      }
+      try{
+        const arrayBuffer = await file.arrayBuffer();
+        const wb = XLSX.read(arrayBuffer, {type:'array'});
+        const sheetName = wb.SheetNames[0];
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1});
+        if(!data || data.length <= 1){
+          Swal.fire("Uyarı","Dosyada veri bulunamadı.","warning");
+          return;
+        }
+        const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+        const colIndex = {
+          tc: headers.findIndex(h => h.includes('tc')),
+          name: headers.findIndex(h => h.includes('ad')),
+          school: headers.findIndex(h => h.includes('okul')),
+          parent: headers.findIndex(h => h.includes('veli')),
+          phone1: headers.findIndex(h => (h.includes('telefon1') || (h.includes('telefon') && !h.includes('2')))),
+          phone2: headers.findIndex(h => h.includes('telefon2'))
+        };
+        const list = [];
+        for(let i=1; i < data.length; i++){
+          const row = data[i];
+          if(!row) continue;
+          if(row.every(cell => cell === null || cell === undefined || String(cell).trim() === '')) continue;
+          const rec = {
+            tc: String(row[colIndex.tc] || '').replace(/\D/g,'').slice(0,11),
+            studentName: toUpperTR(normSpaces(String(row[colIndex.name] || ''))),
+            school: toUpperTR(normSpaces(String(row[colIndex.school] || ''))),
+            parentName: toUpperTR(normSpaces(String(row[colIndex.parent] || ''))),
+            phone1: formatPhoneTR(String(row[colIndex.phone1] || '')),
+            phone2: formatPhoneTR(String(row[colIndex.phone2] || ''))
+          };
+          list.push(rec);
+        }
+        window.bulkStudents = list;
+        displayBulkList();
+        const assign = document.getElementById('bulkAssignControls');
+        const saveArea = document.getElementById('bulkSaveArea');
+        if(assign) assign.style.display = 'block';
+        if(saveArea) saveArea.style.display = 'flex';
+      } catch(e){
+        console.error(e);
+        Swal.fire("Hata","Dosya okuma sırasında hata oluştu: " + (e?.message || e),"error");
+      }
+    };
+
+    // Yüklenen öğrencileri tablo halinde gösterir
+    function displayBulkList(){
+      const container = document.getElementById('excelStudentList');
+      if(!container) return;
+      if(!window.bulkStudents || window.bulkStudents.length === 0){
+        container.innerHTML = '<div class="alert alert-warning">Listelenecek öğrenci bulunamadı.</div>';
+        return;
+      }
+      let html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle"><thead class="table-light"><tr><th><input type="checkbox" id="bulkSelectAll" /></th><th>T.C.</th><th>Ad Soyad</th><th>Okul</th><th>Veli</th><th>Telefon 1</th><th>Telefon 2</th><th>Sınav</th><th>Seans</th></tr></thead><tbody>';
+      window.bulkStudents.forEach((s, idx) => {
+        const examName = s.examName || '';
+        const examTime = (s.examDate && s.examTime) ? `${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}` : '';
+        html += `<tr><td><input type="checkbox" class="bulk-chk" data-idx="${idx}" checked /></td><td>${escapeHtml(String(s.tc))}</td><td>${escapeHtml(String(s.studentName))}</td><td>${escapeHtml(String(s.school))}</td><td>${escapeHtml(String(s.parentName))}</td><td>${escapeHtml(String(s.phone1))}</td><td>${escapeHtml(String(s.phone2))}</td><td>${escapeHtml(examName)}</td><td>${escapeHtml(examTime)}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+      const master = document.getElementById('bulkSelectAll');
+      if(master){
+        master.addEventListener('change', () => {
+          document.querySelectorAll('.bulk-chk').forEach(c => c.checked = master.checked);
+        });
+      }
+    }
+
+    // Sınav seçildiğinde seans listesini doldurur
+    window.populateBulkSessionOptions = () => {
+      const examSel = document.getElementById('bulkExamSelect');
+      const sessionSel = document.getElementById('bulkSessionSelect');
+      if(!examSel || !sessionSel){ return; }
+      const examIdx = parseInt(examSel.value,10);
+      const exam = window.examData[examIdx];
+      if(!exam || !exam.sessions){ sessionSel.innerHTML = '<option value="">Seans bulunamadı</option>'; updateBulkQuotaDisplay(); return; }
+      let opts = '';
+      exam.sessions.forEach((s, i) => {
+        const disabled = (s.remaining <= 0) ? 'disabled' : '';
+        const label = `${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kalan: ${s.remaining}/${s.maxQuota})`;
+        opts += `<option value="${i}" ${disabled}>${label}</option>`;
+      });
+      sessionSel.innerHTML = opts;
+      updateBulkQuotaDisplay();
+    };
+
+    // Seans değiştiğinde kontenjan bilgisini günceller
+    window.updateBulkQuotaDisplay = () => {
+      const examSel = document.getElementById('bulkExamSelect');
+      const sessionSel = document.getElementById('bulkSessionSelect');
+      const quotaDiv = document.getElementById('bulkQuotaDisplay');
+      if(!examSel || !sessionSel || !quotaDiv){ return; }
+      const examIdx = parseInt(examSel.value,10);
+      const sessionIdx = parseInt(sessionSel.value,10);
+      const exam = window.examData[examIdx];
+      if(exam && exam.sessions && !Number.isNaN(sessionIdx)){
+        const s = exam.sessions[sessionIdx];
+        quotaDiv.textContent = `${s.remaining}/${s.maxQuota}`;
+      } else {
+        quotaDiv.textContent = '-';
+      }
+    };
+
+    // Seçili öğrencilere sınav/seans atar
+    window.applyBulkExamSession = () => {
+      const examSel = document.getElementById('bulkExamSelect');
+      const sessionSel = document.getElementById('bulkSessionSelect');
+      if(!examSel || !sessionSel){ return; }
+      const examIdx = parseInt(examSel.value,10);
+      const sessionIdx = parseInt(sessionSel.value,10);
+      const exam = window.examData[examIdx];
+      if(!exam || Number.isNaN(sessionIdx)){
+        Swal.fire('Uyarı','Lütfen sınav ve seans seçiniz.','warning');
+        return;
+      }
+      const checkboxes = document.querySelectorAll('.bulk-chk');
+      checkboxes.forEach(c => {
+        if(c.checked){
+          const idx = parseInt(c.getAttribute('data-idx'),10);
+          const stu = window.bulkStudents[idx];
+          stu.examIdx = examIdx;
+          stu.sessionIdx = sessionIdx;
+          stu.examName = exam.name;
+          stu.examKey = exam.key;
+          const sess = exam.sessions[sessionIdx];
+          stu.examDate = sess.date;
+          stu.examTime = sess.time;
+        }
+      });
+      displayBulkList();
+    };
+
+    // Toplu kayıtları Firebase'e kaydeder
+    window.saveBulkStudents = async () => {
+      const boxes = Array.from(document.querySelectorAll('.bulk-chk'));
+      const ids = boxes.filter(c => c.checked).map(c => parseInt(c.getAttribute('data-idx'),10));
+      if(ids.length === 0){
+        Swal.fire('Uyarı','Kayıt edilecek öğrenci seçmediniz.','warning');
+        return;
+      }
+      // Atanmamış kayıt kontrolü
+      for(const idx of ids){
+        const s = window.bulkStudents[idx];
+        if(s.examIdx === undefined || s.sessionIdx === undefined){
+          Swal.fire('Uyarı','Seçili öğrencilerde sınav veya seans bilgisi eksik. Önce uygulayın.','warning');
+          return;
+        }
+      }
+      const confirm = await Swal.fire({
+        title: `${ids.length} kayıt kaydedilecek`,
+        text: 'Devam etmek istiyor musunuz?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Evet',
+        cancelButtonText: 'Vazgeç'
+      });
+      if(!confirm.isConfirmed) return;
+      showLoading(true);
+      const successes = [];
+      const failures = [];
+      await fetchAdminData();
+      for(const idx of ids){
+        const rec = window.bulkStudents[idx];
+        let seatCandidate;
+        let newRef;
+        try{
+          // tekrar kayıt kontrolü
+          const exists = dbStudents.some(x => String(x.tc) === String(rec.tc) && String(x.examName) === String(rec.examName));
+          if(exists){ failures.push({rec, reason:'Bu T.C. ile bu sınava kayıt mevcut'}); continue; }
+          const exam = window.examData[rec.examIdx];
+          const sessionIdx = rec.sessionIdx;
+          const session = exam.sessions[sessionIdx];
+          // kontenjan rezerve et
+          const seatOk = await reserveSeat(exam.key, sessionIdx, session.maxQuota);
+          if(!seatOk){ failures.push({rec, reason:'Kontenjan dolu'}); continue; }
+          // numara ata
+          const used = await getUsedNumbers(exam.key);
+          seatCandidate = pickSmallestAvailable(exam.startNo, used);
+          let locked = false;
+          let tries = 0;
+          newRef = push(ref(db, 'bursluluk/students'));
+          const studentId = newRef.key;
+          while(!locked && tries < 60){
+            locked = await reserveNumberLock(exam.key, seatCandidate, studentId);
+            if(!locked){ seatCandidate++; tries++; }
+          }
+          if(!locked){ await releaseSeat(exam.key, sessionIdx); failures.push({rec, reason:'Öğrenci numarası atanamadı'}); continue; }
+          // alan doğrulama
+          if(!isValidTC(rec.tc) || !isTwoWords(rec.studentName) || !isTwoWords(rec.parentName) || !isPhoneComplete(rec.phone1)){
+            await releaseSeat(exam.key, sessionIdx);
+            await releaseNumberLock(exam.key, seatCandidate, studentId);
+            failures.push({rec, reason:'Veri eksik veya hatalı'});
+            continue;
+          }
+          const studentData = {
+            id: studentId,
+            tc: rec.tc,
+            studentName: rec.studentName,
+            school: rec.school,
+            parentName: rec.parentName,
+            phone1: rec.phone1,
+            phone2: rec.phone2 || '',
+            examName: rec.examName,
+            examKey: rec.examKey,
+            examDate: rec.examDate,
+            examTime: rec.examTime,
+            sessionIndex: sessionIdx,
+            studentNo: seatCandidate,
+            regTs: Date.now(),
+            regDate: new Date().toLocaleDateString('tr-TR')
+          };
+          await set(newRef, studentData);
+          successes.push(studentData);
+        } catch(e){
+          console.error(e);
+          try{
+            if(rec.examKey && rec.sessionIdx !== undefined) await releaseSeat(rec.examKey, rec.sessionIdx);
+            if(seatCandidate !== undefined && newRef){ await releaseNumberLock(rec.examKey, seatCandidate, newRef.key); }
+          } catch(_){}
+          failures.push({rec, reason:(e && e.message) ? e.message : 'Hata'});
+        }
+      }
+      showLoading(false);
+      await refreshAdminData();
+      let resultHtml = '';
+      if(successes.length){ resultHtml += `<div class='text-success fw-semibold'>Başarılı: ${successes.length}</div>`; }
+      if(failures.length){
+        resultHtml += `<div class='text-danger fw-semibold mt-2'>Başarısız: ${failures.length}</div><ul class='text-start small'>`;
+        failures.forEach(f => {
+          resultHtml += `<li>${escapeHtml(f.rec.studentName || '')} (${escapeHtml(f.rec.tc || '')}) - ${escapeHtml(f.reason)}</li>`;
+        });
+        resultHtml += '</ul>';
+      }
+      Swal.fire({ title:'İşlem Tamamlandı', html: resultHtml || 'Hiçbir işlem yapılmadı.', icon:'info' });
+      const modalEl2 = document.getElementById('excelUploadModal');
+      const inst = bootstrap.Modal.getInstance(modalEl2);
+      if(inst) inst.hide();
     };
 
     // --- Initial silent load ---
