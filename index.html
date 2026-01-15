@@ -704,42 +704,6 @@
 }
 </style>
 
-  <!-- Custom styles to improve readability and printing -->
-  <style>
-    /*
-      Increase the font size for the data tables in the admin panel and the
-      Excel upload modal. By default Bootstrap uses a relatively small font
-      which can be hard to read on some monitors. These selectors target
-      both the table and its header/body cells to ensure consistent sizing.
-    */
-    #adminTable,
-    #adminTable th,
-    #adminTable td,
-    #excelStudentList table,
-    #excelStudentList table th,
-    #excelStudentList table td {
-      font-size: 0.95rem;
-    }
-
-    /*
-      Print-specific adjustments. When printing, hide scrollbars and force
-      the body overflow to be visible. Some browsers render a narrow
-      scrollbar column (with up/down arrows) in print preview which can
-      create unintended blank pages. These rules remove the scrollbars and
-      allow content to flow naturally for printing.
-    */
-    @media print {
-      /* Hide any visible scrollbars */
-      ::-webkit-scrollbar {
-        display: none;
-      }
-      /* Ensure the page content is not clipped by scrollable containers */
-      body {
-        overflow: visible !important;
-      }
-    }
-  </style>
-
 </head>
 
 <body>
@@ -791,6 +755,15 @@
 <style>
   body { padding-bottom: 60px; }
 </style>
+
+  <!-- Override admin table row colors to ensure single-colour backgrounds -->
+  <style>
+    /* Force all table rows in admin list to have the same background color. Without this, Bootstrap may apply alternating stripes. */
+    #adminTable tbody tr:nth-of-type(odd),
+    #adminTable tbody tr:nth-of-type(even) {
+      background-color: #ffffff !important;
+    }
+  </style>
 
   </div>
 
@@ -1239,6 +1212,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     // Track last selected index for admin list shift-range selection
     window.adminLastSelectIndex = null;
+    // Track selected admin row IDs. Instead of relying solely on checkbox states, we maintain a set of selected student IDs.
+    // This allows shift-range toggling across re-renders and ensures selections persist across filters.
+    window.adminSelectedIds = new Set();
 
     const SHEET_ID = "1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg";
     const SHEET_NAME = "Bursluluk-Lgs";
@@ -2295,10 +2271,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         return;
       }
 
+      // Persist current filtered list globally for master checkbox calculations
+      window.adminCurrentFiltered = filtered;
+
       filtered.forEach((s, idx) => {
+        // Determine checkbox checked state based on adminSelectedIds set
+        const checkedAttr = window.adminSelectedIds.has(s.id) ? 'checked' : '';
         tbody.innerHTML += `
           <tr>
-            <td><input type="checkbox" class="admin-chk" data-index="${idx}" value="${s.id}"></td>
+            <td><input type="checkbox" class="admin-chk" data-index="${idx}" value="${s.id}" ${checkedAttr}></td>
             <td class="fw-semibold">${escapeHtml(String(s.studentNo ?? ""))}</td>
             <td>${escapeHtml(String(s.tc ?? ""))}</td>
             <td>${escapeHtml(String(s.studentName ?? ""))}</td>
@@ -2319,54 +2300,90 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Attach shift-range selection events to admin checkboxes
       const adminCheckboxes = document.querySelectorAll('.admin-chk');
       adminCheckboxes.forEach((cb) => {
-        // Click handler supports shift-range selection using a separate global shift state
         cb.addEventListener('click', (ev) => {
           const idx = parseInt(cb.getAttribute('data-index'), 10);
           if (Number.isNaN(idx)) return;
-          // If shift is held (tracked via adminShiftDown) and we have an anchor index, perform range toggle
-          if (window.adminShiftDown && window.adminLastSelectIndex !== null && window.adminLastSelectIndex !== undefined) {
+          // If Shift key held and there is a previous anchor, toggle range selection
+          if (ev.shiftKey && window.adminLastSelectIndex !== null && window.adminLastSelectIndex !== undefined) {
+            // Prevent default toggle behaviour of this checkbox during range select
             ev.preventDefault();
-            // Determine new state: toggle based on current clicked checkbox state
-            const newVal = !cb.checked;
             const start = Math.min(idx, window.adminLastSelectIndex);
             const end = Math.max(idx, window.adminLastSelectIndex);
+            // Determine new selection state based on clicked row's current state
+            const currentId = filtered[idx].id;
+            const currentlySelected = window.adminSelectedIds.has(currentId);
+            const newVal = !currentlySelected;
             for (let j = start; j <= end; j++) {
-              const target = adminCheckboxes[j];
-              if (target) {
-                target.checked = newVal;
+              const recId = filtered[j].id;
+              if (newVal) {
+                window.adminSelectedIds.add(recId);
+              } else {
+                window.adminSelectedIds.delete(recId);
               }
             }
-            // Set last anchor to current index for subsequent shift-clicks
+            // Update anchor index to current clicked row
             window.adminLastSelectIndex = idx;
-            updateAdminMasterCheckbox();
+            // Re-render table to show updated range selection and update master checkbox
+            renderAdminTable();
             return;
           }
-          // Normal click sets anchor to current index
+          // Otherwise toggle selection for single row and set new anchor
+          const id = filtered[idx].id;
+          if (window.adminSelectedIds.has(id)) {
+            window.adminSelectedIds.delete(id);
+          } else {
+            window.adminSelectedIds.add(id);
+          }
+          // Set anchor index for potential shift-selection on next click
           window.adminLastSelectIndex = idx;
+          // Update master checkbox state
+          updateAdminMasterCheckbox();
         });
+        // On change, update master checkbox state (used for select all checkbox)
         cb.addEventListener('change', () => {
           updateAdminMasterCheckbox();
         });
       });
 
+      // After rendering rows and attaching events, update master checkbox based on current selection state
+      const masterCheck = el('selectAll');
+      if(masterCheck){
+        masterCheck.checked = (window.adminCurrentFiltered || []).every(s => window.adminSelectedIds.has(s.id));
+      }
+
       // Helper to update master checkbox state
       window.updateAdminMasterCheckbox = () => {
         const masterCb = el('selectAll');
-        if(masterCb){ masterCb.checked = Array.from(document.querySelectorAll('.admin-chk')).every(c => c.checked); }
+        if(masterCb){
+          masterCb.checked = (window.adminCurrentFiltered || []).every(s => window.adminSelectedIds.has(s.id));
+        }
       };
     };
 
     window.toggleSelectAll = () => {
       const master = el("selectAll").checked;
-      document.querySelectorAll(".admin-chk").forEach(c => c.checked = master);
+      // Add or remove all ids in the current filtered list from selection
+      (window.adminCurrentFiltered || []).forEach(s => {
+        if(master){
+          window.adminSelectedIds.add(s.id);
+        } else {
+          window.adminSelectedIds.delete(s.id);
+        }
+      });
+      // Update anchor index
+      window.adminLastSelectIndex = null;
+      // Re-render table to reflect new state
+      renderAdminTable();
     };
 
     // Admin list: clears all selected checkboxes
     window.clearAdminSelection = () => {
-      document.querySelectorAll('.admin-chk').forEach(cb => cb.checked = false);
-      const master = el('selectAll');
-      if(master) master.checked = false;
+      // Clear the selection set entirely
+      window.adminSelectedIds = new Set();
+      // Reset the shift anchor
       window.adminLastSelectIndex = null;
+      // Re-render table to show cleared state and update master checkbox
+      renderAdminTable();
     };
 
     // Track Shift key globally for admin multi-selection. When Shift is pressed, adminShiftDown = true.
@@ -2383,7 +2400,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     });
 
     function selectedAdminIds(){
-      return Array.from(document.querySelectorAll(".admin-chk:checked")).map(c => c.value);
+      // Return array of selected student IDs from the selection set
+      return Array.from(window.adminSelectedIds || []);
     }
 
     
@@ -2976,22 +2994,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Base styles for A4 printing and optional custom CSS
       const css = `
         <style>
-          .a4{ width:210mm; min-height:297mm; padding:10mm; margin:0 auto; }
+          /*
+           * The .a4 wrapper defines an A4-sized container for printouts. We avoid
+           * enforcing a fixed minimum height because doing so can cause the
+           * browser to insert unnecessary blank pages when the content is
+           * shorter than a full page. Instead we let the height be
+           * auto-adjusted to the content. The width remains fixed to 210mm
+           * (A4 width) with standard padding for margins.
+           */
+          .a4{ width:210mm; min-height:auto; padding:10mm; margin:0 auto; }
           .title{ text-align:center; font-weight:900; font-size:18px; margin:0 0 8mm; }
           .sub{ text-align:center; color:var(--muted); margin:-6mm 0 6mm; font-size:12px; }
           @media print{
             @page{ size:A4; margin:0; }
-            body{
-              -webkit-print-color-adjust:exact;
-              print-color-adjust:exact;
-              /* When printing, allow content to expand and hide scrollbars to
-                 avoid narrow scrollbar columns that can create blank pages */
-              overflow: visible !important;
-            }
+            body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
             .no-print{ display:none !important; }
             .a4{ width:auto; min-height:auto; padding:10mm; }
-            /* Hide scrollbars in WebKit-based browsers during print */
-            ::-webkit-scrollbar{ display:none; }
           }
           ${extraCss}
         </style>
@@ -3038,22 +3056,21 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const area = el("printArea");
       const css = `
         <style>
-          .a4{ width:210mm; min-height:297mm; padding:10mm; margin:0 auto; }
+          /*
+           * The .a4 wrapper defines an A4-sized container for printouts. We avoid
+           * enforcing a fixed minimum height because doing so can cause
+           * blank pages when the content is shorter than a full page. The
+           * height will auto-adjust to the content. Width is fixed to
+           * 210mm (A4 width) with padding for margins.
+           */
+          .a4{ width:210mm; min-height:auto; padding:10mm; margin:0 auto; }
           .title{ text-align:center; font-weight:900; font-size:18px; margin:0 0 8mm; }
           .sub{ text-align:center; color:var(--muted); margin:-6mm 0 6mm; font-size:12px; }
           @media print{
             @page{ size:A4; margin:0; }
-            body{
-              -webkit-print-color-adjust:exact;
-              print-color-adjust:exact;
-              /* Allow content to expand fully and hide scrollbars in print
-                 preview to prevent extraneous blank pages */
-              overflow: visible !important;
-            }
+            body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
             .no-print{ display:none !important; }
             .a4{ width:auto; min-height:auto; padding:10mm; }
-            /* Hide scrollbars when printing (WebKit) */
-            ::-webkit-scrollbar{ display:none; }
           }
           ${extraCss}
         </style>
@@ -3506,9 +3523,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       });
       const keys = Object.keys(by).sort((a,b)=> a.localeCompare(b, "tr-TR"));
       keys.forEach((k, idx) => {
-        bodyHtml += `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
-        bodyHtml += makeTable(by[k].sort((a,b)=> String(a.studentName).localeCompare(String(b.studentName), "tr-TR")));
-        if(idx < keys.length - 1) bodyHtml += `<div style="page-break-after:always;"></div>`;
+        const header = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+        const tableHtml = makeTable(by[k].sort((a,b) => String(a.studentName).localeCompare(String(b.studentName), "tr-TR")));
+        if (idx < keys.length - 1) {
+          bodyHtml += `<div style="page-break-after: always;">${header}${tableHtml}</div>`;
+        } else {
+          bodyHtml += `${header}${tableHtml}`;
+        }
       });
       // Define extra CSS for printing
       const extraCss = `
