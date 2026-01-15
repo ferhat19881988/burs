@@ -3668,9 +3668,62 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           updateBulkQuotaDisplay();
         });
       }
-      // Single row selection: enforce quota check per exam/session when necessary
+      // Row selection handlers: support shift-click for range selection and normal change events
       document.querySelectorAll('.bulk-chk').forEach(cb => {
-        cb.addEventListener('change', () => {
+        // Handle click events for shift-range selection
+        cb.addEventListener('click', (ev) => {
+          const i = parseInt(cb.getAttribute('data-idx'),10);
+          if(Number.isNaN(i)) return;
+          // If shift key held and a previous selection exists, perform range selection
+          if(ev.shiftKey && window.bulkLastSelectIndex !== null && window.bulkLastSelectIndex !== undefined){
+            ev.preventDefault();
+            // Determine the new state: invert current selection state of clicked record
+            const newVal = !window.bulkStudents[i].selected;
+            const start = Math.min(i, window.bulkLastSelectIndex);
+            const end = Math.max(i, window.bulkLastSelectIndex);
+            // Temporarily set selection for range
+            const tmpSelectedState = [];
+            for(let j = start; j <= end; j++){
+              tmpSelectedState[j] = window.bulkStudents[j].selected;
+              window.bulkStudents[j].selected = newVal;
+            }
+            // Quota check only if exam+session are selected
+            let quotaOk = true;
+            const examSelEl = document.getElementById('bulkExamSelect');
+            const sessionSelEl = document.getElementById('bulkSessionSelect');
+            const examIdx = examSelEl ? parseInt(examSelEl.value,10) : NaN;
+            const sessIdx = sessionSelEl ? parseInt(sessionSelEl.value,10) : NaN;
+            if(!Number.isNaN(examIdx) && !Number.isNaN(sessIdx) && window.examData && window.examData[examIdx]){
+              const sess = window.examData[examIdx].sessions && window.examData[examIdx].sessions[sessIdx];
+              if(sess){
+                const assignedCount = (window.bulkStudents || []).filter(r => r.examIdx === examIdx && r.sessionIdx === sessIdx).length;
+                const toAssign = (window.bulkStudents || []).filter(r => r.selected && !(r.examIdx === examIdx && r.sessionIdx === sessIdx)).length;
+                const after = sess.remaining - assignedCount - toAssign;
+                if(after < 0){
+                  quotaOk = false;
+                }
+              }
+            }
+            if(!quotaOk){
+              // revert selections
+              for(let j = start; j <= end; j++){
+                window.bulkStudents[j].selected = tmpSelectedState[j];
+              }
+              Swal.fire('Uyarı','Seçili öğrenci sayısı kalan kontenjanı aşıyor. Daha fazla seçim yapamazsınız.','warning');
+            } else {
+              // update last selected index
+              window.bulkLastSelectIndex = i;
+            }
+            // Re-render list to reflect new selections and update quota display
+            displayBulkList();
+            updateBulkQuotaDisplay();
+            return;
+          }
+          // No shift: record last selected index and allow normal change event to handle toggle
+          window.bulkLastSelectIndex = i;
+        });
+        // Handle normal change events to toggle selection and enforce quota
+        cb.addEventListener('change', (event) => {
           const i = parseInt(cb.getAttribute('data-idx'),10);
           if(Number.isNaN(i)) return;
           const newVal = cb.checked;
@@ -3683,8 +3736,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           if(!Number.isNaN(examIdx) && !Number.isNaN(sessIdx) && window.examData && window.examData[examIdx]){
             const sess = window.examData[examIdx].sessions && window.examData[examIdx].sessions[sessIdx];
             if(sess){
-              // Determine how many seats will be used by selected but not yet assigned records, and how many already assigned to this seans.
-              // `sess.remaining` indicates available seats after remote assignments; we still need to subtract local assignments and newly selected ones.
               const assignedCount = (window.bulkStudents || []).filter(r => r.examIdx === examIdx && r.sessionIdx === sessIdx).length;
               const toAssign = (window.bulkStudents || []).filter(r => r.selected && !(r.examIdx === examIdx && r.sessionIdx === sessIdx)).length;
               const after = sess.remaining - assignedCount - toAssign;
@@ -3865,31 +3916,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     // Toplu kayıtları Firebase'e kaydeder
     window.saveBulkStudents = async () => {
-      // Seçili öğrencilerin indekslerini topla
-      const ids = (window.bulkStudents || []).map((rec, idx) => rec.selected ? idx : null).filter(i => i !== null);
+      // Kaydedilecek öğrencilerin indekslerini topla: sınav ve seans atanmış olanlar
+      const ids = (window.bulkStudents || []).map((rec, idx) => {
+        return (rec.examIdx !== undefined && rec.sessionIdx !== undefined) ? idx : null;
+      }).filter(i => i !== null);
       if(ids.length === 0){
-        Swal.fire('Uyarı','Kayıt edilecek öğrenci seçmediniz.','warning');
+        Swal.fire('Uyarı','Sınav ve seans atanmış kayıt bulunamadı.','warning');
         return;
       }
-      // Önce seçili kayıtlar içinde hatalı olanları kontrol et
+      // Önce seçili kayıtlar (atanmış) içinde hatalı olanları kontrol et
       const errorRecords = ids.filter(i => window.bulkStudents[i].errors && window.bulkStudents[i].errors.length > 0);
       if(errorRecords.length > 0){
         const msg = errorRecords.map(i => `${escapeHtml(window.bulkStudents[i].studentName || '')}: ${escapeHtml(window.bulkStudents[i].errors.join(', '))}`).join('<br>');
         Swal.fire({ title:'Hatalı Kayıtlar', html:`Aşağıdaki kayıtlar hatalı:<br>${msg}<br>Lütfen düzenleyin.`, icon:'error' });
         return;
       }
-      // Sınav/seans atanmayan kayıt kontrolü
-      const missing = [];
-      for(const idx of ids){
-        const s = window.bulkStudents[idx];
-        if(s.examIdx === undefined || s.sessionIdx === undefined){ missing.push(s); }
-      }
-      if(missing.length){
-        const msgList = missing.map(r => `${escapeHtml(r.studentName || '')} (${escapeHtml(r.tc||'')})`).join('<br>');
-        Swal.fire({ title:'Eksik Bilgi', html:`Aşağıdaki seçili kayıtların sınav veya seans bilgisi eksik:<br>${msgList}<br>Lütfen önce sınav ve seans atayın.`, icon:'warning' });
-        return;
-      }
-      // Kontenjan aşımı kontrolü: her sınav/seans için seçili adet <= remaining olmalı
+      // Kontenjan aşımı kontrolü: her sınav/seans için atanmış adet <= remaining olmalı
       const groupCounts = {};
       ids.forEach(i => {
         const rec = window.bulkStudents[i];
@@ -3908,9 +3950,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           return;
         }
       }
+      // Onay iste: atanmış kayıt sayısını bildir
       const confirm = await Swal.fire({
         title: `${ids.length} kayıt kaydedilecek`,
-        text: 'Devam etmek istiyor musunuz?',
+        text: 'Sınav ve seans ataması yapılmış öğrencilerin kaydı sisteme eklenecek. Onaylıyor musunuz?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Evet',
