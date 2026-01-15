@@ -1527,7 +1527,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     el("confirmText").innerHTML = `
         <div class="fw-bold" style="font-size: 26px; color: #0d6efd; margin-bottom: 5px;">
-            Fenomen Çocuk Kulübü
+            Fenomen Eğitim Kurumları
         </div>
 
         <div style="font-size: 18px; color: #dc3545; font-weight: 800;">
@@ -1833,7 +1833,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           studentNo: candidate,
           regTs: Date.now(),
           regDate: new Date().toLocaleString("tr-TR"),
-          place: "Fenomen Çocuk Kulübü"
+          place: "Fenomen Eğitim Kurumları"
         };
 
         // 3) Save student
@@ -1873,7 +1873,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
       const date = data.examDate || data.date || data.exam_date || "";
       const time = data.examTime || data.time || data.exam_time || "";
-      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Çocuk Kulübü");
+      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
 
       const tcPretty = (tc.length === 11)
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
@@ -1885,7 +1885,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
             <div class="card-brand">
               <div class="card-mark"><i class="fa-solid fa-graduation-cap"></i></div>
               <div>
-                <div class="card-title">FENOMEN ÇOCUK KULÜBÜ</div>
+                <div class="card-title">FENOMEN EĞİTİM KURUMLARI</div>
                 <div class="card-type card-sub">Öğrenci Giriş Belgesi</div>
               </div>
             </div>
