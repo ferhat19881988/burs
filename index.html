@@ -3156,68 +3156,63 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
     window.printBulkCards = async () => {
-      /*
-        Triggered when the admin clicks the "Toplu Kart Bas" button.  This
-        implementation collects the selected student records and lays them out
-        in a two‑column, three‑row grid for printing on A4 paper.  If fewer
-        than six students are selected, blank placeholders are appended so
-        that a full sheet (six card areas) is always printed.  Each card is
-        rendered using the built‑in generateCardHTML() helper with the black
-        & white theme enabled.  When a record is null (used for blank
-        placeholders) an empty exam card container is inserted instead of
-        student data.  This ensures that the sizing and cut marks remain
-        consistent even when some slots are unused.
-      */
+      // Fetch selected student IDs and validate selection.  If no records are
+      // checked, alert the user and exit early.
       const ids = selectedAdminIds();
-      if(ids.length === 0){
-        Swal.fire("Uyarı","Kart basmak için listeden kişi seçiniz.","warning");
+      if (!ids.length) {
+        Swal.fire("Uyarı", "Kart basmak için listeden kişi seçiniz.", "warning");
         return;
       }
-      // Resolve selected student objects from the database
+      // Resolve the corresponding student objects from the admin data set.  This
+      // filtering ensures that only the selected rows are printed, preserving
+      // the order defined by the table render.
       const selected = dbStudents.filter(s => ids.includes(s.id));
-      if(selected.length === 0){
-        Swal.fire("Uyarı","Seçilen kayıt bulunamadı.","warning");
+      if (!selected.length) {
+        Swal.fire("Uyarı", "Seçilen kayıt bulunamadı.", "warning");
         return;
       }
-      // Ensure at least six slots by padding with nulls
-      const minCount = 6;
-      const slots = [...selected];
-      while(slots.length < minCount){
-        slots.push(null);
-      }
-      // Build inner card grid.  For real student objects, generate a card in
-      // black/white theme.  For null entries, insert an empty card shell so
-      // the layout remains intact and cut guides are still visible.
+
+      /*
+        Construct the HTML markup for the bulk cards.  Each student entry is
+        rendered using the existing generateCardHTML() helper to produce the
+        standard coloured card layout.  The card is then wrapped in a
+        <div class="bw-card"> container, which applies a grayscale filter
+        via CSS when printing.  Cards are placed inside .card-cell-bw
+        wrappers to control spacing and cut marks.  A parent .cards-grid-bw
+        grid arranges cards into exactly two columns and allows them to flow
+        onto subsequent rows or pages.  No additional placeholders are
+        inserted; only the selected students will be printed.
+      */
       const bodyHtml = `
-        <div class="cards-grid">
-          ${slots.map(item => {
-            if(item){
-              return `<div class="card-cell">${generateCardHTML(item,{theme:'bw'})}</div>`;
-            }
-            // Empty placeholder: insert a container with an empty exam-card to
-            // preserve size.  An empty div inside ensures a minimum height.
-            return `<div class="card-cell"><div class="exam-card theme-bw"></div></div>`;
-          }).join("")}
+        <div class="cards-grid-bw">
+          ${selected.map(s => `
+            <div class="card-cell-bw">
+              <div class="bw-card">
+                ${generateCardHTML(s)}
+              </div>
+            </div>
+          `).join("")}
         </div>
       `;
-      // Additional print CSS overrides for black/white output and grid layout.  We
-      // explicitly define margins, cut marks, and high contrast styling so
-      // cards look sharp when printed.  These rules apply only within the
-      // context of the A4 print wrapper used by printDocument().
+
+      /*
+        Extra CSS rules scoped to the print context (.a4) for bulk card output.
+        These styles set up a two‑column grid with fixed card widths, insert
+        dashed cut lines around each card cell, and apply a grayscale filter
+        to the coloured cards so they appear as high‑contrast black‑and‑white
+        on paper.  We do not override other design variables; instead the
+        filter preserves the original layout and typography while removing
+        colour.  Page margins and padding are standardised to avoid blank
+        pages or unwanted whitespace.  On very narrow screens (e.g. mobile
+        print previews) the layout falls back to a single column for
+        readability.
+      */
       const extraCss = `
-        /*
-         * Arrange the exam cards in a two‑column grid for bulk printing.  Each
-         * column is 92 mm wide and separated by a 6 mm gutter so the total
-         * width (92 × 2 + 6) fits neatly into the printable area of an A4
-         * sheet after 10 mm margins are applied on the left and right.  The
-         * grid will flow vertically, automatically wrapping cards onto the
-         * next page once the available height is exhausted.  To provide
-         * sufficient space for legible cards, the minimum height of a cell is
-         * increased to 85 mm.  This yields a comfortable three rows per
-         * page (6 cards per sheet).  Should the card content be shorter, the
-         * browser will naturally fit four rows on a page without clipping.
-         */
-        .a4 .cards-grid{
+        /* Two‑column card grid.  Each column is 92 mm wide with a 6 mm gap,
+           yielding cards that match the physical size of the original
+           coloured version.  Cards naturally wrap onto new rows when there
+           are more than two per sheet. */
+        .a4 .cards-grid-bw{
           display:grid;
           grid-template-columns:repeat(2, 92mm);
           column-gap:6mm;
@@ -3226,14 +3221,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           align-items:start;
         }
 
-        /*
-         * Each card cell acts as a wrapper around the actual exam card.  A
-         * dashed border is drawn around the cell to serve as a cutting
-         * guideline.  The increased minimum height ensures that at least
-         * three rows of cards fit on a page at 1:1 scale; if the cards are
-         * shorter, up to four rows (eight cards) may be printed per sheet.
-         */
-        .a4 .card-cell{
+        /* Card cell wrapper.  Adds a dashed border as a cutting guide and
+           centres the inner card.  The minimum height is increased so that
+           three rows comfortably fit on an A4 page (2 columns × 3 rows = 6
+           cards). */
+        .a4 .card-cell-bw{
           width:92mm;
           min-height:85mm;
           height:auto;
@@ -3241,7 +3233,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           padding:4mm;
           border:1px dashed #888;
           border-radius:6px;
-          overflow:visible;
           display:flex;
           align-items:center;
           justify-content:center;
@@ -3249,102 +3240,49 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           page-break-inside:avoid;
         }
 
-        /* Remove default margin on the inner exam card when printing. */
-        .a4 .card-cell .exam-card{ margin:0; }
+        /* Remove margin on the inner exam card to maximise printable area. */
+        .a4 .card-cell-bw .exam-card{ margin:0; }
 
-        /* High-contrast black/white styling for clear print. */
-        .a4 .exam-card,
-        .a4 .exam-card *{
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        .a4 .exam-card{
-          background:#fff !important;
-          border:1px solid #000 !important;
+        /* Apply grayscale filter to the coloured card while preserving
+           contrast.  Slightly increase brightness to ensure dark areas are
+           legible on white paper. */
+        .a4 .bw-card .exam-card{
+          filter: grayscale(100%) contrast(1.1) brightness(1.05);
           box-shadow:none !important;
-          filter:none !important;
-          min-height:55mm !important;
         }
-        .a4 .exam-card:before,
-        .a4 .exam-card:after{
+
+        /* Hide decorative overlays on the card when printing (e.g. blurred
+           backgrounds) to avoid muddy greys. */
+        .a4 .bw-card .exam-card:before,
+        .a4 .bw-card .exam-card:after{
           display:none !important;
           content:none !important;
         }
-        .a4 .exam-card-header{
-          background:#fff !important;
-          color:#000 !important;
-          border:1px solid #000 !important;
-        }
-        .a4 .card-title,
-        .a4 .card-type,
-        .a4 .card-sub{
-          color:#000 !important;
-        }
-        .a4 .exam-card-header .card-type{
-          background:transparent !important;
-          border:1px solid #000 !important;
-        }
-        .a4 .card-mark{
-          background:transparent !important;
-          border:1px solid #000 !important;
-          box-shadow:none !important;
-          color:#000 !important;
-        }
-        .a4 .kv{
-          border-bottom:1px solid #000 !important;
-        }
-        .a4 .kv.is-tc{
-          border-bottom:none !important;
-        }
-        .a4 .kv .k,
-        .a4 .kv .v{
-          color:#000 !important;
-        }
-        .a4 .big-no{
-          background:#fff !important;
-          border:2px solid #000 !important;
-        }
-        .a4 .big-no span,
-        .a4 .big-no strong{
-          color:#000 !important;
-        }
-        .a4 .exam-card-footer{
-          border-top:1px solid #000 !important;
-          color:#000 !important;
-        }
-        .a4 .exam-card-footer .fr-k,
-        .a4 .exam-card-footer .fr-v{
-          color:#000 !important;
-        }
-        .a4 .place-pill{
-          background:transparent !important;
-          border:1px solid #000 !important;
-          color:#000 !important;
-        }
 
-        /* Stack cards vertically on very narrow screens. */
+        /* Stacking behaviour on very narrow screens: fall back to a single column. */
         @media (max-width: 575.98px){
-          .a4 .cards-grid{ grid-template-columns: 1fr; gap:8mm; }
-          .a4 .card-cell{
-            padding:0 !important;
-            width:auto !important;
-            min-height:auto !important;
+          .a4 .cards-grid-bw{
+            grid-template-columns: 1fr;
+            column-gap:0;
+            row-gap:8mm;
+          }
+          .a4 .card-cell-bw{
+            width:auto;
+            padding:0;
+            min-height:auto;
           }
         }
 
-        /* Ensure page margins are consistent and avoid duplicate padding on print. */
+        /* Standardise page margins for printing and remove padding from the
+           container so that margins are controlled solely by @page. */
         @media print{
           @page{ size:A4; margin:10mm; }
           .a4{ padding:0; }
         }
       `;
-      // When printing bulk cards, omit header titles so the sheet only contains cards.
-      printDocument({
-        title: "",
-        subtitle: "",
-        bodyHtml: bodyHtml,
-        extraCss: extraCss
-      });
+
+      // Invoke the print helper without header titles; only cards should appear.
+      printDocument({ title: "", subtitle: "", bodyHtml, extraCss });
     };
 
     // Modernised and isolated list printing. This implementation collects the filtered
