@@ -2045,26 +2045,33 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
+    // Veri Güvenliği ve Formatlama
     const safeHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // Türkçe karakter desteği için büyük harf dönüşümü
-    const name = (data.studentName || "").toLocaleUpperCase("tr-TR");
-    const school = (data.school || "").toLocaleUpperCase("tr-TR");
+    const name = (typeof toUpperTR === 'function' ? toUpperTR(data.studentName || "") : (data.studentName || "").toUpperCase());
+    const school = (typeof toUpperTR === 'function' ? toUpperTR(data.school || "") : (data.school || "").toUpperCase());
     const tc = data.tc || "";
+    // TC formatı: 123 456 789 01
     const tcPretty = (tc.length === 11) ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
     const no = data.studentNo || "";
     
-    const exam = (data.examName || "").trim();
+    const examRaw = data.examName || "";
+    const exam = (typeof normSpaces === 'function' ? normSpaces(examRaw) : examRaw);
+    
+    // Tarih ve Saat birleşimi
     const dateInfo = (data.examDate && data.examTime) ? `${data.examDate} • ${data.examTime}` : "";
-    const place = (data.place || "Fenomen Eğitim Kurumları").trim();
+    
+    const placeRaw = data.place || "Fenomen Eğitim Kurumları";
+    const place = (typeof normSpaces === 'function' ? normSpaces(placeRaw) : placeRaw);
 
+    // HTML Yapısı
     return `
     <div class="ref-card-wrapper">
       <div class="ref-card">
         <div class="ref-header">
             <div class="ref-header-left">
                 <div class="ref-title">FENOMEN EĞİTİM KURUMLARI</div>
-                <div class="ref-subtitle">Öğrenci Giriş Belgesi</div>
+                <div class="ref-subtitle">Öğrenci Sınav Giriş Belgesi</div>
             </div>
             <div class="ref-badge">GİRİŞ KARTI</div>
         </div>
@@ -2072,15 +2079,15 @@ window.generateBizCardHTML = function(data) {
         <div class="ref-body">
             <div class="ref-info-col">
                 <div class="ref-row">
-                    <div class="ref-lbl">Öğrenci</div>
+                    <div class="ref-lbl">ÖĞRENCİ</div>
                     <div class="ref-val name">${safeHtml(name)}</div>
                 </div>
                 <div class="ref-row">
-                    <div class="ref-lbl">Okul</div>
-                    <div class="ref-val school">${safeHtml(school)}</div>
+                    <div class="ref-lbl">OKUL</div>
+                    <div class="ref-val school">${safeHtml(school).substring(0, 35)}</div>
                 </div>
                 <div class="ref-row">
-                    <div class="ref-lbl">T.C.</div>
+                    <div class="ref-lbl">T.C. NO</div>
                     <div class="ref-val tc">${safeHtml(tcPretty)}</div>
                 </div>
             </div>
@@ -2093,13 +2100,14 @@ window.generateBizCardHTML = function(data) {
 
         <div class="ref-footer">
             <div class="ref-f-grid">
-                <div class="ref-f-item">
+                <div class="ref-f-item wide-item">
                     <div class="ref-icon"><i class="fa-solid fa-file-pen"></i></div>
                     <div class="ref-f-text">
-                        <div class="ref-f-lbl">SINAV</div>
-                        <div class="ref-f-val">${safeHtml(exam)}</div>
+                        <div class="ref-f-lbl">SINAV ADI</div>
+                        <div class="ref-f-val main-exam">${safeHtml(exam)}</div>
                     </div>
                 </div>
+                
                 <div class="ref-f-item">
                     <div class="ref-icon"><i class="fa-regular fa-clock"></i></div>
                     <div class="ref-f-text">
@@ -2107,10 +2115,11 @@ window.generateBizCardHTML = function(data) {
                         <div class="ref-f-val">${safeHtml(dateInfo)}</div>
                     </div>
                 </div>
-                <div class="ref-f-item full-width">
+                
+                <div class="ref-f-item">
                     <div class="ref-icon"><i class="fa-solid fa-location-dot"></i></div>
                     <div class="ref-f-text">
-                        <div class="ref-f-lbl">SINAV MERKEZİ</div>
+                        <div class="ref-f-lbl">SINAV YERİ</div>
                         <div class="ref-f-val">${safeHtml(place)}</div>
                     </div>
                 </div>
@@ -3193,16 +3202,22 @@ window.generateBizCardHTML = function(data) {
     }
 
   window.printBulkCards = async () => {
+    // KONTROLLER
+    if (typeof selectedAdminIds !== 'function') { Swal.fire("Hata", "Gerekli fonksiyonlar eksik.", "error"); return; }
     const ids = selectedAdminIds(); 
-    if (!ids || ids.length === 0) { Swal.fire("Uyarı", "Seçim yapmadınız.", "warning"); return; }
+    if (!ids || ids.length === 0) { Swal.fire("Uyarı", "Lütfen listeden en az bir öğrenci seçiniz.", "warning"); return; }
 
+    // VERİ
     const selected = dbStudents.filter(s => ids.includes(s.id));
+    
+    // Sayfa Başına 8 Kart (2x4)
     const cardsPerPage = 8; 
     const chunks = [];
     for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
+    // HTML OLUŞTUR
     let pagesHtml = "";
     chunks.forEach((chunk, pageIndex) => {
         const cardsHtml = chunk.map(s => window.generateBizCardHTML(s)).join("");
@@ -3212,11 +3227,12 @@ window.generateBizCardHTML = function(data) {
                 ${cardsHtml}
             </div>
             <div class="sheet-meta">
-                Sayfa ${pageIndex + 1} / ${chunks.length} • Fenomen Eğitim Kurumları Yönetim Paneli
+                Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgilerinden Kesiniz
             </div>
         </div>`;
     });
 
+    // CSS TASARIMI (GÜNCELLENMİŞ VERSİYON)
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
@@ -3224,115 +3240,136 @@ window.generateBizCardHTML = function(data) {
         @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
-        body { margin: 0; padding: 0; background: #fff; font-family: 'Roboto', sans-serif; }
+        body { margin: 0; padding: 0; background: #eee; font-family: 'Roboto', 'Segoe UI', Arial, sans-serif; }
 
         .print-sheet {
-            width: 210mm; height: 297mm; background: white;
+            width: 210mm; height: 296mm; background: white;
             margin: 0 auto;
-            padding: 10mm 12mm; 
+            /* Kağıt kenar boşlukları */
+            padding-top: 15mm; padding-left: 12mm; 
             position: relative; page-break-after: always; overflow: hidden;
         }
 
-        /* 2x4 GRID - Kesme payları için gap artırıldı */
+        /* 2x4 GRID YAPISI */
         .cards-grid {
             display: grid;
-            grid-template-columns: 90mm 90mm; 
-            grid-template-rows: repeat(4, 65mm);
-            column-gap: 6mm; 
-            row-gap: 6mm;
-            justify-content: center;
+            grid-template-columns: 88mm 88mm; 
+            grid-template-rows: repeat(4, 60mm); /* Kart Yüksekliği */
+            column-gap: 8mm; row-gap: 8mm;
         }
 
-        /* KESME ÇİZGİSİ (Wrapper) - Karttan uzaklaştırıldı */
+        /* DIŞ ÇERÇEVE (Kesim Çizgisi) */
         .ref-card-wrapper {
             width: 100%; height: 100%;
-            border: 0.5pt dashed #aaa; /* Kesme çizgisi daha ince ve zarif */
-            padding: 4mm; /* Kart ve kesme çizgisi arasındaki mesafe artırıldı */
+            border: 1px dashed #999; /* Kesik çizgi rengi grileştirildi */
+            padding: 4px; /* Kart içeriğini kesim çizgisinden uzaklaştırır (Boşluk) */
             display: flex; justify-content: center; align-items: center;
         }
 
+        /* --- ASIL KART GÖVDESİ --- */
         .ref-card {
             width: 100%; height: 100%;
-            border: 1.5pt solid #000;
-            border-radius: 4px;
+            border: 2px solid #000; /* Kart çerçevesi tam siyah */
+            border-radius: 5px;
             overflow: hidden;
             display: flex; flex-direction: column;
             background: #fff;
         }
 
-        /* BAŞLIK ALANI */
+        /* BAŞLIK (Siyah Alan) */
         .ref-header {
-            background: #1a1a1a;
+            background: #111; /* Koyu siyah */
             color: #fff;
             padding: 6px 10px;
             display: flex; justify-content: space-between; align-items: center;
             height: 16mm;
+            border-bottom: 1px solid #000;
         }
         .ref-header-left { display: flex; flex-direction: column; }
-        .ref-title { font-size: 13px; font-weight: 900; letter-spacing: 0.5px; } /* Başlık büyütüldü */
-        .ref-subtitle { font-size: 9px; font-weight: 400; color: #bbb; }
+        
+        /* Kurum İsmi Büyütüldü */
+        .ref-title { font-size: 15px; font-weight: 900; letter-spacing: 0.5px; line-height: 1; margin-bottom: 3px;}
+        .ref-subtitle { font-size: 9px; font-weight: 500; color: #ddd; }
         
         .ref-badge {
             background: #fff; color: #000;
-            font-size: 10px; font-weight: 900;
-            padding: 3px 8px; border-radius: 3px;
+            font-size: 10px; font-weight: 800;
+            padding: 3px 8px; border-radius: 4px;
+            white-space: nowrap; margin-left: 8px;
+            border: 1px solid #000;
         }
 
-        /* GÖVDE BİLGİLERİ */
+        /* ORTA GÖVDE (Öğrenci Bilgileri) */
         .ref-body {
             flex: 1;
             display: flex;
-            padding: 8px 12px;
+            padding: 8px 10px;
             align-items: center;
             gap: 10px;
         }
 
-        .ref-info-col { flex: 1.2; display: flex; flex-direction: column; gap: 6px; }
-        .ref-row { display: flex; flex-direction: column; } /* Alt alta daha okunaklı */
-        .ref-lbl { font-size: 8px; color: #666; font-weight: 700; text-transform: uppercase; }
-        .ref-val { font-size: 12px; color: #000; font-weight: 800; }
-        .ref-val.name { font-size: 14px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+        /* Sol Bilgiler */
+        .ref-info-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .ref-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
+        .ref-lbl { font-size: 9px; color: #444; font-weight: 700; text-transform: uppercase; }
+        
+        /* Öğrenci Bilgileri Fontları Büyütüldü */
+        .ref-val { font-size: 11px; color: #000; font-weight: 800; }
+        .ref-val.name { font-size: 13px; font-weight: 900; }
+        .ref-val.tc { font-size: 12px; letter-spacing: 1px; font-family: monospace; font-weight: 700; }
+        .ref-val.school { font-size: 10px; line-height: 1.1; }
 
+        /* Sağ Numara Kutusu */
         .ref-num-box {
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 8px;
+            background: #f1f1f1;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 5px;
             text-align: center;
-            min-width: 30mm;
+            min-width: 35mm;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .ref-num-lbl { font-size: 8px; color: #444; font-weight: 900; margin-bottom: 4px; }
-        .ref-num-val { font-size: 28px; font-weight: 900; color: #000; line-height: 1; }
+        .ref-num-lbl { font-size: 8px; color: #333; font-weight: 800; text-transform: uppercase; margin-bottom: 2px;}
+        .ref-num-val { font-size: 28px; font-weight: 900; color: #000; line-height: 1; letter-spacing: -1px; }
 
-        /* FOOTER ALANI - GENİŞLETİLDİ */
+        /* FOOTER (Alt Bilgi) */
         .ref-footer {
-            border-top: 1px solid #eee;
-            padding: 8px 12px;
-            background: #fafafa;
+            border-top: 2px solid #eee;
+            padding: 6px 10px 8px 10px;
+            background: #fff;
         }
+        
+        /* Grid Yapısı: 3 Sütun (Sınav, Saat, Yer) */
         .ref-f-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            grid-template-columns: 1.8fr 1.2fr 1.2fr; /* Sınav ismine daha çok yer */
+            gap: 12px;
+            align-items: center;
         }
-        .ref-f-item { display: flex; align-items: center; gap: 8px; }
-        .full-width { grid-column: span 2; border-top: 1px solid #eee; padding-top: 6px; }
         
+        .ref-f-item { display: flex; align-items: center; gap: 6px; overflow: hidden; }
+        
+        /* İkonlar */
         .ref-icon {
             width: 18px; height: 18px;
-            background: #000; color: #fff;
+            background: #222; color: #fff;
             border-radius: 4px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 10px; flex-shrink: 0;
+            font-size: 9px; flex-shrink: 0;
         }
         
-        .ref-f-text { display: flex; flex-direction: column; }
-        .ref-f-lbl { font-size: 7px; font-weight: 900; color: #777; }
-        .ref-f-val { font-size: 10px; font-weight: 800; color: #000; }
+        .ref-f-text { display: flex; flex-direction: column; min-width: 0;}
+        .ref-f-lbl { font-size: 6px; font-weight: 800; color: #666; text-transform: uppercase; line-height: 1; margin-bottom: 2px; }
+        
+        /* Alt Bilgi Değer Fontları Büyütüldü */
+        .ref-f-val { font-size: 9px; font-weight: 800; color: #000; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Sınav adı en büyük footer yazısı */
+        .ref-f-val.main-exam { font-size: 10px; font-weight: 900; }
 
         .sheet-meta {
             position: absolute; bottom: 5mm; left: 0; width: 100%;
-            text-align: center; font-size: 9px; color: #aaa;
+            text-align: center; font-size: 9px; color: #999; font-weight: 500;
         }
 
         @media print {
@@ -3341,26 +3378,28 @@ window.generateBizCardHTML = function(data) {
         }
     `;
 
+    // PENCERE AÇ
     const w = window.open('', '_blank');
-    if (!w) { Swal.fire("Engellendi", "Popup izni veriniz.", "error"); return; }
+    if (!w) { Swal.fire("Engellendi", "Lütfen tarayıcınızda açılır pencere (popup) izni veriniz.", "error"); return; }
 
     w.document.open();
     w.document.write(`
         <!DOCTYPE html>
         <html lang="tr">
         <head>
-            <meta charset="UTF-8">
-            <title>Giriş Kartları - Fenomen Eğitim</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Toplu Giriş Kartları</title>
             <style>${printCss}</style>
         </head>
         <body>
             ${pagesHtml}
             <script>
                 window.onload = function() {
-                    setTimeout(function() {
+                    // Fontların yüklenmesi için kısa süre bekle
+                    setTimeout(function(){
                         window.print();
-                        // window.close(); // İsteğe bağlı: Yazdırdıktan sonra sekmeyi kapatır
-                    }, 500);
+                    }, 800);
                 };
             <\/script>
         </body>
