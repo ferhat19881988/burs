@@ -2043,13 +2043,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // and strong typography to convey student and exam information.  The
     // resulting markup is used exclusively for bulk printing and does not
     // interfere with the main application styles.
-   function generateBizCardHTML(data) {
+   // --- Modern Business Card Generator ---
+function generateBizCardHTML(data) {
     const studentName = toUpperTR(data.studentName || "");
     const studentNo = data.studentNo || "";
     const tc = String(data.tc || "");
     // TC'yi okunabilir formatla (XXX XXX XXXXX)
-    const tcPretty = (tc.length === 11) ?
-        `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` :
+    const tcPretty = (tc.length === 11) ? 
+        `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : 
         tc;
 
     const exam = normSpaces(data.examName || "");
@@ -2057,6 +2058,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     const time = data.examTime || "";
     const place = normSpaces(data.place || "Fenomen Eğitim Kurumları");
 
+    // HTML Yapısı
     return `
     <div class="card-wrapper">
       <div class="modern-card">
@@ -3181,28 +3183,29 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
    window.printBulkCards = async () => {
-    // Seçimleri kontrol et
+    // 1. Seçimleri kontrol et
     const ids = selectedAdminIds();
     if (!ids.length) {
         Swal.fire("Uyarı", "Lütfen listeden kart basılacak öğrencileri seçiniz.", "warning");
         return;
     }
+    
+    // Verileri çek
     const selected = dbStudents.filter(s => ids.includes(s.id));
 
-    // A4 Sayfasına kaç kart sığacak? (2 Sütun x 5 Satır = 10 Kart idealdir, ama taşmayı önlemek için 8 güvenlidir)
-    // Biz modern kartvizit boyutu (yaklaşık 90x55mm) ile sayfada 10 kart (2x5) basacağız.
+    // 2. Sayfalama (Chunking): Her sayfaya 10 kart (2 sütun x 5 satır)
     const cardsPerPage = 10;
     const chunks = [];
     for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
+    // 3. HTML Oluşturma
     let bodyHtml = "";
-
     chunks.forEach((chunk, pageIndex) => {
+        // Eksik kart varsa grid bozulmasın diye boş div eklemeye gerek yok, grid flow halleder.
         const cardsHtml = chunk.map(s => generateBizCardHTML(s)).join("");
         
-        // Her 10'lu grup bir "sheet" (A4 sayfa) div'i içine alınır.
         bodyHtml += `
         <div class="sheet">
            <div class="cards-grid">
@@ -3213,8 +3216,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
     });
 
-    // --- CSS TASARIMI ---
+    // 4. CSS Tasarımı (Baskı İçin Özel Ayarlar)
     const extraCss = `
+      /* Font Import (Opsiyonel, sistem fontu yeterli) */
+      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
       /* A4 Sayfa Ayarları */
       @page {
         size: A4 portrait;
@@ -3227,10 +3233,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         height: 297mm;
         background: white;
         margin: 0 auto;
-        padding: 10mm; /* Yazıcı güvenli alanı */
+        padding: 10mm 12mm; /* Kenar boşlukları: Yazıcı güvenli alanı */
         box-sizing: border-box;
         position: relative;
-        page-break-after: always;
+        page-break-after: always; /* Her sheet sonrası yeni sayfa */
         overflow: hidden;
       }
       
@@ -3239,20 +3245,21 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .sheet { margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
       }
 
-      /* Grid Yapısı: 2 Sütun */
+      /* Grid Yapısı: 2 Sütun x 5 Satır */
       .cards-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr; /* İki eşit sütun */
-        grid-template-rows: repeat(5, 1fr); /* 5 Satır */
-        gap: 4mm; /* Kartlar arası boşluk */
-        height: 270mm; /* Sayfa içeriği yüksekliği */
+        grid-template-columns: 1fr 1fr; 
+        grid-template-rows: repeat(5, 1fr); 
+        gap: 4mm; /* Kartlar arası boşluk (kesim payı) */
+        height: 100%;
+        /* İçerik yüksekliği padding düştükten sonra yaklaşık 277mm kalır */
       }
 
       /* Kart Dış Çerçevesi (Kesim Çizgisi) */
       .card-wrapper {
-        border: 1px dashed #ccc; /* Kesim çizgisi */
+        border: 1px dashed #ccc; /* Kesim için rehber çizgi */
         border-radius: 4px;
-        padding: 2px;
+        padding: 2px; /* Kesim payı */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -3268,6 +3275,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         display: flex;
         overflow: hidden;
         border-radius: 3px;
+        /* Hafif bir iç border estetik durur */
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       }
 
@@ -3291,7 +3299,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         font-weight: 600; 
       }
 
-      /* İçerik Alanı */
+      /* Sağ İçerik Alanı */
       .card-content {
         flex: 1;
         padding: 8px 12px;
@@ -3340,14 +3348,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       .name-val { font-size: 12px; font-weight: 900; color: #000; }
       .no-val { font-size: 14px; font-weight: 800; color: #0f172a; }
 
-      /* Alt Bilgi (Tarih/Saat/Yer) */
+      /* Alt Bilgi (Footer) */
       .card-footer-section {
-        background: #f8fafc;
-        border-radius: 4px;
-        padding: 4px 6px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+         background: #f8fafc;
+         border-radius: 4px;
+         padding: 4px 6px;
+         display: flex;
+         flex-wrap: wrap;
+         gap: 8px;
       }
       .footer-item {
         display: flex;
@@ -3361,17 +3369,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       .footer-item i { color: #3b82f6; }
 
       .sheet-footer {
-        position: absolute;
-        bottom: 5mm;
-        left: 0; 
-        width: 100%;
-        text-align: center;
-        font-size: 9px;
-        color: #94a3b8;
+         position: absolute;
+         bottom: 3mm;
+         left: 0; 
+         width: 100%;
+         text-align: center;
+         font-size: 9px;
+         color: #94a3b8;
       }
     `;
 
-    // Yazdırma fonksiyonunu çağır
+    // 5. Yazdırma Penceresini Aç
+    // Not: printDocument fonksiyonunu sizin kodunuzda zaten tanımlı varsayıyorum.
+    // Eğer printInPage kullanıyorsanız onu da çağırabilirsiniz, ama bu yeni pencere (openPrintWindow mantığı) daha sağlıklıdır.
     printDocument({
         title: "", // Başlık boş, çünkü tasarımımız sayfa yapısını kendisi kuruyor
         subtitle: "",
