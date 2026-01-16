@@ -608,55 +608,8 @@
     .no-print{display:none !important;}
   }
 
-  /* A4 card sheet */
-  .a4{
-    width:210mm;
-    min-height:297mm;
-    padding:5mm; /* Kenar boşluğunu 10mm'den 5mm'ye düşürerek daha fazla alan açtık */
-    max-width:100%;
-    box-sizing:border-box;
-}
-
-  /* 2x2 kart düzeni: ölçüler A4 içine taşmadan sığacak şekilde ayarlı */
-  .cards-grid{
-    display:grid;
-    grid-template-columns:repeat(2, 94mm);
-    column-gap:2mm;
-    row-gap:2mm; /* Boşluğu 4mm'den 2mm'ye düşürerek sıkışmayı önledik */
-    justify-content:center;
-    align-items:start;
-    max-width:100%;
-}
-
-  .card-cell{
-    width:94mm;
-    height:68mm;                 /* 8 kartın sığması için 74mm'den 68mm'ye düşürdük */
-    box-sizing:border-box;
-    position:relative;
-    padding:2mm;
-    border:1px dashed rgba(2,6,23,.25);
-    border-radius:10px;
-    overflow:hidden;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    break-inside:avoid;
-    page-break-inside:avoid;
-    max-width:100%;
-}
-
-  .card-cell .exam-card{ margin:0; }
-
-  .cut-hint{
-    position:absolute;
-    left:6px; right:6px; bottom:6px;
-    font-size:9px;
-    color:rgba(2,6,23,.55);
-    text-align:center;
-    pointer-events:none;
-  }
-
-  /* -----------------------------
+ 
+    /* -----------------------------
      EXTRA MOBILE TUNING
      (küçük ekranlarda kart/tablolar taşmasın)
   ------------------------------*/
