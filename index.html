@@ -3145,25 +3145,33 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         /* Kartların birbirine girmemesi için fiziksel (mm) ölçüler */
         .a4 .cards-grid{
           display:grid;
+          /* Her satıra iki kart gelecek şekilde sütun genişlikleri tanımlandı */
           grid-template-columns:repeat(2, 94mm);
           column-gap:2mm;
-          row-gap:4mm;
+          /* Satır aralığı daha küçük tutularak sayfa yüksekliği içinde taşma engellendi */
+          row-gap:3mm;
           justify-content:center;
           align-items:start;
         }
 
         .a4 .card-cell{
           width:94mm;
-          /* 8 kartın A4'e sığması için yükseklik azaltıldı. */
-          height:66mm;
+          /* Kart yüksekliği otomatik ancak en az belirtilen kadar; böylece içerik tam görünür */
+          min-height:64mm;
+          height:auto;
           box-sizing:border-box;
-          padding:2mm;
-          border:1px dashed #777;
-          border-radius:10px;
-          overflow:hidden;
+          /* Kart ile kesme çizgisi arasında boşluk bırakmak için dolgu */
+          padding:3mm;
+          /* Kesme çizgileri için border yerine outline kullanıldı. Outline, içeriğin dışında çizilir ve kartın tasarımına dokunmaz. */
+          border:none;
+          outline:1px dashed #777;
+          outline-offset:0;
+          /* Taşmaları engellemek için içeriğin kesilmesi kaldırıldı */
+          overflow:visible;
           display:flex;
           align-items:center;
           justify-content:center;
+          /* Her kart baskı sayfasında bölünmeyecek şekilde ayarlandı */
           break-inside:avoid;
           page-break-inside:avoid;
         }
@@ -3258,7 +3266,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
         @media (max-width: 575.98px){
           .a4 .cards-grid{ grid-template-columns: 1fr; gap:12px; }
-          .a4 .card-cell{ border:none !important; padding:0 !important; height:auto !important; width:auto !important; }
+          /* Mobilde kartlar yan yana sıkışmasın; border yerine outline kaldırıldı */
+          .a4 .card-cell{
+            outline:none !important;
+            padding:0 !important;
+            height:auto !important;
+            width:auto !important;
+          }
         }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
@@ -3411,7 +3425,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .a4 td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
       `;
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
-      printDocument({
+      /*
+       * Liste çıktılarını doğrudan mevcut sayfaya enjekte edip printDocument ile yazdırmak bazı
+       * tarayıcılarda (özellikle Chromium tabanlı) boş veya hatalı sayfa üretimine neden
+       * olabiliyor. Daha kararlı bir çıktı için printInPage fonksiyonu kullanılmaktadır.
+       * Bu fonksiyon yeni bir pencerede içeriği oluşturur ve orada yazdırma işlemini tetikler.
+       */
+      printInPage({
         title: "Liste Çıktısı",
         subtitle: subtitleStr,
         bodyHtml: bodyHtml,
@@ -3550,7 +3570,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       // Determine subtitle: use provided dateLine if exists, else today's date
       const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
       const titleText = meta.title || "Yoklama Listesi";
-      printDocument({
+      /*
+       * Yoklama listesi yazdırılırken bazı tarayıcılarda mevcut printDocument fonksiyonu
+       * boş bir sayfa üretebiliyor. Bu nedenle listeler printInPage ile yeni bir
+       * pencerede oluşturularak daha kararlı bir çıktı alınır.
+       */
+      printInPage({
         title: titleText,
         subtitle: subtitleLine,
         bodyHtml: bodyHtml,
