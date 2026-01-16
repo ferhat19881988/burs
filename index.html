@@ -3274,6 +3274,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
             width:auto !important;
           }
         }
+
+        /*
+         * Sayfa geçişleri sonrasında üst ve alt boşlukların her sayfada eşit olmasını sağlamak için
+         * @page margin ayarı 10mm olarak tanımlanıyor. Ayrıca .a4 kapsayıcısının dolgusunu
+         * yazdırma sırasında kaldırarak çift boşluk oluşması engelleniyor. Böylece toplu kart
+         * basımında ilk sayfadan sonraki sayfalarda kağıt ile kart arasındaki mesafe tutarlı kalır.
+         */
+        @media print{
+          @page{ size:A4; margin:10mm; }
+          .a4{ padding:0; }
+        }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
       printDocument({
@@ -3289,6 +3300,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // the sort order and whether to group by exam. It then renders a clean table
     // into the print document. All styling is scoped to the print area via `.a4`
     // prefixes so it does not affect the admin panel or other tables.
+    /*
+     * Liste Çıktısı: Seçilen ya da filtrelenen öğrencilerin listesini yazdırır.
+     * Önce kullanıcıdan hangi alanların dahil edilmesi gerektiğini, sıralama yöntemini
+     * ve sınava göre gruplanıp gruplanmayacağını sorar. Ardından seçilen ayarlara
+     * göre tabloyu hazırlar ve printDocument fonksiyonu ile yazdırma işlemi tetiklenir.
+     * Bu yeni implementasyonda `printInPage` yerine `printDocument` kullanılmakta ve
+     * gruplanmış liste bölümlerinde `page-break-after` özelliği kaldırılarak boş
+     * sayfa oluşmasının önüne geçilmiştir. Ayrıca her grup için `page-break-inside: avoid`
+     * uygulanarak tabloların bölünmemesi sağlanır.
+     */
     window.printListOutput = async () => {
       const selectedIds = selectedAdminIds();
       const filtered = getAdminFilteredList();
@@ -3297,7 +3318,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         Swal.fire("Uyarı", "Liste boş. Önce filtre/arama yapın veya seçim yapın.", "warning");
         return;
       }
-      // Prompt the user for column, sort and grouping preferences
+      // Kullanıcıdan kolon, sıralama ve grupla seçeneklerini al
       const { value: cfg } = await Swal.fire({
         title: "Liste Çıktısı",
         html: `
@@ -3336,29 +3357,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
             </select>
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" id="lf_group" checked>
-              <label class="form-check-label" for="lf_group">Sınava göre grupla (başlık + sayfa sonu)</label>
+              <label class="form-check-label" for="lf_group">Sınava göre grupla (başlık)</label>
             </div>
           </div>
         `,
-      showCancelButton: true,
-      confirmButtonText: "Çıktı Oluştur",
-      cancelButtonText: "Vazgeç",
-      preConfirm: () => {
-        const on = (k) => document.getElementById(`lf_${k}`).checked;
-        return {
-          fields: {
-            no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
-            phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
-          },
-          sort: document.getElementById("lf_sort").value,
-          group: document.getElementById("lf_group").checked
-        };
-      }
+        showCancelButton: true,
+        confirmButtonText: "Çıktı Oluştur",
+        cancelButtonText: "Vazgeç",
+        preConfirm: () => {
+          const on = (k) => document.getElementById(`lf_${k}`).checked;
+          return {
+            fields: {
+              no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
+              phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
+            },
+            sort: document.getElementById("lf_sort").value,
+            group: document.getElementById("lf_group").checked
+          };
+        }
       });
       if (!cfg) return;
-      // Clone list for sorting
+      // Sıralama uygulanacak kopya liste
       const rows = [...list];
-      // Apply sort
       if (cfg.sort === "name") {
         rows.sort((a,b) => String(a.studentName).localeCompare(String(b.studentName), "tr-TR"));
       } else if (cfg.sort === "exam") {
@@ -3369,7 +3389,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       } else {
         rows.sort((a,b) => (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0));
       }
-      // Determine which columns to show
+      // Kolon yapılandırması
       const cols = [];
       if (cfg.fields.no) cols.push(["Öğrenci No", s => escapeHtml(s.studentNo)]);
       if (cfg.fields.tc) cols.push(["T.C.", s => escapeHtml(s.tc)]);
@@ -3380,7 +3400,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       if (cfg.fields.phone2) cols.push(["Telefon 2", s => escapeHtml(s.phone2 || "")]);
       if (cfg.fields.exam) cols.push(["Sınav", s => escapeHtml(s.examName || "")]);
       if (cfg.fields.datetime) cols.push(["Tarih / Saat", s => escapeHtml(`${s.examDate || ""} ${s.examTime || ""}`.trim())]);
-      // Helper to build a table of the selected columns
+      // Tablo oluşturucu
       const makeTable = (arr) => {
         return `
           <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -3399,39 +3419,30 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           </table>
         `;
       };
-      // Build the body HTML. If grouping is enabled, split by exam name and insert
-      // a header + page break between groups.
+      // Gövde HTML'sini oluştur
       let bodyHtml = "";
       if (cfg.group) {
         const grouped = {};
         rows.forEach(s => { (grouped[s.examName] ||= []).push(s); });
         const keys = Object.keys(grouped).sort((a,b) => a.localeCompare(b, "tr-TR"));
         keys.forEach((k, idx) => {
-          const header = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+          const header = `<div style="font-weight:800;margin-bottom:2mm;">${escapeHtml(k)}</div>`;
           const tableHtml = makeTable(grouped[k]);
-          if (idx < keys.length - 1) {
-            bodyHtml += `<div style="page-break-after: always;">${header}${tableHtml}</div>`;
-          } else {
-            bodyHtml += `${header}${tableHtml}`;
-          }
+          bodyHtml += `<div style="margin-bottom:6mm; page-break-inside: avoid;">${header}${tableHtml}</div>`;
         });
       } else {
         bodyHtml = makeTable(rows);
       }
-      // Scoped styles for printing: prefix with .a4 so that they only apply in the print document
+      // Yazdırma için stil tanımları. Her satır ve hücre için kenarlıklar burada tanımlanır.
       const extraCss = `
         .a4 table{ width:100%; border-collapse:collapse; font-size:12px; }
         .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
         .a4 td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
+        .a4 div{ break-inside: avoid; page-break-inside: avoid; }
       `;
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
-      /*
-       * Liste çıktılarını doğrudan mevcut sayfaya enjekte edip printDocument ile yazdırmak bazı
-       * tarayıcılarda (özellikle Chromium tabanlı) boş veya hatalı sayfa üretimine neden
-       * olabiliyor. Daha kararlı bir çıktı için printInPage fonksiyonu kullanılmaktadır.
-       * Bu fonksiyon yeni bir pencerede içeriği oluşturur ve orada yazdırma işlemini tetikler.
-       */
-      printInPage({
+      // printDocument fonksiyonunu kullanarak çıktı oluştur
+      printDocument({
         title: "Liste Çıktısı",
         subtitle: subtitleStr,
         bodyHtml: bodyHtml,
