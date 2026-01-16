@@ -3202,6 +3202,15 @@ window.generateBizCardHTML = function(data) {
 
     // 2. Veriyi Hazırla
     const selected = dbStudents.filter(s => ids.includes(s.id));
+
+    // --- YENİ EKLENEN KISIM: Öğrenci Numarasına Göre Sıralama ---
+    selected.sort((a, b) => {
+        // Numaraları sayıya çevirerek karşılaştır (10, 2'den sonra gelsin diye)
+        const noA = parseInt(a.studentNo, 10) || 0;
+        const noB = parseInt(b.studentNo, 10) || 0;
+        return noA - noB;
+    });
+    // -------------------------------------------------------------
     
     // A4 Sayfasına sığacak şekilde 8 kart (2 sütun x 4 satır)
     const cardsPerPage = 8; 
@@ -3222,8 +3231,7 @@ window.generateBizCardHTML = function(data) {
         </div>`;
     });
 
-    // 4. CSS Tasarımı
-    // 'subset=latin-ext' parametresi Türkçe karakterlerin font dosyasında bulunmasını garanti eder.
+    // 4. CSS Tasarımı (Türkçe karakter destekli)
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
@@ -3299,7 +3307,6 @@ window.generateBizCardHTML = function(data) {
         .biz-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
         .biz-lbl { font-size: 8px; font-weight: 700; color: #666; }
         
-        /* Font ayarları ve Türkçe karakter uyumu için önemli */
         .biz-val { font-size: 10px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .biz-val.name { font-size: 11.5px; font-weight: 900; }
         .biz-val.school { white-space: normal; line-height: 1; font-size: 9px; }
@@ -3345,7 +3352,6 @@ window.generateBizCardHTML = function(data) {
     if (!w) { Swal.fire("Engellendi", "Lütfen tarayıcınızda pop-up izni veriniz.", "error"); return; }
 
     w.document.open();
-    // META ETİKETİ ve LANG ATTRIBUTE EKLEMESİ (PDF SORUNU İÇİN KRİTİK)
     w.document.write(`
         <!DOCTYPE html>
         <html lang="tr">
@@ -3359,8 +3365,7 @@ window.generateBizCardHTML = function(data) {
         <body>
             ${pagesHtml}
             <script>
-                // Fontların yüklenmesi için biraz daha uzun süre tanıyalım (1 saniye)
-                // Bu, PDF oluşturulurken fontların render edilmiş olmasını garantiler.
+                // Fontların yüklenmesi için bekle
                 window.onload = function() {
                     setTimeout(function(){ 
                         window.print(); 
