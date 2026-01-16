@@ -2090,75 +2090,71 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // and strong typography to convey student and exam information.  The
     // resulting markup is used exclusively for bulk printing and does not
     // interfere with the main application styles.
-    function generateBizCardHTML(data) {
-      const studentName = toUpperTR(data.studentName || "");
-      const studentNo = data.studentNo || "";
-      const tc = String(data.tc || "");
-      // TC'yi maskelemek istersen: stars yerine tc yazabilirsin
-      const tcPretty = (tc.length === 11) 
-        ? `${tc.slice(0, 3)} ${tc.slice(3, 6)} ${tc.slice(6, 9)} ${tc.slice(9)}` 
-        : tc;
-        
-      const exam = normSpaces(data.examName || data.exam || "");
-      const date = data.examDate || "";
-      const time = data.examTime || "";
-      const place = normSpaces(data.place || "Fenomen Eğitim Kurumları");
+   function generateBizCardHTML(data) {
+    const studentName = toUpperTR(data.studentName || "");
+    const studentNo = data.studentNo || "";
+    const tc = String(data.tc || "");
+    // TC'yi okunabilir formatla (XXX XXX XXXXX)
+    const tcPretty = (tc.length === 11) ?
+        `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` :
+        tc;
 
-      // Sınav tarihi ve saati birleştir
-      const dateTimeStr = (date && time) ? `${date} • ${time}` : (date || time || "");
+    const exam = normSpaces(data.examName || "");
+    const date = data.examDate || "";
+    const time = data.examTime || "";
+    const place = normSpaces(data.place || "Fenomen Eğitim Kurumları");
 
-      return `
-        <div class="biz-card-wrapper">
-            <div class="biz-card">
-                <div class="biz-header">
-                    <div class="biz-logo-area">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                    </div>
-                    <div class="biz-header-text">
-                        <div class="biz-org-name">FENOMEN EĞİTİM KURUMLARI</div>
-                        <div class="biz-doc-type">SINAV GİRİŞ KARTI</div>
-                    </div>
-                </div>
-                
-                <div class="biz-body">
-                    <div class="biz-field">
-                        <div class="biz-label">ADI SOYADI</div>
-                        <div class="biz-value big-text">${escapeHtml(studentName)}</div>
-                    </div>
-                    
-                    <div class="biz-row-split">
-                        <div class="biz-field">
-                            <div class="biz-label">ÖĞRENCİ NO</div>
-                            <div class="biz-value fw-black">${escapeHtml(studentNo)}</div>
-                        </div>
-                        <div class="biz-field text-end">
-                            <div class="biz-label">T.C. KİMLİK NO</div>
-                            <div class="biz-value">${escapeHtml(tcPretty)}</div>
-                        </div>
-                    </div>
-
-                    <div class="biz-divider"></div>
-
-                    <div class="biz-field">
-                        <div class="biz-label">SINAV</div>
-                        <div class="biz-value">${escapeHtml(exam)}</div>
-                    </div>
-
-                    <div class="biz-row-split">
-                        <div class="biz-field">
-                            <div class="biz-label">TARİH / SAAT</div>
-                            <div class="biz-value">${escapeHtml(dateTimeStr)}</div>
-                        </div>
-                    </div>
-                     <div class="biz-field mt-1">
-                        <div class="biz-label">SALON / YER</div>
-                        <div class="biz-value small-text">${escapeHtml(place)}</div>
-                    </div>
-                </div>
-            </div>
+    return `
+    <div class="card-wrapper">
+      <div class="modern-card">
+        <div class="card-side-strip">
+           <div class="side-icon"><i class="fa-solid fa-user-graduate"></i></div>
+           <div class="side-text">GİRİŞ BELGESİ</div>
         </div>
-      `;
-    }
+
+        <div class="card-content">
+          <div class="card-header-section">
+            <div class="brand-name">FENOMEN EĞİTİM KURUMLARI</div>
+            <div class="exam-tag">${escapeHtml(exam)}</div>
+          </div>
+
+          <div class="student-info-row">
+            <div class="info-group main">
+               <label>ADI SOYADI</label>
+               <div class="val name-val">${escapeHtml(studentName)}</div>
+            </div>
+          </div>
+
+          <div class="student-info-row dual">
+             <div class="info-group">
+               <label>ÖĞRENCİ NO</label>
+               <div class="val no-val">${escapeHtml(studentNo)}</div>
+            </div>
+            <div class="info-group">
+               <label>T.C. KİMLİK NO</label>
+               <div class="val">${escapeHtml(tcPretty)}</div>
+            </div>
+          </div>
+
+          <div class="card-footer-section">
+             <div class="footer-item">
+                <i class="fa-regular fa-calendar"></i>
+                <span>${escapeHtml(date)}</span>
+             </div>
+             <div class="footer-item">
+                <i class="fa-regular fa-clock"></i>
+                <span>${escapeHtml(time)}</span>
+             </div>
+             <div class="footer-item full-width">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>${escapeHtml(place)}</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
     // --- Student Info ---
     window.openStudentInfo = () => {
@@ -3232,222 +3228,204 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
    window.printBulkCards = async () => {
-      // 1. Seçimi Kontrol Et
-      const ids = selectedAdminIds();
-      if (!ids.length) {
-        Swal.fire("Uyarı", "Kart basmak için listeden kişi seçiniz.", "warning");
+    // Seçimleri kontrol et
+    const ids = selectedAdminIds();
+    if (!ids.length) {
+        Swal.fire("Uyarı", "Lütfen listeden kart basılacak öğrencileri seçiniz.", "warning");
         return;
-      }
-      
-      const selected = dbStudents.filter(s => ids.includes(s.id));
-      if (!selected.length) {
-        Swal.fire("Uyarı", "Seçilen kayıt bulunamadı.", "warning");
-        return;
-      }
+    }
+    const selected = dbStudents.filter(s => ids.includes(s.id));
 
-      // 2. Öğrencileri 8'li gruplara (A4 başına) böl
-      // A4 Kağıdına: 2 Sütun x 4 Satır = 8 Kart sığdırıyoruz.
-      const cardsPerPage = 8;
-      const chunks = [];
-      for (let i = 0; i < selected.length; i += cardsPerPage) {
+    // A4 Sayfasına kaç kart sığacak? (2 Sütun x 5 Satır = 10 Kart idealdir, ama taşmayı önlemek için 8 güvenlidir)
+    // Biz modern kartvizit boyutu (yaklaşık 90x55mm) ile sayfada 10 kart (2x5) basacağız.
+    const cardsPerPage = 10;
+    const chunks = [];
+    for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
+    }
+
+    let bodyHtml = "";
+
+    chunks.forEach((chunk, pageIndex) => {
+        const cardsHtml = chunk.map(s => generateBizCardHTML(s)).join("");
+        
+        // Her 10'lu grup bir "sheet" (A4 sayfa) div'i içine alınır.
+        bodyHtml += `
+        <div class="sheet">
+           <div class="cards-grid">
+              ${cardsHtml}
+           </div>
+           <div class="sheet-footer">Sayfa ${pageIndex+1} / ${chunks.length} • Kesim çizgilerinden ayırınız.</div>
+        </div>
+      `;
+    });
+
+    // --- CSS TASARIMI ---
+    const extraCss = `
+      /* A4 Sayfa Ayarları */
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      body { margin: 0; padding: 0; background: #eee; }
+      
+      .sheet {
+        width: 210mm;
+        height: 297mm;
+        background: white;
+        margin: 0 auto;
+        padding: 10mm; /* Yazıcı güvenli alanı */
+        box-sizing: border-box;
+        position: relative;
+        page-break-after: always;
+        overflow: hidden;
+      }
+      
+      /* Ekranda gölgeli görünsün ama baskıda görünmesin */
+      @media screen {
+        .sheet { margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
       }
 
-      // 3. HTML Gövdesini Oluştur (Her sayfa .sheet sınıfı ile ayrılır)
-      let bodyHtml = "";
+      /* Grid Yapısı: 2 Sütun */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* İki eşit sütun */
+        grid-template-rows: repeat(5, 1fr); /* 5 Satır */
+        gap: 4mm; /* Kartlar arası boşluk */
+        height: 270mm; /* Sayfa içeriği yüksekliği */
+      }
+
+      /* Kart Dış Çerçevesi (Kesim Çizgisi) */
+      .card-wrapper {
+        border: 1px dashed #ccc; /* Kesim çizgisi */
+        border-radius: 4px;
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Kartın Asıl Tasarımı */
+      .modern-card {
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        display: flex;
+        overflow: hidden;
+        border-radius: 3px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      /* Sol Şerit */
+      .card-side-strip {
+        width: 24px;
+        background: #1e293b; /* Koyu Lacivert */
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 0;
+      }
+      .side-icon { font-size: 14px; margin-bottom: 10px; }
+      .side-text { 
+        writing-mode: vertical-rl; 
+        transform: rotate(180deg); 
+        font-size: 8px; 
+        letter-spacing: 2px; 
+        font-weight: 600; 
+      }
+
+      /* İçerik Alanı */
+      .card-content {
+        flex: 1;
+        padding: 8px 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      /* Başlık */
+      .card-header-section {
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 4px;
+        margin-bottom: 4px;
+      }
+      .brand-name {
+        font-size: 10px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: 0.5px;
+      }
+      .exam-tag {
+        font-size: 9px;
+        color: #3b82f6; /* Mavi vurgu */
+        font-weight: 700;
+        margin-top: 1px;
+      }
+
+      /* Öğrenci Bilgileri */
+      .student-info-row { margin-bottom: 3px; }
+      .student-info-row.dual { display: flex; gap: 15px; }
       
-      chunks.forEach((chunk, pageIndex) => {
-        // Kartları oluştur
-        const cardsHtml = chunk.map(student => generateBizCardHTML(student)).join("");
-        
-        // Eğer 8'den az kart varsa gridin bozulmaması için boş div eklemeye gerek yok,
-        // CSS Grid bunu halleder. Ancak son sayfada sayfa sonu (break) olmamalı.
-        const pageBreakClass = (pageIndex < chunks.length - 1) ? 'page-break' : '';
+      .info-group label {
+        display: block;
+        font-size: 6px;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 1px;
+        text-transform: uppercase;
+      }
+      .val {
+        font-size: 10px;
+        font-weight: 700;
+        color: #334155;
+        line-height: 1.1;
+      }
+      .name-val { font-size: 12px; font-weight: 900; color: #000; }
+      .no-val { font-size: 14px; font-weight: 800; color: #0f172a; }
 
-        bodyHtml += `
-          <div class="sheet ${pageBreakClass}">
-            <div class="sheet-grid">
-                ${cardsHtml}
-            </div>
-            <div class="cut-guide-text">Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgilerinden Ayırınız</div>
-          </div>
-        `;
-      });
+      /* Alt Bilgi (Tarih/Saat/Yer) */
+      .card-footer-section {
+        background: #f8fafc;
+        border-radius: 4px;
+        padding: 4px 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .footer-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 8px;
+        color: #475569;
+        font-weight: 600;
+      }
+      .footer-item.full-width { width: 100%; margin-top: 2px; }
+      .footer-item i { color: #3b82f6; }
 
-      // 4. CSS (Baskı Stilleri)
-      const extraCss = `
-        /* A4 Sıfırlama */
-        @page { 
-            size: A4 portrait; 
-            margin: 0; 
-        }
-        
-        /* Genel Yazı Tipi */
-        .sheet {
-            width: 210mm;
-            height: 297mm;
-            padding: 12mm 10mm; /* Yazıcı güvenli alanı */
-            margin: 0 auto;
-            box-sizing: border-box;
-            background: white;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      .sheet-footer {
+        position: absolute;
+        bottom: 5mm;
+        left: 0; 
+        width: 100%;
+        text-align: center;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+    `;
 
-        /* Sayfa Sonu Mantığı */
-        .page-break {
-            page-break-after: always;
-        }
-
-        /* Izgara Yapısı: 2 Sütun, 4 Satır */
-        .sheet-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 90mm);
-            grid-template-rows: repeat(4, 58mm); /* Kart yüksekliği + boşluk payı */
-            column-gap: 8mm;
-            row-gap: 6mm;
-            justify-content: center;
-        }
-
-        /* Kart Dış Kapsayıcı */
-        .biz-card-wrapper {
-            width: 90mm;
-            height: 55mm; /* Standart Kartvizit Boyutu */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Kartın Kendisi (Çizgili Alan) */
-        .biz-card {
-            width: 100%;
-            height: 100%;
-            border: 1px dashed #94a3b8; /* Kesim Çizgisi Rengi */
-            border-radius: 6px;
-            padding: 4mm;
-            display: flex;
-            flex-direction: column;
-            background: #fff;
-            position: relative;
-        }
-
-        /* Kart Header */
-        .biz-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-        }
-        .biz-logo-area {
-            width: 28px;
-            height: 28px;
-            background: #0f172a;
-            color: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        .biz-header-text {
-            flex: 1;
-        }
-        .biz-org-name {
-            font-size: 9px;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: 0.5px;
-        }
-        .biz-doc-type {
-            font-size: 7px;
-            font-weight: 600;
-            background: #e2e8f0;
-            display: inline-block;
-            padding: 1px 4px;
-            border-radius: 3px;
-            margin-top: 1px;
-        }
-
-        /* Kart Body */
-        .biz-body {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .biz-row-split {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-        .biz-field {
-            line-height: 1.1;
-        }
-        .biz-label {
-            font-size: 6px;
-            color: #64748b;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 1px;
-        }
-        .biz-value {
-            font-size: 9px;
-            font-weight: 700;
-            color: #000;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-        .biz-value.big-text {
-            font-size: 11px;
-            font-weight: 800;
-        }
-        .biz-value.fw-black {
-            font-weight: 900;
-            font-size: 12px;
-        }
-        .biz-value.small-text {
-            font-size: 8px;
-            white-space: normal;
-            line-height: 1;
-        }
-        .text-end { text-align: right; }
-        .biz-divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 2px 0;
-        }
-        .mt-1 { margin-top: 2px; }
-
-        /* Footer Kılavuz Yazısı */
-        .cut-guide-text {
-            position: absolute;
-            bottom: 10mm;
-            font-size: 8px;
-            color: #94a3b8;
-        }
-
-        @media print {
-            body, .a4 { margin: 0 !important; padding: 0 !important; background: none; }
-            .sheet { box-shadow: none; margin: 0; page-break-after: always; }
-            .sheet:last-child { page-break-after: auto; }
-            .no-print { display: none !important; }
-        }
-      `;
-
-      // 5. Yazdırma Penceresini Aç
-      printDocument({
-        title: "", // Başlık boş, çünkü .sheet yapısı her şeyi kapsıyor
+    // Yazdırma fonksiyonunu çağır
+    printDocument({
+        title: "", // Başlık boş, çünkü tasarımımız sayfa yapısını kendisi kuruyor
         subtitle: "",
         bodyHtml: bodyHtml,
         extraCss: extraCss
-      });
-    };
+    });
+};
 
     // Modernised and isolated list printing. This implementation collects the filtered
     // or selected student entries, lets the user choose which columns to include,
