@@ -3182,15 +3182,21 @@ function generateBizCardHTML(data) {
       return filtered;
     }
 
-   window.printBulkCards = async () => {
-    // 1. Seçimleri Kontrol Et
-    const ids = selectedAdminIds(); // Seçili öğrenci ID'lerini al
-    if (!ids.length) {
-        Swal.fire("Uyarı", "Lütfen listeden kart basılacak öğrencileri seçiniz.", "warning");
+  window.printBulkCards = async () => {
+    // 1. KONTROLLER
+    // Yardımcı fonksiyonların varlığını kontrol et (Hata almamak için)
+    if (typeof selectedAdminIds !== 'function') {
+        Swal.fire("Hata", "Gerekli yardımcı fonksiyonlar (selectedAdminIds) bulunamadı. Sayfayı yenileyin.", "error");
         return;
     }
 
-    // 2. Verileri Hazırla
+    const ids = selectedAdminIds(); 
+    if (!ids || ids.length === 0) {
+        Swal.fire("Uyarı", "Lütfen listeden yazdırılacak öğrencileri seçiniz.", "warning");
+        return;
+    }
+
+    // 2. VERİ HAZIRLIĞI
     const selected = dbStudents.filter(s => ids.includes(s.id));
     
     // Her sayfaya 10 kart (2 sütun x 5 satır)
@@ -3200,51 +3206,58 @@ function generateBizCardHTML(data) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
-    // 3. HTML İçeriğini Oluştur
+    // 3. HTML İÇERİĞİ OLUŞTURMA
     let pagesHtml = "";
 
     chunks.forEach((chunk, pageIndex) => {
         let cardsHtml = "";
+        
         chunk.forEach(s => {
-            const name = toUpperTR(s.studentName || "");
+            // Veri güvenliği (null check)
+            const name = typeof toUpperTR === 'function' ? toUpperTR(s.studentName || "") : (s.studentName || "").toUpperCase();
             const no = s.studentNo || "";
             const tc = s.tc || "";
-            const exam = normSpaces(s.examName || "");
-            // Tarih ve saati birleştir
+            const examRaw = s.examName || "";
+            const exam = (typeof normSpaces === 'function' ? normSpaces(examRaw) : examRaw);
             const dateInfo = (s.examDate && s.examTime) ? `${s.examDate} • ${s.examTime}` : "";
-            const place = normSpaces(s.place || "Fenomen Eğitim Kurumları");
+            const placeRaw = s.place || "Fenomen Eğitim Kurumları";
+            const place = (typeof normSpaces === 'function' ? normSpaces(placeRaw) : placeRaw);
+
+            // Escape fonksiyonu yoksa basit bir fallback kullanalım
+            const safeHtml = (str) => {
+                if(typeof escapeHtml === 'function') return escapeHtml(str);
+                return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            };
 
             cardsHtml += `
             <div class="card-box">
                 <div class="vizit-card">
-                    <div class="left-strip">
-                        <span>GİRİŞ</span>
-                    </div>
+                    <div class="left-strip"><span>GİRİŞ</span></div>
                     <div class="card-body-content">
                         <div class="card-header-area">
                             <div class="brand">FENOMEN EĞİTİM</div>
-                            <div class="exam-name">${escapeHtml(exam).substring(0, 30)}</div>
+                            <div class="exam-name">${safeHtml(exam).substring(0, 35)}</div>
                         </div>
                         
                         <div class="student-row">
                             <div class="lbl">ADI SOYADI</div>
-                            <div class="val name">${escapeHtml(name)}</div>
+                            <div class="val name">${safeHtml(name)}</div>
                         </div>
 
                         <div class="info-grid">
                             <div class="info-item">
                                 <div class="lbl">ÖĞRENCİ NO</div>
-                                <div class="val big">${escapeHtml(no)}</div>
+                                <div class="val big">${safeHtml(no)}</div>
                             </div>
                             <div class="info-item">
                                 <div class="lbl">T.C. KİMLİK</div>
-                                <div class="val">${escapeHtml(tc)}</div>
+                                <div class="val">${safeHtml(tc)}</div>
                             </div>
                         </div>
 
                         <div class="card-footer-area">
-                            <div class="f-item"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateInfo)}</div>
-                            <div class="f-item"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(place)}</div>
+                            <div class="f-item"><i class="fa-regular fa-calendar"></i> ${safeHtml(dateInfo)}</div>
+                            <div class="f-item"><i class="fa-solid fa-location-dot"></i> ${safeHtml(place)}</div>
                         </div>
                     </div>
                 </div>
@@ -3252,121 +3265,122 @@ function generateBizCardHTML(data) {
             `;
         });
 
-        // Sayfa Yapısı
+        // Sayfa Sonu Temizliği (clearfix)
         pagesHtml += `
         <div class="print-sheet">
             <div class="cards-wrapper clearfix">
                 ${cardsHtml}
             </div>
-            <div class="sheet-meta">Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgilerinden Ayırınız</div>
+            <div class="sheet-meta">Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgileri Dahil</div>
         </div>
         `;
     });
 
-    // 4. CSS (Baskı İçin Özel Ayarlar)
-    // A4 Genişliği: 210mm.
-    // Kart Genişliği: 88mm x 2 = 176mm.
-    // Boşluklar: Sol 15mm + Orta 4mm + Sağ ~15mm = Tam sığar.
+    // 4. CSS (Baskı Garantili Ayarlar)
+    // Not: float:left kullandık. Kart genişliğini 86mm'ye çektim. 
+    // 86mm + 86mm = 172mm. A4 (210mm) içinde rahatça sığar.
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @page { size: A4 portrait; margin: 0; }
         
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; background: #e2e2e2; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        @page { 
+            size: A4 portrait; 
+            margin: 0; 
+        }
+        
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #e2e2e2; 
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+        }
 
-        /* A4 Sayfa */
         .print-sheet {
             width: 210mm;
-            height: 297mm;
+            height: 296mm; /* 1mm tolerans */
             background: white;
             margin: 0 auto;
-            padding-top: 15mm;
-            padding-left: 15mm; /* Sol marj */
+            padding-top: 12mm;
+            padding-left: 12mm; /* Sol boşluk */
+            padding-right: 0;
             position: relative;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             page-break-after: always;
             overflow: hidden;
         }
 
-        /* Kart Kutusu (Dış Çerçeve + Kesim Çizgisi) */
+        /* Float Yapısı - En Güvenlisi */
         .card-box {
-            float: left; /* Grid yerine Float kullanımı daha güvenlidir */
-            width: 88mm;
-            height: 54mm; /* Standart kartvizit yüksekliği */
-            margin-right: 4mm; /* Sağ boşluk */
-            margin-bottom: 2mm; /* Alt boşluk */
-            border: 1px dashed #bbb; /* KESİM ÇİZGİSİ */
+            float: left;
+            width: 86mm;   /* Kart Genişliği */
+            height: 53mm;  /* Kart Yüksekliği */
+            margin-right: 5mm; /* Sağ Boşluk */
+            margin-bottom: 3mm; /* Alt Boşluk */
+            border: 1px dashed #999; /* Kesim Çizgisi */
             padding: 1px;
+            page-break-inside: avoid;
         }
 
-        /* Her 2 kartta bir sağ boşluğu sıfırla (satır sonu) */
+        /* Her 2. karttan sonra sağ boşluğu sıfırla ki aşağı kaymasın */
         .card-box:nth-child(2n) {
             margin-right: 0;
         }
 
-        /* Kart Tasarımı */
         .vizit-card {
             width: 100%;
             height: 100%;
             display: flex;
             background: #fff;
-            border-radius: 2px;
             overflow: hidden;
         }
 
-        /* Sol Şerit */
         .left-strip {
-            width: 18px;
+            width: 16px;
             background: #1e293b;
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
         }
         .left-strip span {
             writing-mode: vertical-rl;
             transform: rotate(180deg);
-            font-size: 8px;
+            font-size: 7px;
             letter-spacing: 2px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        /* İçerik */
         .card-body-content {
             flex: 1;
-            padding: 4px 8px;
+            padding: 3px 6px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
 
         .card-header-area {
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ddd;
             padding-bottom: 2px;
             margin-bottom: 2px;
         }
         .brand { font-size: 9px; font-weight: 800; color: #0f172a; }
-        .exam-name { font-size: 8px; color: #2563eb; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .exam-name { font-size: 8px; color: #2563eb; font-weight: 700; }
 
-        .student-row { margin-bottom: 1px; }
-        .lbl { font-size: 6px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .lbl { font-size: 6px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom:1px;}
         .val { font-size: 9px; font-weight: 700; color: #334155; line-height: 1.1; }
         .val.name { font-size: 11px; font-weight: 900; color: #000; }
-        .val.big { font-size: 13px; font-weight: 800; color: #000; }
+        .val.big { font-size: 14px; font-weight: 800; color: #000; }
 
-        .info-grid { display: flex; gap: 15px; }
+        .info-grid { display: flex; gap: 15px; margin-top:2px; }
 
         .card-footer-area {
-            background: #f8fafc;
+            background: #f1f5f9;
             border-radius: 3px;
             padding: 2px 4px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            margin-top: 2px;
         }
         .f-item { font-size: 7px; color: #475569; font-weight: 600; }
         .f-item i { margin-right: 2px; color: #2563eb; }
@@ -3377,7 +3391,7 @@ function generateBizCardHTML(data) {
             left: 0; width: 100%;
             text-align: center;
             font-size: 8px;
-            color: #999;
+            color: #bbb;
         }
 
         .clearfix::after {
@@ -3385,42 +3399,47 @@ function generateBizCardHTML(data) {
             clear: both;
             display: table;
         }
-
+        
+        /* Baskı Modu */
         @media print {
             body { background: white; }
-            .print-sheet { margin: 0; box-shadow: none; border: none; }
+            .print-sheet { margin: 0; border: none; }
         }
     `;
 
-    // 5. Yazdırma Penceresini Aç (Bağımsız Fonksiyon)
-    // Bu yöntem daha güvenilirdir ve "printDocument is not defined" hatasını önler.
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        Swal.fire("Hata", "Pop-up engelleyiciyi kapatınız.", "error");
+    // 5. YAZDIRMA PENCERESİ (GÜVENLİ METHOD)
+    const w = window.open('', '_blank');
+    if (!w) {
+        Swal.fire("Engellendi", "Lütfen tarayıcınızda açılır pencere (popup) izni veriniz.", "error");
         return;
     }
-    
-    printWindow.document.open();
-    printWindow.document.write(`
-        <html>
+
+    // HTML içeriği - Dikkat: script tag'ini escape ediyoruz!
+    const finalHtml = `
+        <!DOCTYPE html>
+        <html lang="tr">
         <head>
-            <title>Giriş Belgeleri Yazdır</title>
+            <meta charset="utf-8">
+            <title>Giriş Belgeleri</title>
             <style>${printCss}</style>
         </head>
         <body>
             ${pagesHtml}
             <script>
-                // Resimlerin ve fontların yüklenmesi için kısa bir bekleme
+                // Resimlerin ve fontların yüklenmesini bekle
                 window.onload = function() {
                     setTimeout(function(){
                         window.print();
-                    }, 500);
+                    }, 1000); // 1 saniye bekle (FontAwesome için)
                 };
-            </script>
+            <\/script>
         </body>
         </html>
-    `);
-    printWindow.document.close();
+    `;
+
+    w.document.open();
+    w.document.write(finalHtml);
+    w.document.close();
 };
 
     // Modernised and isolated list printing. This implementation collects the filtered
