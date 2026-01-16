@@ -471,52 +471,26 @@
   }
 
   /* Themed variations for exam cards */
-  /*
-   * Renkli öğrenci kartı için tasarım.
-   * Arka plan olarak sağlanan PNG dosyası kullanılır. Dosya proje kökünde yer almalı.
-   * Pseudo-elemanlar kaldırılır ki arka planı bozmasın.
-   */
   .exam-card.theme-orange{
-    /* Arka plan resmi: renkli öğrencikart.png */
-    background-image: url('a47f8739-b62a-4901-80e1-a68674aa7fc2.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* Varsayılan gradyan renkleri daha sıcak tonlara ayarlandı */
-    --header-gradient: linear-gradient(135deg, #b45309, #d97706);
-    --mark-gradient: linear-gradient(135deg, #f59e0b, #fbbf24);
-    --no-bg: rgba(234,88,12,.10);
-    --no-border: rgba(234,88,12,.18);
-    --no-color: #b45309;
+    --c1: rgba(253,186,116,.16);
+    --c2: rgba(249,115,22,.14);
+    --stroke: rgba(234,88,12,.15);
+    --header-gradient: linear-gradient(135deg, #ea580c, #f59e0b);
+    --mark-gradient: linear-gradient(135deg,#fdba74,#f97316);
+    --no-bg: rgba(234,88,12,.08);
+    --no-border: rgba(234,88,12,.14);
+    --no-color: #ea580c;
   }
 
-  .exam-card.theme-orange:before,
-  .exam-card.theme-orange:after{
-    display:none;
-    content:none;
-  }
-
-  /*
-   * Siyah-beyaz kart tasarımı için arka plan olarak aynı görüntünün gri tonlamalı
-   * versiyonu kullanılır. Renk değişkenleri daha koyu tonlara ayarlanır. Pseudo
-   * elemanlar kaldırılır ki arka planı bozmasın.
-   */
   .exam-card.theme-bw{
-    background-image: url('84852a13-1b33-4fef-8181-c109ee78690e.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    --header-gradient: linear-gradient(135deg, #475569, #1e293b);
-    --mark-gradient: linear-gradient(135deg,#94a3b8,#64748b);
-    --no-bg: rgba(71,85,105,.10);
-    --no-border: rgba(71,85,105,.20);
+    --c1: rgba(120,124,136,.12);
+    --c2: rgba(99,105,116,.10);
+    --stroke: rgba(71,85,105,.25);
+    --header-gradient: linear-gradient(135deg, #334155, #1e293b);
+    --mark-gradient: linear-gradient(135deg,#64748b,#475569);
+    --no-bg: rgba(71,85,105,.08);
+    --no-border: rgba(71,85,105,.16);
     --no-color: #1e293b;
-  }
-
-  .exam-card.theme-bw:before,
-  .exam-card.theme-bw:after{
-    display:none;
-    content:none;
   }
 
   /* Sharper on-screen preview */
@@ -3100,13 +3074,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           .sub{ text-align:center; color:var(--muted); margin:-6mm 0 6mm; font-size:12px; }
           @media print{
             @page{ size:A4; margin:0; }
-            /* Tüm varsayılan kenar boşluklarını kaldır: body'nin margin ve padding'ini sıfırla */
-            body{
-              margin:0 !important;
-              padding:0 !important;
-              -webkit-print-color-adjust:exact;
-              print-color-adjust:exact;
-            }
+            body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
             .no-print{ display:none !important; }
             .a4{ width:auto; min-height:auto; padding:10mm; }
           }
@@ -3223,12 +3191,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         }
 
         .a4 .exam-card{
-          /* Arka planı koru; sadece kenarlık ve tonlama ayarlarını yap */
+          background:#fff !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
-          /* Renkli arka planın gri tonlamaya dönmesi için filtre uygula */
-          filter:grayscale(1) !important;
-          color:#000 !important;
+          filter:none !important;
           /* Kartların daha kısa hücrelere sığması için minimum yükseklik azaltıldı */
           min-height:55mm !important;
         }
@@ -3238,33 +3204,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           content:none !important;
         }
 
-        /*
-         * Baskıda başlık bölümü koyu tonlarda hazırlanır; metinler açık renkle gösterilir.
-         */
         .a4 .exam-card-header{
-          background:#1e293b !important;
-          color:#fff !important;
+          background:#fff !important;
+          color:#000 !important;
           border:1px solid #000 !important;
         }
 
         .a4 .card-title,
         .a4 .card-type,
         .a4 .card-sub{
-          color:#fff !important;
+          color:#000 !important;
         }
 
         .a4 .exam-card-header .card-type{
           background:transparent !important;
           border:1px solid #000 !important;
-          color:#fff !important;
         }
 
         .a4 .card-mark{
-          /* Baskıda logo alanını koyu renkte göster ve ikonu beyaz renk yap */
-          background:#1e293b !important;
+          background:transparent !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
-          color:#fff !important;
+          color:#000 !important;
         }
 
         .a4 .kv{
