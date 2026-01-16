@@ -3156,23 +3156,54 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
     window.printBulkCards = async () => {
+      /*
+        Triggered when the admin clicks the "Toplu Kart Bas" button.  This
+        implementation collects the selected student records and lays them out
+        in a two‑column, three‑row grid for printing on A4 paper.  If fewer
+        than six students are selected, blank placeholders are appended so
+        that a full sheet (six card areas) is always printed.  Each card is
+        rendered using the built‑in generateCardHTML() helper with the black
+        & white theme enabled.  When a record is null (used for blank
+        placeholders) an empty exam card container is inserted instead of
+        student data.  This ensures that the sizing and cut marks remain
+        consistent even when some slots are unused.
+      */
       const ids = selectedAdminIds();
       if(ids.length === 0){
         Swal.fire("Uyarı","Kart basmak için listeden kişi seçiniz.","warning");
         return;
       }
-
+      // Resolve selected student objects from the database
       const selected = dbStudents.filter(s => ids.includes(s.id));
       if(selected.length === 0){
         Swal.fire("Uyarı","Seçilen kayıt bulunamadı.","warning");
         return;
       }
-      // Build inner card grid using black-white theme for bulk printing
+      // Ensure at least six slots by padding with nulls
+      const minCount = 6;
+      const slots = [...selected];
+      while(slots.length < minCount){
+        slots.push(null);
+      }
+      // Build inner card grid.  For real student objects, generate a card in
+      // black/white theme.  For null entries, insert an empty card shell so
+      // the layout remains intact and cut guides are still visible.
       const bodyHtml = `
         <div class="cards-grid">
-          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join("")}
+          ${slots.map(item => {
+            if(item){
+              return `<div class="card-cell">${generateCardHTML(item,{theme:'bw'})}</div>`;
+            }
+            // Empty placeholder: insert a container with an empty exam-card to
+            // preserve size.  An empty div inside ensures a minimum height.
+            return `<div class="card-cell"><div class="exam-card theme-bw"></div></div>`;
+          }).join("")}
         </div>
       `;
+      // Additional print CSS overrides for black/white output and grid layout.  We
+      // explicitly define margins, cut marks, and high contrast styling so
+      // cards look sharp when printed.  These rules apply only within the
+      // context of the A4 print wrapper used by printDocument().
       const extraCss = `
         /*
          * Arrange the exam cards in a two‑column grid for bulk printing.  Each
