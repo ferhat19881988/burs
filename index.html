@@ -2045,26 +2045,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
-    // Veri Güvenliği ve Formatlama
     const safeHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    const name = (typeof toUpperTR === 'function' ? toUpperTR(data.studentName || "") : (data.studentName || "").toUpperCase());
-    const school = (typeof toUpperTR === 'function' ? toUpperTR(data.school || "") : (data.school || "").toUpperCase());
+    // Türkçe karakter desteği için büyük harf dönüşümü
+    const name = (data.studentName || "").toLocaleUpperCase("tr-TR");
+    const school = (data.school || "").toLocaleUpperCase("tr-TR");
     const tc = data.tc || "";
-    // TC formatı: 123 456 789 01
     const tcPretty = (tc.length === 11) ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
     const no = data.studentNo || "";
     
-    const examRaw = data.examName || "";
-    const exam = (typeof normSpaces === 'function' ? normSpaces(examRaw) : examRaw);
-    
-    // Tarih ve Saat birleşimi
+    const exam = (data.examName || "").trim();
     const dateInfo = (data.examDate && data.examTime) ? `${data.examDate} • ${data.examTime}` : "";
-    
-    const placeRaw = data.place || "Fenomen Eğitim Kurumları";
-    const place = (typeof normSpaces === 'function' ? normSpaces(placeRaw) : placeRaw);
+    const place = (data.place || "Fenomen Eğitim Kurumları").trim();
 
-    // HTML Yapısı (Referans resme göre)
     return `
     <div class="ref-card-wrapper">
       <div class="ref-card">
@@ -2084,7 +2077,7 @@ window.generateBizCardHTML = function(data) {
                 </div>
                 <div class="ref-row">
                     <div class="ref-lbl">Okul</div>
-                    <div class="ref-val school">${safeHtml(school).substring(0, 28)}</div>
+                    <div class="ref-val school">${safeHtml(school)}</div>
                 </div>
                 <div class="ref-row">
                     <div class="ref-lbl">T.C.</div>
@@ -2093,7 +2086,7 @@ window.generateBizCardHTML = function(data) {
             </div>
 
             <div class="ref-num-box">
-                <div class="ref-num-lbl">ÖĞRENCİ NUMARASI</div>
+                <div class="ref-num-lbl">ÖĞRENCİ NO</div>
                 <div class="ref-num-val">${safeHtml(no)}</div>
             </div>
         </div>
@@ -2104,27 +2097,20 @@ window.generateBizCardHTML = function(data) {
                     <div class="ref-icon"><i class="fa-solid fa-file-pen"></i></div>
                     <div class="ref-f-text">
                         <div class="ref-f-lbl">SINAV</div>
-                        <div class="ref-f-val">${safeHtml(exam).substring(0, 25)}</div>
+                        <div class="ref-f-val">${safeHtml(exam)}</div>
                     </div>
                 </div>
                 <div class="ref-f-item">
                     <div class="ref-icon"><i class="fa-regular fa-clock"></i></div>
                     <div class="ref-f-text">
-                        <div class="ref-f-lbl">SAAT</div>
+                        <div class="ref-f-lbl">TARİH / SAAT</div>
                         <div class="ref-f-val">${safeHtml(dateInfo)}</div>
                     </div>
                 </div>
-                <div class="ref-f-item">
-                     <div class="ref-icon"><i class="fa-solid fa-user"></i></div>
-                     <div class="ref-f-text">
-                        <div class="ref-f-lbl">SALON/SIRA</div>
-                        <div class="ref-f-val">Listeden Kontrol Ediniz</div>
-                    </div>
-                </div>
-                 <div class="ref-f-item">
+                <div class="ref-f-item full-width">
                     <div class="ref-icon"><i class="fa-solid fa-location-dot"></i></div>
                     <div class="ref-f-text">
-                        <div class="ref-f-lbl">YER</div>
+                        <div class="ref-f-lbl">SINAV MERKEZİ</div>
                         <div class="ref-f-val">${safeHtml(place)}</div>
                     </div>
                 </div>
@@ -3207,22 +3193,16 @@ window.generateBizCardHTML = function(data) {
     }
 
   window.printBulkCards = async () => {
-    // KONTROLLER
-    if (typeof selectedAdminIds !== 'function') { Swal.fire("Hata", "Gerekli fonksiyonlar eksik.", "error"); return; }
     const ids = selectedAdminIds(); 
     if (!ids || ids.length === 0) { Swal.fire("Uyarı", "Seçim yapmadınız.", "warning"); return; }
 
-    // VERİ
     const selected = dbStudents.filter(s => ids.includes(s.id));
-    
-    // Sayfa Başına 8 Kart (2x4)
     const cardsPerPage = 8; 
     const chunks = [];
     for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
-    // HTML OLUŞTUR
     let pagesHtml = "";
     chunks.forEach((chunk, pageIndex) => {
         const cardsHtml = chunk.map(s => window.generateBizCardHTML(s)).join("");
@@ -3232,12 +3212,11 @@ window.generateBizCardHTML = function(data) {
                 ${cardsHtml}
             </div>
             <div class="sheet-meta">
-                Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgilerinden Kesiniz
+                Sayfa ${pageIndex + 1} / ${chunks.length} • Fenomen Eğitim Kurumları Yönetim Paneli
             </div>
         </div>`;
     });
 
-    // CSS (Resimdeki Tasarımın Kodlanmış Hali)
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
@@ -3245,117 +3224,115 @@ window.generateBizCardHTML = function(data) {
         @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
-        body { margin: 0; padding: 0; background: #eee; font-family: 'Roboto', sans-serif; }
+        body { margin: 0; padding: 0; background: #fff; font-family: 'Roboto', sans-serif; }
 
         .print-sheet {
-            width: 210mm; height: 296mm; background: white;
+            width: 210mm; height: 297mm; background: white;
             margin: 0 auto;
-            padding-top: 15mm; padding-left: 12mm; 
+            padding: 10mm 12mm; 
             position: relative; page-break-after: always; overflow: hidden;
         }
 
-        /* 2x4 GRID */
+        /* 2x4 GRID - Kesme payları için gap artırıldı */
         .cards-grid {
             display: grid;
-            grid-template-columns: 88mm 88mm; 
-            grid-template-rows: repeat(4, 60mm); /* Kart Yüksekliği ~60mm */
-            column-gap: 8mm; row-gap: 8mm;
+            grid-template-columns: 90mm 90mm; 
+            grid-template-rows: repeat(4, 65mm);
+            column-gap: 6mm; 
+            row-gap: 6mm;
+            justify-content: center;
         }
 
-        /* DIŞ ÇERÇEVE (Kesim Çizgisi) */
+        /* KESME ÇİZGİSİ (Wrapper) - Karttan uzaklaştırıldı */
         .ref-card-wrapper {
             width: 100%; height: 100%;
-            border: 1px dashed #bbb;
-            padding: 1px;
+            border: 0.5pt dashed #aaa; /* Kesme çizgisi daha ince ve zarif */
+            padding: 4mm; /* Kart ve kesme çizgisi arasındaki mesafe artırıldı */
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* --- ASIL KART TASARIMI --- */
         .ref-card {
             width: 100%; height: 100%;
-            border: 2px solid #222;
-            border-radius: 6px;
+            border: 1.5pt solid #000;
+            border-radius: 4px;
             overflow: hidden;
             display: flex; flex-direction: column;
             background: #fff;
         }
 
-        /* BAŞLIK (Siyah) */
+        /* BAŞLIK ALANI */
         .ref-header {
-            background: #262626; /* Koyu gri/siyah */
+            background: #1a1a1a;
             color: #fff;
-            padding: 5px 8px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            height: 15mm;
+            padding: 6px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 16mm;
         }
         .ref-header-left { display: flex; flex-direction: column; }
-        .ref-title { font-size: 11px; font-weight: 900; letter-spacing: 0.3px; line-height: 1.1; }
-        .ref-subtitle { font-size: 8px; font-weight: 400; color: #ccc; margin-top: 2px; }
+        .ref-title { font-size: 13px; font-weight: 900; letter-spacing: 0.5px; } /* Başlık büyütüldü */
+        .ref-subtitle { font-size: 9px; font-weight: 400; color: #bbb; }
         
         .ref-badge {
-            background: #d4d4d4; color: #000;
-            font-size: 9px; font-weight: 800;
-            padding: 2px 5px; border-radius: 2px;
-            white-space: nowrap; margin-left: 5px;
+            background: #fff; color: #000;
+            font-size: 10px; font-weight: 900;
+            padding: 3px 8px; border-radius: 3px;
         }
 
-        /* ORTA GÖVDE */
+        /* GÖVDE BİLGİLERİ */
         .ref-body {
             flex: 1;
             display: flex;
-            padding: 6px 8px;
+            padding: 8px 12px;
             align-items: center;
+            gap: 10px;
         }
 
-        /* Sol Bilgiler */
-        .ref-info-col { flex: 1.5; display: flex; flex-direction: column; gap: 4px; }
-        .ref-row { display: flex; align-items: baseline; }
-        .ref-lbl { width: 50px; font-size: 9px; color: #333; font-weight: 500; }
-        .ref-val { font-size: 10px; color: #000; font-weight: 800; }
-        .ref-val.name { font-size: 11px; font-weight: 900; }
-        .ref-val.tc { letter-spacing: 0.5px; }
-        .ref-val.school { font-size: 9px; }
+        .ref-info-col { flex: 1.2; display: flex; flex-direction: column; gap: 6px; }
+        .ref-row { display: flex; flex-direction: column; } /* Alt alta daha okunaklı */
+        .ref-lbl { font-size: 8px; color: #666; font-weight: 700; text-transform: uppercase; }
+        .ref-val { font-size: 12px; color: #000; font-weight: 800; }
+        .ref-val.name { font-size: 14px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 2px; }
 
-        /* Sağ Numara Kutusu (Gri) */
         .ref-num-box {
-            background: #e5e5e5;
-            border-radius: 6px;
-            padding: 4px 6px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
             text-align: center;
-            min-width: 32mm;
-            display: flex; flex-direction: column; justify-content: center;
+            min-width: 30mm;
         }
-        .ref-num-lbl { font-size: 6px; color: #333; text-transform: uppercase; letter-spacing: 0.5px; }
-        .ref-num-val { font-size: 24px; font-weight: 900; color: #000; line-height: 1; margin-top: 1px; }
+        .ref-num-lbl { font-size: 8px; color: #444; font-weight: 900; margin-bottom: 4px; }
+        .ref-num-val { font-size: 28px; font-weight: 900; color: #000; line-height: 1; }
 
-        /* FOOTER (İkonlar) */
+        /* FOOTER ALANI - GENİŞLETİLDİ */
         .ref-footer {
             border-top: 1px solid #eee;
-            padding: 4px 8px 6px 8px;
-            background: #fff;
+            padding: 8px 12px;
+            background: #fafafa;
         }
         .ref-f-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px 10px;
+            gap: 8px;
         }
-        .ref-f-item { display: flex; align-items: center; gap: 5px; }
+        .ref-f-item { display: flex; align-items: center; gap: 8px; }
+        .full-width { grid-column: span 2; border-top: 1px solid #eee; padding-top: 6px; }
         
         .ref-icon {
-            width: 14px; height: 14px;
-            background: #444; color: #fff;
-            border-radius: 3px;
+            width: 18px; height: 18px;
+            background: #000; color: #fff;
+            border-radius: 4px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 8px; flex-shrink: 0;
+            font-size: 10px; flex-shrink: 0;
         }
         
-        .ref-f-text { display: flex; flex-direction: column; overflow: hidden; }
-        .ref-f-lbl { font-size: 5px; font-weight: 700; color: #555; text-transform: uppercase; line-height: 1; }
-        .ref-f-val { font-size: 7px; font-weight: 800; color: #000; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ref-f-text { display: flex; flex-direction: column; }
+        .ref-f-lbl { font-size: 7px; font-weight: 900; color: #777; }
+        .ref-f-val { font-size: 10px; font-weight: 800; color: #000; }
 
         .sheet-meta {
             position: absolute; bottom: 5mm; left: 0; width: 100%;
-            text-align: center; font-size: 8px; color: #999;
+            text-align: center; font-size: 9px; color: #aaa;
         }
 
         @media print {
@@ -3364,7 +3341,6 @@ window.generateBizCardHTML = function(data) {
         }
     `;
 
-    // PENCERE AÇ
     const w = window.open('', '_blank');
     if (!w) { Swal.fire("Engellendi", "Popup izni veriniz.", "error"); return; }
 
@@ -3373,12 +3349,20 @@ window.generateBizCardHTML = function(data) {
         <!DOCTYPE html>
         <html lang="tr">
         <head>
-            <title>Giriş Kartları</title>
+            <meta charset="UTF-8">
+            <title>Giriş Kartları - Fenomen Eğitim</title>
             <style>${printCss}</style>
         </head>
         <body>
             ${pagesHtml}
-            <script>window.onload=function(){setTimeout(function(){window.print();},1000);};<\/script>
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        // window.close(); // İsteğe bağlı: Yazdırdıktan sonra sekmeyi kapatır
+                    }, 500);
+                };
+            <\/script>
         </body>
         </html>
     `);
