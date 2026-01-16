@@ -2069,7 +2069,7 @@ window.generateBizCardHTML = function(data) {
     <div class="ref-card-wrapper">
       <div class="ref-card">
         <div class="ref-header">
-            <div class="ref-header-left">
+            <div class="ref-header-content">
                 <div class="ref-title">FENOMEN EĞİTİM KURUMLARI</div>
                 <div class="ref-subtitle">Öğrenci Sınav Giriş Belgesi</div>
             </div>
@@ -2077,14 +2077,14 @@ window.generateBizCardHTML = function(data) {
         </div>
 
         <div class="ref-body">
-            <div class="ref-info-col">
+            <div class="ref-info-grid">
                 <div class="ref-row">
                     <div class="ref-lbl">ÖĞRENCİ</div>
                     <div class="ref-val name">${safeHtml(name)}</div>
                 </div>
                 <div class="ref-row">
                     <div class="ref-lbl">OKUL</div>
-                    <div class="ref-val school">${safeHtml(school).substring(0, 35)}</div>
+                    <div class="ref-val school">${safeHtml(school)}</div>
                 </div>
                 <div class="ref-row">
                     <div class="ref-lbl">T.C. NO</div>
@@ -2099,29 +2099,27 @@ window.generateBizCardHTML = function(data) {
         </div>
 
         <div class="ref-footer">
-            <div class="ref-f-grid">
-                <div class="ref-f-item wide-item">
-                    <div class="ref-icon"><i class="fa-solid fa-file-pen"></i></div>
-                    <div class="ref-f-text">
-                        <div class="ref-f-lbl">SINAV ADI</div>
-                        <div class="ref-f-val main-exam">${safeHtml(exam)}</div>
-                    </div>
+            <div class="ref-f-row">
+                <div class="ref-icon"><i class="fa-solid fa-file-pen"></i></div>
+                <div class="ref-f-content">
+                    <span class="ref-f-lbl">SINAV ADI:</span>
+                    <span class="ref-f-val main-exam">${safeHtml(exam)}</span>
                 </div>
-                
-                <div class="ref-f-item">
-                    <div class="ref-icon"><i class="fa-regular fa-clock"></i></div>
-                    <div class="ref-f-text">
-                        <div class="ref-f-lbl">TARİH / SAAT</div>
-                        <div class="ref-f-val">${safeHtml(dateInfo)}</div>
-                    </div>
+            </div>
+            
+            <div class="ref-f-row">
+                <div class="ref-icon"><i class="fa-regular fa-clock"></i></div>
+                <div class="ref-f-content">
+                    <span class="ref-f-lbl">TARİH / SAAT:</span>
+                    <span class="ref-f-val">${safeHtml(dateInfo)}</span>
                 </div>
-                
-                <div class="ref-f-item">
-                    <div class="ref-icon"><i class="fa-solid fa-location-dot"></i></div>
-                    <div class="ref-f-text">
-                        <div class="ref-f-lbl">SINAV YERİ</div>
-                        <div class="ref-f-val">${safeHtml(place)}</div>
-                    </div>
+            </div>
+            
+            <div class="ref-f-row">
+                <div class="ref-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <div class="ref-f-content">
+                    <span class="ref-f-lbl">SINAV YERİ:</span>
+                    <span class="ref-f-val">${safeHtml(place)}</span>
                 </div>
             </div>
         </div>
@@ -3245,8 +3243,8 @@ window.generateBizCardHTML = function(data) {
         .print-sheet {
             width: 210mm; height: 296mm; background: white;
             margin: 0 auto;
-            /* Kağıt kenar boşlukları */
-            padding-top: 15mm; padding-left: 12mm; 
+            /* Kağıt kenar boşlukları - Dikeyde ortalamak için padding ayarlandı */
+            padding-top: 10mm; padding-left: 12mm; 
             position: relative; page-break-after: always; overflow: hidden;
         }
 
@@ -3254,23 +3252,24 @@ window.generateBizCardHTML = function(data) {
         .cards-grid {
             display: grid;
             grid-template-columns: 88mm 88mm; 
-            grid-template-rows: repeat(4, 60mm); /* Kart Yüksekliği */
-            column-gap: 8mm; row-gap: 8mm;
+            /* Kart yüksekliği 68mm yapıldı (4 satır x 68 = 272mm, A4'e rahat sığar) */
+            grid-template-rows: repeat(4, 68mm); 
+            column-gap: 8mm; row-gap: 4mm;
         }
 
         /* DIŞ ÇERÇEVE (Kesim Çizgisi) */
         .ref-card-wrapper {
             width: 100%; height: 100%;
-            border: 1px dashed #999; /* Kesik çizgi rengi grileştirildi */
-            padding: 4px; /* Kart içeriğini kesim çizgisinden uzaklaştırır (Boşluk) */
+            border: 1px dashed #bbb; 
+            padding: 3px; /* Kart ile kesim çizgisi arasındaki boşluk */
             display: flex; justify-content: center; align-items: center;
         }
 
         /* --- ASIL KART GÖVDESİ --- */
         .ref-card {
             width: 100%; height: 100%;
-            border: 2px solid #000; /* Kart çerçevesi tam siyah */
-            border-radius: 5px;
+            border: 2px solid #000; 
+            border-radius: 6px;
             overflow: hidden;
             display: flex; flex-direction: column;
             background: #fff;
@@ -3278,23 +3277,30 @@ window.generateBizCardHTML = function(data) {
 
         /* BAŞLIK (Siyah Alan) */
         .ref-header {
-            background: #111; /* Koyu siyah */
+            background: #111; 
             color: #fff;
-            padding: 6px 10px;
+            padding: 8px 10px;
             display: flex; justify-content: space-between; align-items: center;
-            height: 16mm;
+            height: 18mm; /* Başlık alanı biraz genişletildi */
             border-bottom: 1px solid #000;
         }
-        .ref-header-left { display: flex; flex-direction: column; }
+        .ref-header-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         
-        /* Kurum İsmi Büyütüldü */
-        .ref-title { font-size: 15px; font-weight: 900; letter-spacing: 0.5px; line-height: 1; margin-bottom: 3px;}
-        .ref-subtitle { font-size: 9px; font-weight: 500; color: #ddd; }
+        /* Kurum İsmi - Tek Satır Zorlaması */
+        .ref-title { 
+            font-size: 15px; 
+            font-weight: 900; 
+            letter-spacing: 0.3px; 
+            line-height: 1; 
+            white-space: nowrap; /* Asla alt satıra geçme */
+            overflow: visible;
+        }
+        .ref-subtitle { font-size: 9px; font-weight: 400; color: #ccc; margin-top: 3px; }
         
         .ref-badge {
             background: #fff; color: #000;
             font-size: 10px; font-weight: 800;
-            padding: 3px 8px; border-radius: 4px;
+            padding: 4px 8px; border-radius: 4px;
             white-space: nowrap; margin-left: 8px;
             border: 1px solid #000;
         }
@@ -3303,68 +3309,77 @@ window.generateBizCardHTML = function(data) {
         .ref-body {
             flex: 1;
             display: flex;
-            padding: 8px 10px;
+            padding: 8px 12px;
             align-items: center;
             gap: 10px;
         }
 
-        /* Sol Bilgiler */
-        .ref-info-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-        .ref-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
-        .ref-lbl { font-size: 9px; color: #444; font-weight: 700; text-transform: uppercase; }
+        .ref-info-grid { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+        .ref-row { display: grid; grid-template-columns: 60px 1fr; align-items: baseline; }
         
-        /* Öğrenci Bilgileri Fontları Büyütüldü */
-        .ref-val { font-size: 11px; color: #000; font-weight: 800; }
+        .ref-lbl { font-size: 9px; color: #555; font-weight: 700; }
+        
+        /* Değer Fontları */
+        .ref-val { font-size: 11px; color: #000; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ref-val.name { font-size: 13px; font-weight: 900; }
-        .ref-val.tc { font-size: 12px; letter-spacing: 1px; font-family: monospace; font-weight: 700; }
-        .ref-val.school { font-size: 10px; line-height: 1.1; }
+        .ref-val.tc { font-size: 12px; letter-spacing: 1px; font-family: monospace; }
+        /* Okul adı uzunsa alt satıra geçmesine izin ver */
+        .ref-val.school { white-space: normal; line-height: 1.1; font-size: 10px;}
 
         /* Sağ Numara Kutusu */
         .ref-num-box {
-            background: #f1f1f1;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            padding: 5px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 2px 8px;
             text-align: center;
-            min-width: 35mm;
+            min-width: 36mm;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100%;
         }
-        .ref-num-lbl { font-size: 8px; color: #333; font-weight: 800; text-transform: uppercase; margin-bottom: 2px;}
-        .ref-num-val { font-size: 28px; font-weight: 900; color: #000; line-height: 1; letter-spacing: -1px; }
+        .ref-num-lbl { font-size: 7px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ref-num-val { font-size: 26px; font-weight: 900; color: #000; line-height: 1; letter-spacing: -1px; margin-top: 2px; }
 
-        /* FOOTER (Alt Bilgi) */
+        /* FOOTER (Alt Bilgi - YENİ TASARIM) */
         .ref-footer {
-            border-top: 2px solid #eee;
-            padding: 6px 10px 8px 10px;
-            background: #fff;
+            border-top: 1px solid #e5e5e5;
+            padding: 6px 10px;
+            background: #fbfbfb;
+            display: flex;
+            flex-direction: column; /* Alt alta sırala */
+            gap: 4px;
         }
         
-        /* Grid Yapısı: 3 Sütun (Sınav, Saat, Yer) */
-        .ref-f-grid {
-            display: grid;
-            grid-template-columns: 1.8fr 1.2fr 1.2fr; /* Sınav ismine daha çok yer */
-            gap: 12px;
-            align-items: center;
+        .ref-f-row {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%;
         }
         
-        .ref-f-item { display: flex; align-items: center; gap: 6px; overflow: hidden; }
-        
-        /* İkonlar */
         .ref-icon {
-            width: 18px; height: 18px;
+            width: 16px; height: 16px;
             background: #222; color: #fff;
-            border-radius: 4px;
+            border-radius: 3px;
             display: flex; align-items: center; justify-content: center;
             font-size: 9px; flex-shrink: 0;
         }
         
-        .ref-f-text { display: flex; flex-direction: column; min-width: 0;}
-        .ref-f-lbl { font-size: 6px; font-weight: 800; color: #666; text-transform: uppercase; line-height: 1; margin-bottom: 2px; }
+        .ref-f-content {
+            display: flex; align-items: baseline; gap: 5px;
+            flex: 1; min-width: 0; /* Taşmayı önler */
+        }
+
+        .ref-f-lbl { 
+            font-size: 7px; font-weight: 700; color: #666; 
+            text-transform: uppercase; white-space: nowrap; 
+            width: 50px; /* Hizalamak için sabit genişlik */
+        }
         
-        /* Alt Bilgi Değer Fontları Büyütüldü */
-        .ref-f-val { font-size: 9px; font-weight: 800; color: #000; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ref-f-val { 
+            font-size: 9px; font-weight: 800; color: #000; 
+            white-space: nowrap; /* Tek satırda kalsın */
+        }
         
-        /* Sınav adı en büyük footer yazısı */
+        /* Sınav adı ve yer adı gerekirse font küçültülerek sığdırılabilir ama yerimiz bol */
         .ref-f-val.main-exam { font-size: 10px; font-weight: 900; }
 
         .sheet-meta {
@@ -3396,10 +3411,7 @@ window.generateBizCardHTML = function(data) {
             ${pagesHtml}
             <script>
                 window.onload = function() {
-                    // Fontların yüklenmesi için kısa süre bekle
-                    setTimeout(function(){
-                        window.print();
-                    }, 800);
+                    setTimeout(function(){ window.print(); }, 800);
                 };
             <\/script>
         </body>
