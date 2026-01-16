@@ -3193,197 +3193,219 @@ function generateBizCardHTML(data) {
     // Verileri çek
     const selected = dbStudents.filter(s => ids.includes(s.id));
 
-    // 2. Sayfalama (Chunking): Her sayfaya 10 kart (2 sütun x 5 satır)
+    // 2. Her sayfaya 10 kart (2 sütun x 5 satır)
     const cardsPerPage = 10;
     const chunks = [];
     for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
-    // 3. HTML Oluşturma
+    // 3. İçerik HTML'ini oluştur
     let bodyHtml = "";
+
     chunks.forEach((chunk, pageIndex) => {
-        // Eksik kart varsa grid bozulmasın diye boş div eklemeye gerek yok, grid flow halleder.
-        const cardsHtml = chunk.map(s => generateBizCardHTML(s)).join("");
-        
+        // Kartları oluştur
+        const cardsHtml = chunk.map(s => {
+            const name = toUpperTR(s.studentName || "");
+            const no = s.studentNo || "";
+            const tc = s.tc || "";
+            const exam = normSpaces(s.examName || "");
+            const dateInfo = `${s.examDate || ''} ${s.examTime || ''}`;
+            const place = normSpaces(s.place || "Fenomen Eğitim");
+
+            return `
+            <div class="card-container">
+                <div class="vizit-card">
+                    <div class="left-strip">
+                        <span>GİRİŞ</span>
+                    </div>
+                    <div class="card-main">
+                        <div class="card-head">
+                            <strong>FENOMEN EĞİTİM</strong>
+                            <span class="exam-badge">${escapeHtml(exam).substring(0, 25)}</span>
+                        </div>
+                        
+                        <div class="student-row">
+                            <div class="label">ÖĞRENCİ ADI</div>
+                            <div class="value name">${escapeHtml(name)}</div>
+                        </div>
+
+                        <div class="details-grid">
+                            <div>
+                                <div class="label">NO</div>
+                                <div class="value big-no">${escapeHtml(no)}</div>
+                            </div>
+                            <div>
+                                <div class="label">TC KİMLİK</div>
+                                <div class="value">${escapeHtml(tc)}</div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <div>${escapeHtml(dateInfo)}</div>
+                            <div>${escapeHtml(place)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join("");
+
+        // Sayfa yapısı (A4 Sheet)
         bodyHtml += `
         <div class="sheet">
-           <div class="cards-grid">
+           <div class="grid-wrapper">
               ${cardsHtml}
            </div>
-           <div class="sheet-footer">Sayfa ${pageIndex+1} / ${chunks.length} • Kesim çizgilerinden ayırınız.</div>
+           <div class="cut-guide">Sayfa ${pageIndex+1} • Kesim Çizgileri Dahil</div>
         </div>
-      `;
+        `;
     });
 
-    // 4. CSS Tasarımı (Baskı İçin Özel Ayarlar)
+    // 4. CSS (Baskı İçin Milimetrik Ayarlar)
     const extraCss = `
-      /* Font Import (Opsiyonel, sistem fontu yeterli) */
-      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-
-      /* A4 Sayfa Ayarları */
       @page {
-        size: A4 portrait;
-        margin: 0;
+        size: A4 portrait; /* Dikey A4 */
+        margin: 0;         /* Tarayıcı marginlerini sıfırla */
       }
-      body { margin: 0; padding: 0; background: #eee; }
       
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ccc; /* Ekranda arka plan gri olsun ki kağıt belli olsun */
+        font-family: 'Segoe UI', Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* A4 Sayfa Yapısı */
       .sheet {
         width: 210mm;
-        height: 297mm;
+        height: 296mm; /* 297mm yerine 1mm tolerans */
         background: white;
         margin: 0 auto;
-        padding: 10mm 12mm; /* Kenar boşlukları: Yazıcı güvenli alanı */
+        padding-top: 15mm;  /* Üstten boşluk */
+        padding-left: 10mm; /* Soldan boşluk */
         box-sizing: border-box;
         position: relative;
         page-break-after: always; /* Her sheet sonrası yeni sayfa */
         overflow: hidden;
       }
-      
-      /* Ekranda gölgeli görünsün ama baskıda görünmesin */
+
+      /* Ekranda görünen sayfa araları */
       @media screen {
-        .sheet { margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .sheet { margin-bottom: 20px; border: 1px solid #999; }
+      }
+      
+      /* Baskıda ekran marginlerini sil */
+      @media print {
+        .sheet { margin-bottom: 0; border: none; }
+        body { background: white; }
       }
 
-      /* Grid Yapısı: 2 Sütun x 5 Satır */
-      .cards-grid {
+      /* 2 Sütunlu Grid */
+      .grid-wrapper {
         display: grid;
-        grid-template-columns: 1fr 1fr; 
-        grid-template-rows: repeat(5, 1fr); 
-        gap: 4mm; /* Kartlar arası boşluk (kesim payı) */
-        height: 100%;
-        /* İçerik yüksekliği padding düştükten sonra yaklaşık 277mm kalır */
+        grid-template-columns: 92mm 92mm; /* Kart genişliği + boşluk */
+        grid-template-rows: repeat(5, 54mm); /* Kart yüksekliği + boşluk */
+        column-gap: 4mm;
+        row-gap: 2mm;
       }
 
-      /* Kart Dış Çerçevesi (Kesim Çizgisi) */
-      .card-wrapper {
-        border: 1px dashed #ccc; /* Kesim için rehber çizgi */
-        border-radius: 4px;
-        padding: 2px; /* Kesim payı */
+      /* Kart Taşıyıcı (Kesim çizgisi buraya gelir) */
+      .card-container {
+        width: 90mm;   /* Standart kartvizit genişliği */
+        height: 52mm;  /* Yükseklik */
+        border: 1px dashed #aaa; /* KESİM ÇİZGİSİ */
+        padding: 1px;
+        box-sizing: border-box;
         display: flex;
-        align-items: center;
         justify-content: center;
-        width: 100%;
-        height: 100%;
+        align-items: center;
+        page-break-inside: avoid;
       }
 
-      /* Kartın Asıl Tasarımı */
-      .modern-card {
+      /* Kartın İç Tasarımı */
+      .vizit-card {
         width: 100%;
         height: 100%;
         background: #fff;
         display: flex;
         overflow: hidden;
-        border-radius: 3px;
-        /* Hafif bir iç border estetik durur */
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        border-radius: 2px;
       }
 
       /* Sol Şerit */
-      .card-side-strip {
-        width: 24px;
-        background: #1e293b; /* Koyu Lacivert */
-        color: white;
+      .left-strip {
+        width: 20px;
+        background: #1e293b;
+        color: #fff;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 5px 0;
+        font-size: 8px;
+        letter-spacing: 2px;
       }
-      .side-icon { font-size: 14px; margin-bottom: 10px; }
-      .side-text { 
-        writing-mode: vertical-rl; 
-        transform: rotate(180deg); 
-        font-size: 8px; 
-        letter-spacing: 2px; 
-        font-weight: 600; 
+      .left-strip span {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
       }
 
-      /* Sağ İçerik Alanı */
-      .card-content {
+      /* İçerik */
+      .card-main {
         flex: 1;
-        padding: 8px 12px;
+        padding: 5px 8px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
 
-      /* Başlık */
-      .card-header-section {
-        border-bottom: 2px solid #f1f5f9;
-        padding-bottom: 4px;
-        margin-bottom: 4px;
-      }
-      .brand-name {
-        font-size: 10px;
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: 0.5px;
-      }
-      .exam-tag {
-        font-size: 9px;
-        color: #3b82f6; /* Mavi vurgu */
-        font-weight: 700;
-        margin-top: 1px;
-      }
-
-      /* Öğrenci Bilgileri */
-      .student-info-row { margin-bottom: 3px; }
-      .student-info-row.dual { display: flex; gap: 15px; }
-      
-      .info-group label {
-        display: block;
-        font-size: 6px;
-        color: #64748b;
-        font-weight: 700;
-        margin-bottom: 1px;
-        text-transform: uppercase;
-      }
-      .val {
-        font-size: 10px;
-        font-weight: 700;
-        color: #334155;
-        line-height: 1.1;
-      }
-      .name-val { font-size: 12px; font-weight: 900; color: #000; }
-      .no-val { font-size: 14px; font-weight: 800; color: #0f172a; }
-
-      /* Alt Bilgi (Footer) */
-      .card-footer-section {
-         background: #f8fafc;
-         border-radius: 4px;
-         padding: 4px 6px;
-         display: flex;
-         flex-wrap: wrap;
-         gap: 8px;
-      }
-      .footer-item {
+      .card-head {
+        border-bottom: 2px solid #eee;
+        padding-bottom: 3px;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 4px;
-        font-size: 8px;
-        color: #475569;
-        font-weight: 600;
       }
-      .footer-item.full-width { width: 100%; margin-top: 2px; }
-      .footer-item i { color: #3b82f6; }
+      .card-head strong { font-size: 10px; color: #000; }
+      .exam-badge { font-size: 8px; background: #e0f2fe; color: #0284c7; padding: 1px 4px; border-radius: 4px; font-weight: bold; }
 
-      .sheet-footer {
-         position: absolute;
-         bottom: 3mm;
-         left: 0; 
-         width: 100%;
-         text-align: center;
-         font-size: 9px;
-         color: #94a3b8;
+      .student-row { margin-top: 2px; }
+      .label { font-size: 6px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; }
+      .value { font-size: 10px; font-weight: bold; color: #334155; line-height: 1.1; }
+      .value.name { font-size: 11px; color: #000; text-transform: uppercase; }
+      .value.big-no { font-size: 14px; color: #000; }
+
+      .details-grid {
+        display: flex;
+        gap: 15px;
+        margin-top: 4px;
+      }
+
+      .card-footer {
+        margin-top: auto;
+        background: #f8fafc;
+        border-radius: 3px;
+        padding: 3px 5px;
+        font-size: 7px;
+        color: #475569;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .cut-guide {
+        position: absolute;
+        bottom: 5mm;
+        width: 100%;
+        text-align: center;
+        font-size: 9px;
+        color: #999;
       }
     `;
 
-    // 5. Yazdırma Penceresini Aç
-    // Not: printDocument fonksiyonunu sizin kodunuzda zaten tanımlı varsayıyorum.
-    // Eğer printInPage kullanıyorsanız onu da çağırabilirsiniz, ama bu yeni pencere (openPrintWindow mantığı) daha sağlıklıdır.
+    // 5. Yazdır
     printDocument({
-        title: "", // Başlık boş, çünkü tasarımımız sayfa yapısını kendisi kuruyor
+        title: "",
         subtitle: "",
         bodyHtml: bodyHtml,
         extraCss: extraCss
