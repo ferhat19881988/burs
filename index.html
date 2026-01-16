@@ -2045,85 +2045,77 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
-    // Veri Güvenliği ve Formatlama
-    const safeHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // Güvenli veri temizleme ve formatlama
+    const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
     
-    const name = (typeof toUpperTR === 'function' ? toUpperTR(data.studentName || "") : (data.studentName || "").toUpperCase());
-    const school = (typeof toUpperTR === 'function' ? toUpperTR(data.school || "") : (data.school || "").toUpperCase());
+    const name = upper(data.studentName);
+    const school = upper(data.school);
     const tc = data.tc || "";
-    // TC formatı: 123 456 789 01
-    const tcPretty = (tc.length === 11) ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
+    // TC'yi 3'erli gruplar halinde formatla
+    const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
     const no = data.studentNo || "";
-    
-    const examRaw = data.examName || "";
-    const exam = (typeof normSpaces === 'function' ? normSpaces(examRaw) : examRaw);
-    
-    // Tarih ve Saat birleşimi
-    const dateInfo = (data.examDate && data.examTime) ? `${data.examDate} • ${data.examTime}` : "";
-    
-    const placeRaw = data.place || "Fenomen Eğitim Kurumları";
-    const place = (typeof normSpaces === 'function' ? normSpaces(placeRaw) : placeRaw);
+    const exam = safe(data.examName);
+    const date = `${data.examDate || ""} • ${data.examTime || ""}`;
+    const place = safe(data.place || "Fenomen Eğitim Kurumları");
 
-    // HTML Yapısı
     return `
-    <div class="ref-card-wrapper">
-      <div class="ref-card">
-        <div class="ref-header">
-            <div class="ref-header-content">
-                <div class="ref-title">FENOMEN EĞİTİM KURUMLARI</div>
-                <div class="ref-subtitle">Öğrenci Sınav Giriş Belgesi</div>
-            </div>
-            <div class="ref-badge">GİRİŞ KARTI</div>
-        </div>
-
-        <div class="ref-body">
-            <div class="ref-info-grid">
-                <div class="ref-row">
-                    <div class="ref-lbl">ÖĞRENCİ</div>
-                    <div class="ref-val name">${safeHtml(name)}</div>
+    <div class="biz-wrapper">
+        <div class="biz-card">
+            <div class="biz-header">
+                <div class="biz-header-left">
+                    <div class="biz-title">FENOMEN EĞİTİM KURUMLARI</div>
+                    <div class="biz-subtitle">Öğrenci Sınav Giriş Belgesi</div>
                 </div>
-                <div class="ref-row">
-                    <div class="ref-lbl">OKUL</div>
-                    <div class="ref-val school">${safeHtml(school)}</div>
-                </div>
-                <div class="ref-row">
-                    <div class="ref-lbl">T.C. NO</div>
-                    <div class="ref-val tc">${safeHtml(tcPretty)}</div>
-                </div>
+                <div class="biz-badge">GİRİŞ KARTI</div>
             </div>
 
-            <div class="ref-num-box">
-                <div class="ref-num-lbl">ÖĞRENCİ NO</div>
-                <div class="ref-num-val">${safeHtml(no)}</div>
+            <div class="biz-body">
+                <div class="biz-info-col">
+                    <div class="biz-row">
+                        <div class="biz-lbl">ÖĞRENCİ</div>
+                        <div class="biz-val name" title="${safe(name)}">${safe(name)}</div>
+                    </div>
+                    <div class="biz-row">
+                        <div class="biz-lbl">OKUL</div>
+                        <div class="biz-val school" title="${safe(school)}">${safe(school)}</div>
+                    </div>
+                    <div class="biz-row">
+                        <div class="biz-lbl">T.C. NO</div>
+                        <div class="biz-val tc">${safe(tcFmt)}</div>
+                    </div>
+                </div>
+                
+                <div class="biz-num-box">
+                    <div class="biz-num-lbl">ÖĞRENCİ NO</div>
+                    <div class="biz-num-val">${safe(no)}</div>
+                </div>
             </div>
-        </div>
 
-        <div class="ref-footer">
-            <div class="ref-f-row">
-                <div class="ref-icon"><i class="fa-solid fa-file-pen"></i></div>
-                <div class="ref-f-content">
-                    <span class="ref-f-lbl">SINAV ADI:</span>
-                    <span class="ref-f-val main-exam">${safeHtml(exam)}</span>
+            <div class="biz-footer">
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">SINAV ADI:</span>
+                        <span class="biz-f-val">${exam}</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="ref-f-row">
-                <div class="ref-icon"><i class="fa-regular fa-clock"></i></div>
-                <div class="ref-f-content">
-                    <span class="ref-f-lbl">TARİH / SAAT:</span>
-                    <span class="ref-f-val">${safeHtml(dateInfo)}</span>
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">TARİH:</span>
+                        <span class="biz-f-val">${date}</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="ref-f-row">
-                <div class="ref-icon"><i class="fa-solid fa-location-dot"></i></div>
-                <div class="ref-f-content">
-                    <span class="ref-f-lbl">SINAV YERİ:</span>
-                    <span class="ref-f-val">${safeHtml(place)}</span>
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-solid fa-location-dot"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">YER:</span>
+                        <span class="biz-f-val">${place}</span>
+                    </div>
                 </div>
             </div>
         </div>
-      </div>
     </div>
     `;
 };
@@ -3200,24 +3192,24 @@ window.generateBizCardHTML = function(data) {
     }
 
   window.printBulkCards = async () => {
-    // KONTROLLER
+    // 1. Kontroller
     if (typeof selectedAdminIds !== 'function') { Swal.fire("Hata", "Gerekli fonksiyonlar eksik.", "error"); return; }
     const ids = selectedAdminIds(); 
     if (!ids || ids.length === 0) { Swal.fire("Uyarı", "Lütfen listeden en az bir öğrenci seçiniz.", "warning"); return; }
 
-    // VERİ
+    // 2. Veriyi Hazırla
     const selected = dbStudents.filter(s => ids.includes(s.id));
     
-    // Sayfa Başına 8 Kart (2x4)
+    // A4 Sayfasına sığacak şekilde 8 kart (2 sütun x 4 satır)
     const cardsPerPage = 8; 
     const chunks = [];
     for (let i = 0; i < selected.length; i += cardsPerPage) {
         chunks.push(selected.slice(i, i + cardsPerPage));
     }
 
-    // HTML OLUŞTUR
+    // 3. HTML Sayfalarını Oluştur
     let pagesHtml = "";
-    chunks.forEach((chunk, pageIndex) => {
+    chunks.forEach((chunk) => {
         const cardsHtml = chunk.map(s => window.generateBizCardHTML(s)).join("");
         pagesHtml += `
         <div class="print-sheet">
@@ -3227,162 +3219,114 @@ window.generateBizCardHTML = function(data) {
         </div>`;
     });
 
-    // CSS TASARIMI (GÜNCELLENMİŞ VERSİYON)
+    // 4. CSS Tasarımı (Resme Uygun)
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         
         @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
-        body { margin: 0; padding: 0; background: #eee; font-family: 'Roboto', 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; padding: 0; background: #eee; font-family: 'Inter', sans-serif; }
 
         .print-sheet {
             width: 210mm; height: 296mm; background: white;
             margin: 0 auto;
-            /* Kağıt kenar boşlukları - Dikeyde ortalamak için padding ayarlandı */
-            padding-top: 10mm; padding-left: 12mm; 
+            padding-top: 10mm; padding-left: 12mm; /* A4 hizalama */
             position: relative; page-break-after: always; overflow: hidden;
         }
 
-        /* 2x4 GRID YAPISI */
+        /* Izgara: 2 Sütun, 4 Satır. Kart Boyutu: 88mm x 64mm */
         .cards-grid {
             display: grid;
-            grid-template-columns: 88mm 88mm; 
-            /* Kart yüksekliği 68mm yapıldı (4 satır x 68 = 272mm, A4'e rahat sığar) */
-            grid-template-rows: repeat(4, 68mm); 
-            column-gap: 8mm; row-gap: 4mm;
+            grid-template-columns: 88mm 88mm;
+            grid-template-rows: repeat(4, 64mm);
+            column-gap: 8mm; row-gap: 6mm;
         }
 
-        /* DIŞ ÇERÇEVE (Kesim Çizgisi) */
-        .ref-card-wrapper {
+        /* Kart Dış Kesim Çizgisi */
+        .biz-wrapper {
             width: 100%; height: 100%;
-            border: 1px dashed #bbb; 
-            padding: 3px; /* Kart ile kesim çizgisi arasındaki boşluk */
+            border: 1px dashed #ccc; /* Kesim çizgisi */
+            padding: 2px;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* --- ASIL KART GÖVDESİ --- */
-        .ref-card {
+        /* --- KART TASARIMI --- */
+        .biz-card {
             width: 100%; height: 100%;
-            border: 2px solid #000; 
+            border: 1px solid #000;
             border-radius: 6px;
             overflow: hidden;
             display: flex; flex-direction: column;
             background: #fff;
         }
 
-        /* BAŞLIK (Siyah Alan) */
-        .ref-header {
-            background: #111; 
+        /* HEADER */
+        .biz-header {
+            background: #111; /* Siyah Başlık */
             color: #fff;
-            padding: 8px 10px;
+            padding: 6px 10px;
             display: flex; justify-content: space-between; align-items: center;
-            height: 18mm; /* Başlık alanı biraz genişletildi */
+            height: 16mm;
             border-bottom: 1px solid #000;
         }
-        .ref-header-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .biz-header-left { display: flex; flex-direction: column; }
+        .biz-title { font-size: 13px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.1; }
+        .biz-subtitle { font-size: 8px; font-weight: 400; color: #bbb; margin-top: 2px; }
         
-        /* Kurum İsmi - Tek Satır Zorlaması */
-        .ref-title { 
-            font-size: 15px; 
-            font-weight: 900; 
-            letter-spacing: 0.3px; 
-            line-height: 1; 
-            white-space: nowrap; /* Asla alt satıra geçme */
-            overflow: visible;
-        }
-        .ref-subtitle { font-size: 9px; font-weight: 400; color: #ccc; margin-top: 3px; }
-        
-        .ref-badge {
+        .biz-badge {
             background: #fff; color: #000;
-            font-size: 10px; font-weight: 800;
-            padding: 4px 8px; border-radius: 4px;
-            white-space: nowrap; margin-left: 8px;
-            border: 1px solid #000;
+            font-size: 9px; font-weight: 800;
+            padding: 3px 6px; border-radius: 4px;
+            white-space: nowrap; border: 1px solid #000;
         }
 
-        /* ORTA GÖVDE (Öğrenci Bilgileri) */
-        .ref-body {
+        /* BODY */
+        .biz-body {
             flex: 1;
             display: flex;
-            padding: 8px 12px;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ref-info-grid { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-        .ref-row { display: grid; grid-template-columns: 60px 1fr; align-items: baseline; }
-        
-        .ref-lbl { font-size: 9px; color: #555; font-weight: 700; }
-        
-        /* Değer Fontları */
-        .ref-val { font-size: 11px; color: #000; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ref-val.name { font-size: 13px; font-weight: 900; }
-        .ref-val.tc { font-size: 12px; letter-spacing: 1px; font-family: monospace; }
-        /* Okul adı uzunsa alt satıra geçmesine izin ver */
-        .ref-val.school { white-space: normal; line-height: 1.1; font-size: 10px;}
-
-        /* Sağ Numara Kutusu */
-        .ref-num-box {
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            padding: 2px 8px;
-            text-align: center;
-            min-width: 36mm;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            height: 100%;
-        }
-        .ref-num-lbl { font-size: 7px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .ref-num-val { font-size: 26px; font-weight: 900; color: #000; line-height: 1; letter-spacing: -1px; margin-top: 2px; }
-
-        /* FOOTER (Alt Bilgi - YENİ TASARIM) */
-        .ref-footer {
-            border-top: 1px solid #e5e5e5;
             padding: 6px 10px;
-            background: #fbfbfb;
-            display: flex;
-            flex-direction: column; /* Alt alta sırala */
-            gap: 4px;
+            gap: 8px;
+            align-items: center;
         }
+        .biz-info-col { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
         
-        .ref-f-row {
-            display: flex; align-items: center; gap: 8px;
-            width: 100%;
-        }
-        
-        .ref-icon {
-            width: 16px; height: 16px;
-            background: #222; color: #fff;
-            border-radius: 3px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 9px; flex-shrink: 0;
-        }
-        
-        .ref-f-content {
-            display: flex; align-items: baseline; gap: 5px;
-            flex: 1; min-width: 0; /* Taşmayı önler */
-        }
+        .biz-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
+        .biz-lbl { font-size: 8px; font-weight: 700; color: #666; }
+        .biz-val { font-size: 10px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .biz-val.name { font-size: 11.5px; font-weight: 900; }
+        .biz-val.school { white-space: normal; line-height: 1; font-size: 9px; }
+        .biz-val.tc { font-family: monospace; font-size: 10px; letter-spacing: 0.5px; }
 
-        .ref-f-lbl { 
-            font-size: 7px; font-weight: 700; color: #666; 
-            text-transform: uppercase; white-space: nowrap; 
-            width: 50px; /* Hizalamak için sabit genişlik */
+        /* NUMARA KUTUSU (SAĞ) */
+        .biz-num-box {
+            width: 30mm; height: 100%;
+            background: #f3f4f6; /* Gri kutu */
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
-        
-        .ref-f-val { 
-            font-size: 9px; font-weight: 800; color: #000; 
-            white-space: nowrap; /* Tek satırda kalsın */
-        }
-        
-        /* Sınav adı ve yer adı gerekirse font küçültülerek sığdırılabilir ama yerimiz bol */
-        .ref-f-val.main-exam { font-size: 10px; font-weight: 900; }
+        .biz-num-lbl { font-size: 6px; font-weight: 700; color: #555; margin-bottom: 0px; }
+        .biz-num-val { font-size: 24px; font-weight: 900; color: #000; line-height: 1; }
 
-        .sheet-meta {
-            position: absolute; bottom: 5mm; left: 0; width: 100%;
-            text-align: center; font-size: 9px; color: #999; font-weight: 500;
+        /* FOOTER */
+        .biz-footer {
+            background: #f9fafb;
+            border-top: 1px solid #e5e5e5;
+            padding: 5px 10px;
+            display: flex; flex-direction: column; gap: 2px;
+            height: auto;
         }
+        .biz-f-row { display: flex; align-items: center; gap: 6px; }
+        .biz-icon { 
+            width: 14px; display: flex; justify-content: center; 
+            font-size: 9px; color: #000; 
+        }
+        .biz-f-content { display: flex; align-items: baseline; gap: 4px; flex: 1; min-width: 0; }
+        .biz-f-lbl { font-size: 7px; font-weight: 700; color: #666; width: 42px; flex-shrink: 0; }
+        .biz-f-val { font-size: 9px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         @media print {
             body { background: white; }
@@ -3390,9 +3334,9 @@ window.generateBizCardHTML = function(data) {
         }
     `;
 
-    // PENCERE AÇ
+    // 5. Pencereyi Aç ve Yazdır
     const w = window.open('', '_blank');
-    if (!w) { Swal.fire("Engellendi", "Lütfen tarayıcınızda açılır pencere (popup) izni veriniz.", "error"); return; }
+    if (!w) { Swal.fire("Engellendi", "Lütfen tarayıcınızda pop-up izni veriniz.", "error"); return; }
 
     w.document.open();
     w.document.write(`
@@ -3401,7 +3345,7 @@ window.generateBizCardHTML = function(data) {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Toplu Giriş Kartları</title>
+            <title>Giriş Kartları</title>
             <style>${printCss}</style>
         </head>
         <body>
