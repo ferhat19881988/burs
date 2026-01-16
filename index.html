@@ -2045,17 +2045,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
-    // Güvenli veri temizleme ve formatlama
+    // Türkçe karakter güvenli temizleme fonksiyonu
     const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Türkçe kurallarına uygun büyük harf dönüşümü
     const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
     
     const name = upper(data.studentName);
     const school = upper(data.school);
     const tc = data.tc || "";
-    // TC'yi 3'erli gruplar halinde formatla
+    // TC formatlama (11 hane ise aralıklı, değilse olduğu gibi)
     const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
     const no = data.studentNo || "";
-    const exam = safe(data.examName);
+    // Sınav adını olduğu gibi al (büyük harf zorlamadık, veri nasıl gelirse)
+    const exam = safe(data.examName); 
     const date = `${data.examDate || ""} • ${data.examTime || ""}`;
     const place = safe(data.place || "Fenomen Eğitim Kurumları");
 
@@ -3219,10 +3222,11 @@ window.generateBizCardHTML = function(data) {
         </div>`;
     });
 
-    // 4. CSS Tasarımı (Resme Uygun)
+    // 4. CSS Tasarımı
+    // 'subset=latin-ext' parametresi Türkçe karakterlerin font dosyasında bulunmasını garanti eder.
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
         
         @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3232,11 +3236,11 @@ window.generateBizCardHTML = function(data) {
         .print-sheet {
             width: 210mm; height: 296mm; background: white;
             margin: 0 auto;
-            padding-top: 10mm; padding-left: 12mm; /* A4 hizalama */
+            padding-top: 10mm; padding-left: 12mm;
             position: relative; page-break-after: always; overflow: hidden;
         }
 
-        /* Izgara: 2 Sütun, 4 Satır. Kart Boyutu: 88mm x 64mm */
+        /* 2x4 Grid: 88mm x 64mm */
         .cards-grid {
             display: grid;
             grid-template-columns: 88mm 88mm;
@@ -3244,15 +3248,15 @@ window.generateBizCardHTML = function(data) {
             column-gap: 8mm; row-gap: 6mm;
         }
 
-        /* Kart Dış Kesim Çizgisi */
+        /* Kesim Çizgisi */
         .biz-wrapper {
             width: 100%; height: 100%;
-            border: 1px dashed #ccc; /* Kesim çizgisi */
+            border: 1px dashed #ccc;
             padding: 2px;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* --- KART TASARIMI --- */
+        /* Kart Gövdesi */
         .biz-card {
             width: 100%; height: 100%;
             border: 1px solid #000;
@@ -3262,9 +3266,9 @@ window.generateBizCardHTML = function(data) {
             background: #fff;
         }
 
-        /* HEADER */
+        /* Header */
         .biz-header {
-            background: #111; /* Siyah Başlık */
+            background: #111;
             color: #fff;
             padding: 6px 10px;
             display: flex; justify-content: space-between; align-items: center;
@@ -3282,7 +3286,7 @@ window.generateBizCardHTML = function(data) {
             white-space: nowrap; border: 1px solid #000;
         }
 
-        /* BODY */
+        /* Info Body */
         .biz-body {
             flex: 1;
             display: flex;
@@ -3294,15 +3298,17 @@ window.generateBizCardHTML = function(data) {
         
         .biz-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
         .biz-lbl { font-size: 8px; font-weight: 700; color: #666; }
+        
+        /* Font ayarları ve Türkçe karakter uyumu için önemli */
         .biz-val { font-size: 10px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .biz-val.name { font-size: 11.5px; font-weight: 900; }
         .biz-val.school { white-space: normal; line-height: 1; font-size: 9px; }
-        .biz-val.tc { font-family: monospace; font-size: 10px; letter-spacing: 0.5px; }
+        .biz-val.tc { font-family: 'Inter', monospace; font-size: 10px; letter-spacing: 0.5px; }
 
-        /* NUMARA KUTUSU (SAĞ) */
+        /* Numara Kutusu */
         .biz-num-box {
             width: 30mm; height: 100%;
-            background: #f3f4f6; /* Gri kutu */
+            background: #f3f4f6;
             border: 1px solid #d1d5db;
             border-radius: 6px;
             display: flex; flex-direction: column;
@@ -3311,7 +3317,7 @@ window.generateBizCardHTML = function(data) {
         .biz-num-lbl { font-size: 6px; font-weight: 700; color: #555; margin-bottom: 0px; }
         .biz-num-val { font-size: 24px; font-weight: 900; color: #000; line-height: 1; }
 
-        /* FOOTER */
+        /* Footer */
         .biz-footer {
             background: #f9fafb;
             border-top: 1px solid #e5e5e5;
@@ -3339,11 +3345,13 @@ window.generateBizCardHTML = function(data) {
     if (!w) { Swal.fire("Engellendi", "Lütfen tarayıcınızda pop-up izni veriniz.", "error"); return; }
 
     w.document.open();
+    // META ETİKETİ ve LANG ATTRIBUTE EKLEMESİ (PDF SORUNU İÇİN KRİTİK)
     w.document.write(`
         <!DOCTYPE html>
         <html lang="tr">
         <head>
-            <meta charset="utf-8">
+            <meta charset="UTF-8">
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>Giriş Kartları</title>
             <style>${printCss}</style>
@@ -3351,8 +3359,12 @@ window.generateBizCardHTML = function(data) {
         <body>
             ${pagesHtml}
             <script>
+                // Fontların yüklenmesi için biraz daha uzun süre tanıyalım (1 saniye)
+                // Bu, PDF oluşturulurken fontların render edilmiş olmasını garantiler.
                 window.onload = function() {
-                    setTimeout(function(){ window.print(); }, 800);
+                    setTimeout(function(){ 
+                        window.print(); 
+                    }, 1000);
                 };
             <\/script>
         </body>
