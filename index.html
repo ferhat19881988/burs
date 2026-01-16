@@ -2084,6 +2084,63 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
     }
 
+    // --- Modern business card generator ---
+    // This helper constructs a clean, professional business‑card style layout
+    // independent of the colourful student exam card.  It uses neutral tones
+    // and strong typography to convey student and exam information.  The
+    // resulting markup is used exclusively for bulk printing and does not
+    // interfere with the main application styles.
+    function generateBizCardHTML(data){
+      const studentName = toUpperTR(data.studentName || "");
+      const studentNo = data.studentNo || "";
+      const tc = String(data.tc || "");
+      const tcPretty = (tc.length === 11)
+        ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
+        : tc;
+      const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
+      const date = data.examDate || data.date || data.exam_date || "";
+      const time = data.examTime || data.time || data.exam_time || "";
+      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
+
+      return `
+        <div class="biz-card">
+          <div class="biz-card-header">
+            <div class="biz-card-brand">
+              <div class="biz-card-logo"><i class="fa-solid fa-user-graduate"></i></div>
+              <div class="biz-card-title">Fenomen Eğitim Kurumları</div>
+            </div>
+            <div class="biz-card-type">Giriş Kartı</div>
+          </div>
+          <div class="biz-card-body">
+            <div class="biz-row">
+              <span class="biz-key">Ad Soyad</span>
+              <span class="biz-val" title="${escapeHtml(studentName)}">${escapeHtml(studentName)}</span>
+            </div>
+            <div class="biz-row">
+              <span class="biz-key">Öğrenci No</span>
+              <span class="biz-val">${escapeHtml(studentNo)}</span>
+            </div>
+            <div class="biz-row">
+              <span class="biz-key">T.C.</span>
+              <span class="biz-val" title="${escapeHtml(tc)}">${escapeHtml(tcPretty)}</span>
+            </div>
+            <div class="biz-row">
+              <span class="biz-key">Sınav</span>
+              <span class="biz-val" title="${escapeHtml(exam)}">${escapeHtml(exam)}</span>
+            </div>
+            <div class="biz-row">
+              <span class="biz-key">Tarih / Saat</span>
+              <span class="biz-val">${escapeHtml(date)}${date && time ? ' • ' : ''}${escapeHtml(time)}</span>
+            </div>
+            <div class="biz-row">
+              <span class="biz-key">Yer</span>
+              <span class="biz-val" title="${escapeHtml(place)}">${escapeHtml(place)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -3156,133 +3213,175 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     }
 
     window.printBulkCards = async () => {
-      // Fetch selected student IDs and validate selection.  If no records are
-      // checked, alert the user and exit early.
+      // Validate selection
       const ids = selectedAdminIds();
       if (!ids.length) {
         Swal.fire("Uyarı", "Kart basmak için listeden kişi seçiniz.", "warning");
         return;
       }
-      // Resolve the corresponding student objects from the admin data set.  This
-      // filtering ensures that only the selected rows are printed, preserving
-      // the order defined by the table render.
       const selected = dbStudents.filter(s => ids.includes(s.id));
       if (!selected.length) {
         Swal.fire("Uyarı", "Seçilen kayıt bulunamadı.", "warning");
         return;
       }
-
       /*
-        Construct the HTML markup for the bulk cards.  Each student entry is
-        rendered using the existing generateCardHTML() helper to produce the
-        standard coloured card layout.  The card is then wrapped in a
-        <div class="bw-card"> container, which applies a grayscale filter
-        via CSS when printing.  Cards are placed inside .card-cell-bw
-        wrappers to control spacing and cut marks.  A parent .cards-grid-bw
-        grid arranges cards into exactly two columns and allows them to flow
-        onto subsequent rows or pages.  No additional placeholders are
-        inserted; only the selected students will be printed.
-      */
+       * Build a fresh, modern business‑card layout for each selected
+       * student.  Cards are arranged in two columns on each A4 page
+       * (portrait orientation) with consistent spacing and dashed
+       * outlines for cutting.  The design deliberately avoids
+       * borrowing styles from the coloured exam cards to ensure
+       * complete independence.  Should the list span multiple
+       * pages, the grid continues seamlessly.
+       */
       const bodyHtml = `
-        <div class="cards-grid-bw">
+        <div class="biz-cards-grid">
           ${selected.map(s => `
-            <div class="card-cell-bw">
-              <div class="bw-card">
-                ${generateCardHTML(s)}
-              </div>
+            <div class="biz-card-cell">
+              ${generateBizCardHTML(s)}
             </div>
           `).join("")}
         </div>
       `;
-
       /*
-        Extra CSS rules scoped to the print context (.a4) for bulk card output.
-        These styles set up a two‑column grid with fixed card widths, insert
-        dashed cut lines around each card cell, and apply a grayscale filter
-        to the coloured cards so they appear as high‑contrast black‑and‑white
-        on paper.  We do not override other design variables; instead the
-        filter preserves the original layout and typography while removing
-        colour.  Page margins and padding are standardised to avoid blank
-        pages or unwanted whitespace.  On very narrow screens (e.g. mobile
-        print previews) the layout falls back to a single column for
-        readability.
-      */
+       * Custom CSS for the business card print layout.  We use
+       * portrait A4 orientation by default.  Two cards fit per
+       * row with four rows on each page (90×55 mm standard card
+       * dimensions with gaps).  Card borders and typography are
+       * tuned for a professional black‑and‑white finish.  All
+       * styling rules are prefixed with `.a4` to limit their
+       * scope to the print document and prevent leakage back into
+       * the admin UI.
+       */
       const extraCss = `
-        /* Two‑column card grid.  Each column is 92 mm wide with a 6 mm gap,
-           yielding cards that match the physical size of the original
-           coloured version.  Cards naturally wrap onto new rows when there
-           are more than two per sheet. */
-        .a4 .cards-grid-bw{
+        /* Base wrapper for print: A4 portrait with zero padding */
+        .a4{
+          width:210mm;
+          min-height:auto;
+          margin:0 auto;
+          padding:0;
+        }
+        @media print{
+          @page{ size:A4 portrait; margin:10mm; }
+          .a4{ width:auto; padding:0; }
+        }
+        /* Business cards grid: 2 columns, equal gaps */
+        .a4 .biz-cards-grid{
           display:grid;
-          grid-template-columns:repeat(2, 92mm);
-          column-gap:6mm;
-          row-gap:6mm;
+          grid-template-columns:repeat(2, 90mm);
+          column-gap:8mm;
+          row-gap:8mm;
           justify-content:center;
           align-items:start;
         }
-
-        /* Card cell wrapper.  Adds a dashed border as a cutting guide and
-           centres the inner card.  The minimum height is increased so that
-           three rows comfortably fit on an A4 page (2 columns × 3 rows = 6
-           cards). */
-        .a4 .card-cell-bw{
-          width:92mm;
-          min-height:85mm;
-          height:auto;
+        /* Each cell defines the cut line (dashed) and ensures
+         * cards do not break across pages.  Height matches a
+         * standard business card (55mm) plus padding. */
+        .a4 .biz-card-cell{
+          width:90mm;
+          height:55mm;
           box-sizing:border-box;
-          padding:4mm;
-          border:1px dashed #888;
-          border-radius:6px;
+          padding:3mm;
+          border:1px dashed #666;
+          border-radius:2mm;
+          break-inside:avoid;
+          page-break-inside:avoid;
           display:flex;
           align-items:center;
           justify-content:center;
-          break-inside:avoid;
-          page-break-inside:avoid;
         }
-
-        /* Remove margin on the inner exam card to maximise printable area. */
-        .a4 .card-cell-bw .exam-card{ margin:0; }
-
-        /* Apply grayscale filter to the coloured card while preserving
-           contrast.  Slightly increase brightness to ensure dark areas are
-           legible on white paper. */
-        .a4 .bw-card .exam-card{
-          filter: grayscale(100%) contrast(1.1) brightness(1.05);
-          box-shadow:none !important;
+        /* Card container: solid border and soft background */
+        .a4 .biz-card{
+          width:100%;
+          height:100%;
+          border:1px solid #000;
+          border-radius:2mm;
+          padding:2.5mm 3mm;
+          display:flex;
+          flex-direction:column;
+          justify-content:space-between;
+          background:#fff;
         }
-
-        /* Hide decorative overlays on the card when printing (e.g. blurred
-           backgrounds) to avoid muddy greys. */
-        .a4 .bw-card .exam-card:before,
-        .a4 .bw-card .exam-card:after{
-          display:none !important;
-          content:none !important;
+        /* Header: brand and card type */
+        .a4 .biz-card-header{
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          border-bottom:1px solid #bbb;
+          padding-bottom:1mm;
+          margin-bottom:1mm;
+          font-size:9pt;
+          font-weight:600;
         }
-
-        /* Stacking behaviour on very narrow screens: fall back to a single column. */
+        .a4 .biz-card-brand{
+          display:flex;
+          align-items:center;
+          gap:1.5mm;
+        }
+        .a4 .biz-card-logo i{
+          font-size:11pt;
+          color:#000;
+        }
+        .a4 .biz-card-title{
+          font-size:8.5pt;
+          font-weight:800;
+          letter-spacing:0.2pt;
+          white-space:nowrap;
+        }
+        .a4 .biz-card-type{
+          font-size:6.7pt;
+          font-weight:600;
+          padding:1mm 2mm;
+          border:1px solid #222;
+          border-radius:2mm;
+        }
+        /* Body: spaced rows for each piece of information */
+        .a4 .biz-card-body{
+          flex:1;
+          display:flex;
+          flex-direction:column;
+          justify-content:space-evenly;
+        }
+        .a4 .biz-row{
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          font-size:7.4pt;
+          margin-bottom:1mm;
+        }
+        .a4 .biz-key{
+          font-weight:600;
+          color:#333;
+        }
+        .a4 .biz-val{
+          font-weight:700;
+          color:#000;
+          text-align:right;
+          max-width:60%;
+          overflow-wrap:anywhere;
+        }
+        /* Ensure all icons render black in print */
+        .a4 .biz-card i{
+          color:#000 !important;
+        }
+        /* Responsive: fallback to single column on small screens */
         @media (max-width: 575.98px){
-          .a4 .cards-grid-bw{
-            grid-template-columns: 1fr;
+          .a4 .biz-cards-grid{
+            grid-template-columns:1fr;
             column-gap:0;
-            row-gap:8mm;
+            row-gap:10mm;
           }
-          .a4 .card-cell-bw{
+          .a4 .biz-card-cell{
             width:auto;
+            height:auto;
             padding:0;
-            min-height:auto;
+            border:none;
           }
-        }
-
-        /* Standardise page margins for printing and remove padding from the
-           container so that margins are controlled solely by @page. */
-        @media print{
-          @page{ size:A4; margin:10mm; }
-          .a4{ padding:0; }
+          .a4 .biz-card{
+            border:none;
+          }
         }
       `;
-
-      // Invoke the print helper without header titles; only cards should appear.
-      printDocument({ title: "", subtitle: "", bodyHtml, extraCss });
+      printDocument({ title:"", subtitle:"", bodyHtml, extraCss });
     };
 
     // Modernised and isolated list printing. This implementation collects the filtered
