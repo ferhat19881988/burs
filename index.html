@@ -2090,70 +2090,72 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // and strong typography to convey student and exam information.  The
     // resulting markup is used exclusively for bulk printing and does not
     // interfere with the main application styles.
-    function generateBizCardHTML(data){
-      /*
-       * Build a richly styled business card for each student.  This
-       * implementation introduces icons alongside each label and
-       * reorders the content to improve the visual hierarchy.  The
-       * header features a colour gradient drawn from the app's brand
-       * palette and houses the logo and card type.  Below, each
-       * information row uses a small icon, a key and a value.  Long
-       * strings are truncated with ellipses via CSS so the layout
-       * remains tidy even with lengthy exam names or locations.  All
-       * HTML entities are escaped to prevent injection.
-       */
+    function generateBizCardHTML(data) {
       const studentName = toUpperTR(data.studentName || "");
-      const studentNo   = data.studentNo   || "";
-      const tc          = String(data.tc || "");
-      const tcPretty    = (tc.length === 11)
-        ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
+      const studentNo = data.studentNo || "";
+      const tc = String(data.tc || "");
+      // TC'yi maskelemek istersen: stars yerine tc yazabilirsin
+      const tcPretty = (tc.length === 11) 
+        ? `${tc.slice(0, 3)} ${tc.slice(3, 6)} ${tc.slice(6, 9)} ${tc.slice(9)}` 
         : tc;
-      const exam  = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
-      const date  = data.examDate || data.date || data.exam_date || "";
-      const time  = data.examTime || data.time || data.exam_time || "";
-      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
+        
+      const exam = normSpaces(data.examName || data.exam || "");
+      const date = data.examDate || "";
+      const time = data.examTime || "";
+      const place = normSpaces(data.place || "Fenomen Eğitim Kurumları");
+
+      // Sınav tarihi ve saati birleştir
+      const dateTimeStr = (date && time) ? `${date} • ${time}` : (date || time || "");
 
       return `
-        <div class="biz-card">
-          <div class="biz-card-header">
-            <div class="biz-card-brand">
-              <div class="biz-card-logo"><i class="fa-solid fa-user-graduate"></i></div>
-              <div class="biz-card-title">Fenomen Eğitim Kurumları</div>
+        <div class="biz-card-wrapper">
+            <div class="biz-card">
+                <div class="biz-header">
+                    <div class="biz-logo-area">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="biz-header-text">
+                        <div class="biz-org-name">FENOMEN EĞİTİM KURUMLARI</div>
+                        <div class="biz-doc-type">SINAV GİRİŞ KARTI</div>
+                    </div>
+                </div>
+                
+                <div class="biz-body">
+                    <div class="biz-field">
+                        <div class="biz-label">ADI SOYADI</div>
+                        <div class="biz-value big-text">${escapeHtml(studentName)}</div>
+                    </div>
+                    
+                    <div class="biz-row-split">
+                        <div class="biz-field">
+                            <div class="biz-label">ÖĞRENCİ NO</div>
+                            <div class="biz-value fw-black">${escapeHtml(studentNo)}</div>
+                        </div>
+                        <div class="biz-field text-end">
+                            <div class="biz-label">T.C. KİMLİK NO</div>
+                            <div class="biz-value">${escapeHtml(tcPretty)}</div>
+                        </div>
+                    </div>
+
+                    <div class="biz-divider"></div>
+
+                    <div class="biz-field">
+                        <div class="biz-label">SINAV</div>
+                        <div class="biz-value">${escapeHtml(exam)}</div>
+                    </div>
+
+                    <div class="biz-row-split">
+                        <div class="biz-field">
+                            <div class="biz-label">TARİH / SAAT</div>
+                            <div class="biz-value">${escapeHtml(dateTimeStr)}</div>
+                        </div>
+                    </div>
+                     <div class="biz-field mt-1">
+                        <div class="biz-label">SALON / YER</div>
+                        <div class="biz-value small-text">${escapeHtml(place)}</div>
+                    </div>
+                </div>
             </div>
-            <div class="biz-card-type">Giriş Kartı</div>
-          </div>
-          <div class="biz-card-body">
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-user"></i></span>
-              <span class="biz-key">Ad Soyad</span>
-              <span class="biz-val" title="${escapeHtml(studentName)}">${escapeHtml(studentName)}</span>
-            </div>
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-id-card"></i></span>
-              <span class="biz-key">Öğrenci No</span>
-              <span class="biz-val">${escapeHtml(studentNo)}</span>
-            </div>
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-address-card"></i></span>
-              <span class="biz-key">T.C.</span>
-              <span class="biz-val" title="${escapeHtml(tc)}">${escapeHtml(tcPretty)}</span>
-            </div>
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-book-open"></i></span>
-              <span class="biz-key">Sınav</span>
-              <span class="biz-val" title="${escapeHtml(exam)}">${escapeHtml(exam)}</span>
-            </div>
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-calendar-days"></i></span>
-              <span class="biz-key">Tarih / Saat</span>
-              <span class="biz-val">${escapeHtml(date)}${date && time ? ' • ' : ''}${escapeHtml(time)}</span>
-            </div>
-            <div class="biz-row">
-              <span class="biz-icon"><i class="fa-solid fa-location-dot"></i></span>
-              <span class="biz-key">Yer</span>
-              <span class="biz-val" title="${escapeHtml(place)}">${escapeHtml(place)}</span>
-            </div>
-          </div>
         </div>
       `;
     }
@@ -3229,315 +3231,222 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       return filtered;
     }
 
-    window.printBulkCards = async () => {
-      // Validate selection
+   window.printBulkCards = async () => {
+      // 1. Seçimi Kontrol Et
       const ids = selectedAdminIds();
       if (!ids.length) {
         Swal.fire("Uyarı", "Kart basmak için listeden kişi seçiniz.", "warning");
         return;
       }
+      
       const selected = dbStudents.filter(s => ids.includes(s.id));
       if (!selected.length) {
         Swal.fire("Uyarı", "Seçilen kayıt bulunamadı.", "warning");
         return;
       }
-      /*
-       * Build a fresh, modern business‑card layout for each selected
-       * student.  Cards are arranged in two columns on each A4 page
-       * (portrait orientation) with consistent spacing and dashed
-       * outlines for cutting.  The design deliberately avoids
-       * borrowing styles from the coloured exam cards to ensure
-       * complete independence.  Should the list span multiple
-       * pages, the grid continues seamlessly.
-       */
-      const bodyHtml = `
-        <div class="biz-cards-grid">
-          ${selected.map(s => `
-            <div class="biz-card-cell">
-              ${generateBizCardHTML(s)}
+
+      // 2. Öğrencileri 8'li gruplara (A4 başına) böl
+      // A4 Kağıdına: 2 Sütun x 4 Satır = 8 Kart sığdırıyoruz.
+      const cardsPerPage = 8;
+      const chunks = [];
+      for (let i = 0; i < selected.length; i += cardsPerPage) {
+        chunks.push(selected.slice(i, i + cardsPerPage));
+      }
+
+      // 3. HTML Gövdesini Oluştur (Her sayfa .sheet sınıfı ile ayrılır)
+      let bodyHtml = "";
+      
+      chunks.forEach((chunk, pageIndex) => {
+        // Kartları oluştur
+        const cardsHtml = chunk.map(student => generateBizCardHTML(student)).join("");
+        
+        // Eğer 8'den az kart varsa gridin bozulmaması için boş div eklemeye gerek yok,
+        // CSS Grid bunu halleder. Ancak son sayfada sayfa sonu (break) olmamalı.
+        const pageBreakClass = (pageIndex < chunks.length - 1) ? 'page-break' : '';
+
+        bodyHtml += `
+          <div class="sheet ${pageBreakClass}">
+            <div class="sheet-grid">
+                ${cardsHtml}
             </div>
-          `).join("")}
-        </div>
-      `;
-      /*
-       * Custom CSS for the business card print layout.  We use
-       * portrait A4 orientation by default.  Two cards fit per
-       * row with four rows on each page (90×55 mm standard card
-       * dimensions with gaps).  Card borders and typography are
-       * tuned for a professional black‑and‑white finish.  All
-       * styling rules are prefixed with `.a4` to limit their
-       * scope to the print document and prevent leakage back into
-       * the admin UI.
-       */
+            <div class="cut-guide-text">Sayfa ${pageIndex + 1} / ${chunks.length} • Kesim Çizgilerinden Ayırınız</div>
+          </div>
+        `;
+      });
+
+      // 4. CSS (Baskı Stilleri)
       const extraCss = `
-        /* Base wrapper for print: A4 portrait with zero padding */
-        .a4{
-          width:210mm;
-          min-height:auto;
-          margin:0 auto;
-          padding:0;
+        /* A4 Sıfırlama */
+        @page { 
+            size: A4 portrait; 
+            margin: 0; 
         }
-        @media print{
-          @page{ size:A4 portrait; margin:10mm; }
-          .a4{ width:auto; padding:0; }
+        
+        /* Genel Yazı Tipi */
+        .sheet {
+            width: 210mm;
+            height: 297mm;
+            padding: 12mm 10mm; /* Yazıcı güvenli alanı */
+            margin: 0 auto;
+            box-sizing: border-box;
+            background: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        /* Business cards grid: 2 columns, equal gaps */
-        .a4 .biz-cards-grid{
-          display:grid;
-          grid-template-columns:repeat(2, 90mm);
-          column-gap:8mm;
-          row-gap:8mm;
-          justify-content:center;
-          align-items:start;
+
+        /* Sayfa Sonu Mantığı */
+        .page-break {
+            page-break-after: always;
         }
-        /* Each cell defines the cut line (dashed) and ensures
-         * cards do not break across pages.  Height matches a
-         * standard business card (55mm) plus padding. */
-        .a4 .biz-card-cell{
-          width:90mm;
-          height:55mm;
-          box-sizing:border-box;
-          padding:3mm;
-          border:1px dashed #666;
-          border-radius:2mm;
-          break-inside:avoid;
-          page-break-inside:avoid;
-          display:flex;
-          align-items:center;
-          justify-content:center;
+
+        /* Izgara Yapısı: 2 Sütun, 4 Satır */
+        .sheet-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 90mm);
+            grid-template-rows: repeat(4, 58mm); /* Kart yüksekliği + boşluk payı */
+            column-gap: 8mm;
+            row-gap: 6mm;
+            justify-content: center;
         }
-        /* Card container: solid border and soft background */
-        .a4 .biz-card{
-          width:100%;
-          height:100%;
-          border:1px solid #000;
-          border-radius:2mm;
-          padding:2.5mm 3mm;
-          display:flex;
-          flex-direction:column;
-          justify-content:space-between;
-          background:#fff;
+
+        /* Kart Dış Kapsayıcı */
+        .biz-card-wrapper {
+            width: 90mm;
+            height: 55mm; /* Standart Kartvizit Boyutu */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        /* Header: brand and card type */
-        .a4 .biz-card-header{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          border-bottom:1px solid #bbb;
-          padding-bottom:1mm;
-          margin-bottom:1mm;
-          font-size:9pt;
-          font-weight:600;
+
+        /* Kartın Kendisi (Çizgili Alan) */
+        .biz-card {
+            width: 100%;
+            height: 100%;
+            border: 1px dashed #94a3b8; /* Kesim Çizgisi Rengi */
+            border-radius: 6px;
+            padding: 4mm;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            position: relative;
         }
-        .a4 .biz-card-brand{
-          display:flex;
-          align-items:center;
-          gap:1.5mm;
+
+        /* Kart Header */
+        .biz-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
         }
-        .a4 .biz-card-logo i{
-          font-size:11pt;
-          color:#000;
+        .biz-logo-area {
+            width: 28px;
+            height: 28px;
+            background: #0f172a;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
         }
-        .a4 .biz-card-title{
-          font-size:8.5pt;
-          font-weight:800;
-          letter-spacing:0.2pt;
-          white-space:nowrap;
+        .biz-header-text {
+            flex: 1;
         }
-        .a4 .biz-card-type{
-          font-size:6.7pt;
-          font-weight:600;
-          padding:1mm 2mm;
-          border:1px solid #222;
-          border-radius:2mm;
+        .biz-org-name {
+            font-size: 9px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: 0.5px;
         }
-        /* Body: spaced rows for each piece of information */
-        .a4 .biz-card-body{
-          flex:1;
-          display:flex;
-          flex-direction:column;
-          justify-content:space-evenly;
+        .biz-doc-type {
+            font-size: 7px;
+            font-weight: 600;
+            background: #e2e8f0;
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-top: 1px;
         }
-        .a4 .biz-row{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          font-size:7.4pt;
-          margin-bottom:1mm;
+
+        /* Kart Body */
+        .biz-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .a4 .biz-key{
-          font-weight:600;
-          color:#333;
+        .biz-row-split {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
-        .a4 .biz-val{
-          font-weight:700;
-          color:#000;
-          text-align:right;
-          max-width:60%;
-          overflow-wrap:anywhere;
+        .biz-field {
+            line-height: 1.1;
         }
-        /* Ensure all icons render black in print */
-        .a4 .biz-card i{
-          color:#000 !important;
+        .biz-label {
+            font-size: 6px;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 1px;
         }
-        /* Modern card overrides: refine typography, colours and spacing.
-           These rules override earlier definitions to deliver a more
-           contemporary business-card appearance without affecting the
-           admin interface. */
-        .a4 .biz-card{
-          border:1px solid #e5e7eb;
-          border-radius:3mm;
-          box-shadow:0 2mm 4mm rgba(0,0,0,0.08);
-          overflow:hidden;
-          background:#ffffff;
+        .biz-value {
+            font-size: 9px;
+            font-weight: 700;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
-        .a4 .biz-card-header{
-          background:linear-gradient(135deg,#2563eb 0%, #7c3aed 100%);
-          color:#ffffff;
-          padding:3mm 3mm 2mm;
-          margin:0;
-          border-bottom:none;
-          font-size:9pt;
+        .biz-value.big-text {
+            font-size: 11px;
+            font-weight: 800;
         }
-        .a4 .biz-card-brand{
-          gap:2mm;
+        .biz-value.fw-black {
+            font-weight: 900;
+            font-size: 12px;
         }
-        .a4 .biz-card-logo i{
-          font-size:14pt;
-          color:inherit;
+        .biz-value.small-text {
+            font-size: 8px;
+            white-space: normal;
+            line-height: 1;
         }
-        .a4 .biz-card-title{
-          font-size:10pt;
-          font-weight:800;
-          letter-spacing:0.3pt;
+        .text-end { text-align: right; }
+        .biz-divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 2px 0;
         }
-        .a4 .biz-card-type{
-          font-size:7pt;
-          font-weight:700;
-          padding:1mm 2mm;
-          background:rgba(255,255,255,0.25);
-          color:#ffffff;
-          border-radius:2mm;
-          border:none;
+        .mt-1 { margin-top: 2px; }
+
+        /* Footer Kılavuz Yazısı */
+        .cut-guide-text {
+            position: absolute;
+            bottom: 10mm;
+            font-size: 8px;
+            color: #94a3b8;
         }
-        .a4 .biz-card-body{
-          background:#f9fafb;
-          padding:3mm;
-          gap:1.5mm;
-        }
-        .a4 .biz-row{
-          align-items:center;
-          gap:1.6mm;
-          font-size:7.2pt;
-        }
-        .a4 .biz-icon i{
-          font-size:7.2pt;
-          color:#2563eb;
-        }
-        .a4 .biz-key{
-          font-weight:600;
-          color:#475569;
-          white-space:nowrap;
-        }
-        .a4 .biz-val{
-          font-weight:700;
-          color:#1e293b;
-          text-align:right;
-          flex:1;
-          overflow-wrap:anywhere;
-        }
-        /* Lighten the dashed cut lines around each card cell.  The
-           border is softened and the radius increased to mirror the
-           card corners. */
-        .a4 .biz-card-cell{
-          border:1px dashed #94a3b8;
-          border-radius:3mm;
-        }
-        /* Modern card overrides: refine typography, colours and spacing.
-           These rules override earlier definitions to deliver a more
-           contemporary business-card appearance without affecting the
-           admin interface. */
-        .a4 .biz-card{
-          border:1px solid #e5e7eb;
-          border-radius:3mm;
-          box-shadow:0 2mm 4mm rgba(0,0,0,0.08);
-          overflow:hidden;
-          background:#ffffff;
-        }
-        .a4 .biz-card-header{
-          background:linear-gradient(135deg,#2563eb 0%, #7c3aed 100%);
-          color:#ffffff;
-          padding:3mm 3mm 2mm;
-          margin:0;
-          border-bottom:none;
-          font-size:9pt;
-        }
-        .a4 .biz-card-brand{
-          gap:2mm;
-        }
-        .a4 .biz-card-logo i{
-          font-size:14pt;
-          color:inherit;
-        }
-        .a4 .biz-card-title{
-          font-size:10pt;
-          font-weight:800;
-          letter-spacing:0.3pt;
-        }
-        .a4 .biz-card-type{
-          font-size:7pt;
-          font-weight:700;
-          padding:1mm 2mm;
-          background:rgba(255,255,255,0.25);
-          color:#ffffff;
-          border-radius:2mm;
-          border:none;
-        }
-        .a4 .biz-card-body{
-          background:#f9fafb;
-          padding:3mm;
-          gap:1.5mm;
-        }
-        .a4 .biz-row{
-          align-items:center;
-          gap:1.6mm;
-          font-size:7.2pt;
-        }
-        .a4 .biz-icon i{
-          font-size:7.2pt;
-          color:#2563eb;
-        }
-        .a4 .biz-key{
-          font-weight:600;
-          color:#475569;
-          white-space:nowrap;
-        }
-        .a4 .biz-val{
-          font-weight:700;
-          color:#1e293b;
-          text-align:right;
-          flex:1;
-          overflow-wrap:anywhere;
-        }
-        /* Responsive: fallback to single column on small screens */
-        @media (max-width: 575.98px){
-          .a4 .biz-cards-grid{
-            grid-template-columns:1fr;
-            column-gap:0;
-            row-gap:10mm;
-          }
-          .a4 .biz-card-cell{
-            width:auto;
-            height:auto;
-            padding:0;
-            border:none;
-          }
-          .a4 .biz-card{
-            border:none;
-          }
+
+        @media print {
+            body, .a4 { margin: 0 !important; padding: 0 !important; background: none; }
+            .sheet { box-shadow: none; margin: 0; page-break-after: always; }
+            .sheet:last-child { page-break-after: auto; }
+            .no-print { display: none !important; }
         }
       `;
-      printDocument({ title:"", subtitle:"", bodyHtml, extraCss });
+
+      // 5. Yazdırma Penceresini Aç
+      printDocument({
+        title: "", // Başlık boş, çünkü .sheet yapısı her şeyi kapsıyor
+        subtitle: "",
+        bodyHtml: bodyHtml,
+        extraCss: extraCss
+      });
     };
 
     // Modernised and isolated list printing. This implementation collects the filtered
