@@ -3174,10 +3174,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </div>
       `;
       const extraCss = `
-        /* Two-column card grid sized so that 6–8 cards fit on one A4 page.
-           Each column is 92 mm wide. With a 6 mm gap between columns and rows,
-           four rows of two cards (8 total) occupy approximately 264 mm of
-           vertical space, leaving room for margins. */
+        /*
+         * Arrange the exam cards in a two‑column grid for bulk printing.  Each
+         * column is 92 mm wide and separated by a 6 mm gutter so the total
+         * width (92 × 2 + 6) fits neatly into the printable area of an A4
+         * sheet after 10 mm margins are applied on the left and right.  The
+         * grid will flow vertically, automatically wrapping cards onto the
+         * next page once the available height is exhausted.  To provide
+         * sufficient space for legible cards, the minimum height of a cell is
+         * increased to 85 mm.  This yields a comfortable three rows per
+         * page (6 cards per sheet).  Should the card content be shorter, the
+         * browser will naturally fit four rows on a page without clipping.
+         */
         .a4 .cards-grid{
           display:grid;
           grid-template-columns:repeat(2, 92mm);
@@ -3187,12 +3195,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           align-items:start;
         }
 
-        /* Card container with cut lines and fixed sizing.
-           Height set to 63 mm to allow four rows per page while keeping
-           the inner card (55 mm high) clear and adding space for dashed borders. */
+        /*
+         * Each card cell acts as a wrapper around the actual exam card.  A
+         * dashed border is drawn around the cell to serve as a cutting
+         * guideline.  The increased minimum height ensures that at least
+         * three rows of cards fit on a page at 1:1 scale; if the cards are
+         * shorter, up to four rows (eight cards) may be printed per sheet.
+         */
         .a4 .card-cell{
           width:92mm;
-          min-height:63mm;
+          min-height:85mm;
           height:auto;
           box-sizing:border-box;
           padding:4mm;
@@ -3206,10 +3218,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           page-break-inside:avoid;
         }
 
-        /* Remove margin from card itself when printing */
+        /* Remove default margin on the inner exam card when printing. */
         .a4 .card-cell .exam-card{ margin:0; }
 
-        /* High-contrast black/white styling for clear print */
+        /* High-contrast black/white styling for clear print. */
         .a4 .exam-card,
         .a4 .exam-card *{
           -webkit-print-color-adjust: exact;
@@ -3279,7 +3291,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           color:#000 !important;
         }
 
-        /* Mobile fallback: stack cards vertically */
+        /* Stack cards vertically on very narrow screens. */
         @media (max-width: 575.98px){
           .a4 .cards-grid{ grid-template-columns: 1fr; gap:8mm; }
           .a4 .card-cell{
@@ -3289,7 +3301,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           }
         }
 
-        /* Ensure consistent page margins and prevent double padding */
+        /* Ensure page margins are consistent and avoid duplicate padding on print. */
         @media print{
           @page{ size:A4; margin:10mm; }
           .a4{ padding:0; }
