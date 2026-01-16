@@ -3135,43 +3135,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         Swal.fire("Uyarı","Seçilen kayıt bulunamadı.","warning");
         return;
       }
-
-      // A4 sayfa başına 4 kart (2x2) olacak şekilde sayfalara böl.
-      // Böylece her yeni sayfada üst/alt boşluklar (margins) tutarlı olur.
-      const perPage = 4;
-      const pages = [];
-      for(let i=0; i<selected.length; i+=perPage){
-        const chunk = selected.slice(i, i+perPage);
-        pages.push(`
-          <section class="a4 sheet">
-            <div class="cards-grid">
-              ${chunk.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join('')}
-            </div>
-          </section>
-        `);
-      }
-
-      const bodyHtml = pages.join("");
-
+      // Build inner card grid using black-white theme for bulk printing
+      const bodyHtml = `
+        <div class="cards-grid">
+          ${selected.map(s => `<div class="card-cell">${generateCardHTML(s,{theme:'bw'})}</div>`).join("")}
+        </div>
+      `;
       const extraCss = `
-        /* Her sayfada aynı baskı payı (üst/alt boşluk) için: @page margin kullan. */
-        @media print{
-          @page{ size:A4; margin:8mm; }
-          .a4{
-            width:auto;
-            min-height:auto;
-            padding:0 !important;
-            margin:0 !important;
-          }
-          .sheet{ break-after: page; }
-          .sheet:last-child{ break-after: auto; }
-        }
-
-        /* 2x2 kart düzeni: ölçüler A4 içine taşmadan sığacak şekilde ayarlı */
+        /* Kartların birbirine girmemesi için fiziksel (mm) ölçüler */
         .a4 .cards-grid{
           display:grid;
+          /* Her satıra iki kart gelecek şekilde sütun genişlikleri tanımlandı */
           grid-template-columns:repeat(2, 94mm);
           column-gap:2mm;
+          /* Satır aralığı daha küçük tutularak sayfa yüksekliği içinde taşma engellendi */
           row-gap:3mm;
           justify-content:center;
           align-items:start;
@@ -3179,17 +3156,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
         .a4 .card-cell{
           width:94mm;
+          /* Kart yüksekliği otomatik ancak en az belirtilen kadar; böylece içerik tam görünür */
           min-height:64mm;
           height:auto;
           box-sizing:border-box;
+          /* Kart ile kesme çizgisi arasında boşluk bırakmak için dolgu */
           padding:3mm;
+          /* Kesme çizgileri için border yerine outline kullanıldı. Outline, içeriğin dışında çizilir ve kartın tasarımına dokunmaz. */
           border:none;
           outline:1px dashed #777;
           outline-offset:0;
+          /* Taşmaları engellemek için içeriğin kesilmesi kaldırıldı */
           overflow:visible;
           display:flex;
           align-items:center;
           justify-content:center;
+          /* Her kart baskı sayfasında bölünmeyecek şekilde ayarlandı */
           break-inside:avoid;
           page-break-inside:avoid;
         }
@@ -3213,6 +3195,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           border:1px solid #000 !important;
           box-shadow:none !important;
           filter:none !important;
+          /* Kartların daha kısa hücrelere sığması için minimum yükseklik azaltıldı */
           min-height:55mm !important;
         }
         .a4 .exam-card:before,
@@ -3283,6 +3266,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
         @media (max-width: 575.98px){
           .a4 .cards-grid{ grid-template-columns: 1fr; gap:12px; }
+          /* Mobilde kartlar yan yana sıkışmasın; border yerine outline kaldırıldı */
           .a4 .card-cell{
             outline:none !important;
             padding:0 !important;
@@ -3291,7 +3275,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           }
         }
       `;
-
       // When printing bulk cards, omit header titles so the sheet only contains cards.
       printDocument({
         title: "",
@@ -3306,24 +3289,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // the sort order and whether to group by exam. It then renders a clean table
     // into the print document. All styling is scoped to the print area via `.a4`
     // prefixes so it does not affect the admin panel or other tables.
-
-    // Liste çıktısı: Chromium tabanlı tarayıcılarda boş ekstra sayfa sorununu önlemek için
-    // printDocument (body margin/padding reset’li) ile üretilir. Sayfa sonu boşluk/taşma
-    // kaynaklı gereksiz 2. sayfa oluşmasını engellemek için tablo kuralları eklenmiştir.
-
-    // Liste çıktısı: Chromium tabanlı tarayıcılarda boş ekstra sayfa sorununu önlemek için
-    // printDocument (body margin/padding reset’li) ile üretilir. Tablo davranışları ve
-    // sayfa kırılmaları kontrol edilerek gereksiz 2. sayfa oluşması engellenir.
     window.printListOutput = async () => {
       const selectedIds = selectedAdminIds();
       const filtered = getAdminFilteredList();
       const list = selectedIds.length ? filtered.filter(s => selectedIds.includes(s.id)) : filtered;
-
-      if(list.length === 0){
-        Swal.fire("Uyarı","Liste boş. Önce filtre/arama yapın veya seçim yapın.","warning");
+      if (list.length === 0) {
+        Swal.fire("Uyarı", "Liste boş. Önce filtre/arama yapın veya seçim yapın.", "warning");
         return;
       }
-
+      // Prompt the user for column, sort and grouping preferences
       const { value: cfg } = await Swal.fire({
         title: "Liste Çıktısı",
         html: `
@@ -3332,7 +3306,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
               <div class="fw-semibold">Kayıt Sayısı: ${list.length}</div>
               <div class="text-secondary small">${selectedIds.length ? "Seçilen kayıtlar yazdırılacak." : "Mevcut filtre/arama sonucu yazdırılacak."}</div>
             </div>
-
             <div class="fw-semibold mb-1">Alanlar</div>
             <div class="row g-2">
               ${[
@@ -3354,136 +3327,117 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
                 </div>
               `).join("")}
             </div>
-
             <hr class="my-2">
-
             <div class="fw-semibold mb-1">Sıralama</div>
             <select id="lf_sort" class="form-select">
               <option value="no">Öğrenci No (artan)</option>
               <option value="name">Ad Soyad (A-Z)</option>
               <option value="exam">Sınav + No</option>
             </select>
-
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" id="lf_group" checked>
               <label class="form-check-label" for="lf_group">Sınava göre grupla (başlık + sayfa sonu)</label>
             </div>
           </div>
         `,
-        showCancelButton: true,
-        confirmButtonText: "Çıktı Oluştur",
-        cancelButtonText: "Vazgeç",
-        preConfirm: () => {
-          const on = (k) => document.getElementById(`lf_${k}`).checked;
-          return {
-            fields: {
-              no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
-              phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
-            },
-            sort: document.getElementById("lf_sort").value,
-            group: document.getElementById("lf_group").checked
-          };
-        }
+      showCancelButton: true,
+      confirmButtonText: "Çıktı Oluştur",
+      cancelButtonText: "Vazgeç",
+      preConfirm: () => {
+        const on = (k) => document.getElementById(`lf_${k}`).checked;
+        return {
+          fields: {
+            no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
+            phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
+          },
+          sort: document.getElementById("lf_sort").value,
+          group: document.getElementById("lf_group").checked
+        };
+      }
       });
-
-      if(!cfg) return;
-
+      if (!cfg) return;
+      // Clone list for sorting
       const rows = [...list];
-      if(cfg.sort === "name"){
-        rows.sort((a,b)=> String(a.studentName).localeCompare(String(b.studentName), "tr-TR"));
-      } else if(cfg.sort === "exam"){
-        rows.sort((a,b)=>{
-          if(a.examName !== b.examName) return String(a.examName).localeCompare(String(b.examName),"tr-TR");
+      // Apply sort
+      if (cfg.sort === "name") {
+        rows.sort((a,b) => String(a.studentName).localeCompare(String(b.studentName), "tr-TR"));
+      } else if (cfg.sort === "exam") {
+        rows.sort((a,b) => {
+          if (a.examName !== b.examName) return String(a.examName).localeCompare(String(b.examName),"tr-TR");
           return (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0);
         });
       } else {
-        rows.sort((a,b)=> (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0));
+        rows.sort((a,b) => (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0));
       }
-
+      // Determine which columns to show
       const cols = [];
-      if(cfg.fields.no) cols.push(["Öğrenci No", s => escapeHtml(s.studentNo)]);
-      if(cfg.fields.tc) cols.push(["T.C.", s => escapeHtml(s.tc)]);
-      if(cfg.fields.name) cols.push(["Ad Soyad", s => escapeHtml(s.studentName)]);
-      if(cfg.fields.school) cols.push(["Okul", s => escapeHtml(s.school || "")]);
-      if(cfg.fields.parent) cols.push(["Veli", s => escapeHtml(s.parentName || "")]);
-      if(cfg.fields.phone1) cols.push(["Telefon 1", s => escapeHtml(s.phone1 || "")]);
-      if(cfg.fields.phone2) cols.push(["Telefon 2", s => escapeHtml(s.phone2 || "")]);
-      if(cfg.fields.exam) cols.push(["Sınav", s => escapeHtml(s.examName || "")]);
-      if(cfg.fields.datetime) cols.push(["Tarih / Saat", s => escapeHtml(`${s.examDate || ""} ${s.examTime || ""}`.trim())]);
-
-      const makeTable = (arr) => `
-        <table class="print-table">
-          <thead>
-            <tr>
-              ${cols.map(c => `<th>${c[0]}</th>`).join("")}
-            </tr>
-          </thead>
-          <tbody>
-            ${arr.map(s => `
+      if (cfg.fields.no) cols.push(["Öğrenci No", s => escapeHtml(s.studentNo)]);
+      if (cfg.fields.tc) cols.push(["T.C.", s => escapeHtml(s.tc)]);
+      if (cfg.fields.name) cols.push(["Ad Soyad", s => escapeHtml(s.studentName)]);
+      if (cfg.fields.school) cols.push(["Okul", s => escapeHtml(s.school || "")]);
+      if (cfg.fields.parent) cols.push(["Veli", s => escapeHtml(s.parentName || "")]);
+      if (cfg.fields.phone1) cols.push(["Telefon 1", s => escapeHtml(s.phone1 || "")]);
+      if (cfg.fields.phone2) cols.push(["Telefon 2", s => escapeHtml(s.phone2 || "")]);
+      if (cfg.fields.exam) cols.push(["Sınav", s => escapeHtml(s.examName || "")]);
+      if (cfg.fields.datetime) cols.push(["Tarih / Saat", s => escapeHtml(`${s.examDate || ""} ${s.examTime || ""}`.trim())]);
+      // Helper to build a table of the selected columns
+      const makeTable = (arr) => {
+        return `
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
               <tr>
-                ${cols.map(c => `<td>${c[1](s)}</td>`).join("")}
+                ${cols.map(c => `<th style="border:1px solid #cbd5e1;background:#0f172a;color:#fff;padding:6px;text-align:left;">${c[0]}</th>`).join("")}
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-
+            </thead>
+            <tbody>
+              ${arr.map(s => `
+                <tr>
+                  ${cols.map(c => `<td style="border:1px solid #cbd5e1;padding:6px;vertical-align:top;">${c[1](s)}</td>`).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      };
+      // Build the body HTML. If grouping is enabled, split by exam name and insert
+      // a header + page break between groups.
       let bodyHtml = "";
-      if(cfg.group){
+      if (cfg.group) {
         const grouped = {};
         rows.forEach(s => { (grouped[s.examName] ||= []).push(s); });
-        const keys = Object.keys(grouped).sort((a,b)=> a.localeCompare(b, "tr-TR"));
+        const keys = Object.keys(grouped).sort((a,b) => a.localeCompare(b, "tr-TR"));
         keys.forEach((k, idx) => {
-          bodyHtml += `
-            <section class="group" ${idx < keys.length - 1 ? 'style="break-after:page"' : ''}>
-              <div class="group-title">${escapeHtml(k)}</div>
-              ${makeTable(grouped[k])}
-            </section>
-          `;
+          const header = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+          const tableHtml = makeTable(grouped[k]);
+          if (idx < keys.length - 1) {
+            bodyHtml += `<div style="page-break-after: always;">${header}${tableHtml}</div>`;
+          } else {
+            bodyHtml += `${header}${tableHtml}`;
+          }
         });
       } else {
         bodyHtml = makeTable(rows);
       }
-
+      // Scoped styles for printing: prefix with .a4 so that they only apply in the print document
       const extraCss = `
-        /* Her sayfada tutarlı boşluklar için @page margin kullan */
-        @media print{
-          @page{ size:A4; margin:10mm; }
-          .a4{ padding:0 !important; margin:0 !important; width:auto !important; }
-        }
-
-        .group-title{ font-weight:800; margin:0 0 2mm; }
-
-        .print-table{ width:100%; border-collapse:collapse; font-size:12px; }
-        .print-table th{
-          border:1px solid #cbd5e1;
-          background:#0f172a;
-          color:#fff;
-          padding:6px;
-          text-align:left;
-          -webkit-print-color-adjust:exact;
-          print-color-adjust:exact;
-        }
-        .print-table td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
-
-        /* Çok sayfalı listelerde başlık satırı tekrarlansın */
-        thead{ display:table-header-group; }
-        tfoot{ display:table-footer-group; }
-
-        /* Satırlar sayfa ortasında bölünmesin */
-        tr{ break-inside:avoid; page-break-inside:avoid; }
+        .a4 table{ width:100%; border-collapse:collapse; font-size:12px; }
+        .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
+        .a4 td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
       `;
-
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
-
-      printDocument({
+      /*
+       * Liste çıktılarını doğrudan mevcut sayfaya enjekte edip printDocument ile yazdırmak bazı
+       * tarayıcılarda (özellikle Chromium tabanlı) boş veya hatalı sayfa üretimine neden
+       * olabiliyor. Daha kararlı bir çıktı için printInPage fonksiyonu kullanılmaktadır.
+       * Bu fonksiyon yeni bir pencerede içeriği oluşturur ve orada yazdırma işlemini tetikler.
+       */
+      printInPage({
         title: "Liste Çıktısı",
         subtitle: subtitleStr,
         bodyHtml: bodyHtml,
         extraCss: extraCss
       });
     };
-
 
     window.printAttendanceOutput = async () => {
       const selectedIds = selectedAdminIds();
