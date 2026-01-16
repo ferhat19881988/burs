@@ -2091,15 +2091,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // resulting markup is used exclusively for bulk printing and does not
     // interfere with the main application styles.
     function generateBizCardHTML(data){
+      /*
+       * Build a richly styled business card for each student.  This
+       * implementation introduces icons alongside each label and
+       * reorders the content to improve the visual hierarchy.  The
+       * header features a colour gradient drawn from the app's brand
+       * palette and houses the logo and card type.  Below, each
+       * information row uses a small icon, a key and a value.  Long
+       * strings are truncated with ellipses via CSS so the layout
+       * remains tidy even with lengthy exam names or locations.  All
+       * HTML entities are escaped to prevent injection.
+       */
       const studentName = toUpperTR(data.studentName || "");
-      const studentNo = data.studentNo || "";
-      const tc = String(data.tc || "");
-      const tcPretty = (tc.length === 11)
+      const studentNo   = data.studentNo   || "";
+      const tc          = String(data.tc || "");
+      const tcPretty    = (tc.length === 11)
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
         : tc;
-      const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
-      const date = data.examDate || data.date || data.exam_date || "";
-      const time = data.examTime || data.time || data.exam_time || "";
+      const exam  = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
+      const date  = data.examDate || data.date || data.exam_date || "";
+      const time  = data.examTime || data.time || data.exam_time || "";
       const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
 
       return `
@@ -2113,26 +2124,32 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           </div>
           <div class="biz-card-body">
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-user"></i></span>
               <span class="biz-key">Ad Soyad</span>
               <span class="biz-val" title="${escapeHtml(studentName)}">${escapeHtml(studentName)}</span>
             </div>
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-id-card"></i></span>
               <span class="biz-key">Öğrenci No</span>
               <span class="biz-val">${escapeHtml(studentNo)}</span>
             </div>
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-address-card"></i></span>
               <span class="biz-key">T.C.</span>
               <span class="biz-val" title="${escapeHtml(tc)}">${escapeHtml(tcPretty)}</span>
             </div>
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-book-open"></i></span>
               <span class="biz-key">Sınav</span>
               <span class="biz-val" title="${escapeHtml(exam)}">${escapeHtml(exam)}</span>
             </div>
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-calendar-days"></i></span>
               <span class="biz-key">Tarih / Saat</span>
               <span class="biz-val">${escapeHtml(date)}${date && time ? ' • ' : ''}${escapeHtml(time)}</span>
             </div>
             <div class="biz-row">
+              <span class="biz-icon"><i class="fa-solid fa-location-dot"></i></span>
               <span class="biz-key">Yer</span>
               <span class="biz-val" title="${escapeHtml(place)}">${escapeHtml(place)}</span>
             </div>
@@ -3362,6 +3379,145 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         /* Ensure all icons render black in print */
         .a4 .biz-card i{
           color:#000 !important;
+        }
+        /* Modern card overrides: refine typography, colours and spacing.
+           These rules override earlier definitions to deliver a more
+           contemporary business-card appearance without affecting the
+           admin interface. */
+        .a4 .biz-card{
+          border:1px solid #e5e7eb;
+          border-radius:3mm;
+          box-shadow:0 2mm 4mm rgba(0,0,0,0.08);
+          overflow:hidden;
+          background:#ffffff;
+        }
+        .a4 .biz-card-header{
+          background:linear-gradient(135deg,#2563eb 0%, #7c3aed 100%);
+          color:#ffffff;
+          padding:3mm 3mm 2mm;
+          margin:0;
+          border-bottom:none;
+          font-size:9pt;
+        }
+        .a4 .biz-card-brand{
+          gap:2mm;
+        }
+        .a4 .biz-card-logo i{
+          font-size:14pt;
+          color:inherit;
+        }
+        .a4 .biz-card-title{
+          font-size:10pt;
+          font-weight:800;
+          letter-spacing:0.3pt;
+        }
+        .a4 .biz-card-type{
+          font-size:7pt;
+          font-weight:700;
+          padding:1mm 2mm;
+          background:rgba(255,255,255,0.25);
+          color:#ffffff;
+          border-radius:2mm;
+          border:none;
+        }
+        .a4 .biz-card-body{
+          background:#f9fafb;
+          padding:3mm;
+          gap:1.5mm;
+        }
+        .a4 .biz-row{
+          align-items:center;
+          gap:1.6mm;
+          font-size:7.2pt;
+        }
+        .a4 .biz-icon i{
+          font-size:7.2pt;
+          color:#2563eb;
+        }
+        .a4 .biz-key{
+          font-weight:600;
+          color:#475569;
+          white-space:nowrap;
+        }
+        .a4 .biz-val{
+          font-weight:700;
+          color:#1e293b;
+          text-align:right;
+          flex:1;
+          overflow-wrap:anywhere;
+        }
+        /* Lighten the dashed cut lines around each card cell.  The
+           border is softened and the radius increased to mirror the
+           card corners. */
+        .a4 .biz-card-cell{
+          border:1px dashed #94a3b8;
+          border-radius:3mm;
+        }
+        /* Modern card overrides: refine typography, colours and spacing.
+           These rules override earlier definitions to deliver a more
+           contemporary business-card appearance without affecting the
+           admin interface. */
+        .a4 .biz-card{
+          border:1px solid #e5e7eb;
+          border-radius:3mm;
+          box-shadow:0 2mm 4mm rgba(0,0,0,0.08);
+          overflow:hidden;
+          background:#ffffff;
+        }
+        .a4 .biz-card-header{
+          background:linear-gradient(135deg,#2563eb 0%, #7c3aed 100%);
+          color:#ffffff;
+          padding:3mm 3mm 2mm;
+          margin:0;
+          border-bottom:none;
+          font-size:9pt;
+        }
+        .a4 .biz-card-brand{
+          gap:2mm;
+        }
+        .a4 .biz-card-logo i{
+          font-size:14pt;
+          color:inherit;
+        }
+        .a4 .biz-card-title{
+          font-size:10pt;
+          font-weight:800;
+          letter-spacing:0.3pt;
+        }
+        .a4 .biz-card-type{
+          font-size:7pt;
+          font-weight:700;
+          padding:1mm 2mm;
+          background:rgba(255,255,255,0.25);
+          color:#ffffff;
+          border-radius:2mm;
+          border:none;
+        }
+        .a4 .biz-card-body{
+          background:#f9fafb;
+          padding:3mm;
+          gap:1.5mm;
+        }
+        .a4 .biz-row{
+          align-items:center;
+          gap:1.6mm;
+          font-size:7.2pt;
+        }
+        .a4 .biz-icon i{
+          font-size:7.2pt;
+          color:#2563eb;
+        }
+        .a4 .biz-key{
+          font-weight:600;
+          color:#475569;
+          white-space:nowrap;
+        }
+        .a4 .biz-val{
+          font-weight:700;
+          color:#1e293b;
+          text-align:right;
+          flex:1;
+          overflow-wrap:anywhere;
         }
         /* Responsive: fallback to single column on small screens */
         @media (max-width: 575.98px){
