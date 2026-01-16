@@ -3174,20 +3174,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </div>
       `;
       const extraCss = `
-        /* Two-column card grid for A4 printing with consistent margins */
+        /* Two-column card grid sized so that 6–8 cards fit on one A4 page.
+           Each column is 92 mm wide. With a 6 mm gap between columns and rows,
+           four rows of two cards (8 total) occupy approximately 264 mm of
+           vertical space, leaving room for margins. */
         .a4 .cards-grid{
           display:grid;
-          grid-template-columns:repeat(2, 95mm);
-          column-gap:5mm;
-          row-gap:5mm;
+          grid-template-columns:repeat(2, 92mm);
+          column-gap:6mm;
+          row-gap:6mm;
           justify-content:center;
           align-items:start;
         }
 
-        /* Card container with cut lines (dashed border) and fixed sizing */
+        /* Card container with cut lines and fixed sizing.
+           Height set to 63 mm to allow four rows per page while keeping
+           the inner card (55 mm high) clear and adding space for dashed borders. */
         .a4 .card-cell{
-          width:95mm;
-          min-height:70mm;
+          width:92mm;
+          min-height:63mm;
           height:auto;
           box-sizing:border-box;
           padding:4mm;
