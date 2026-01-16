@@ -515,13 +515,21 @@
 
   /* Keep exact physical size in print */
   @media print{
+    /*
+      In print we size cards relative to their parent cell so that they align perfectly
+      within the dashed cut marks. Using percentage widths allows the card to fill the
+      available space inside each .card-cell even if the page is rendered at a different
+      DPI. Millimetre-based units are used for the minimum height so cards have
+      consistent proportions on A4 paper. Padding is also defined in millimetres to
+      avoid subtle misalignments when pixel units are converted by the printer. */
     .exam-card{
-      width:90mm;
+      width:100%;
       height:auto;
       min-height:65mm;
-      padding:10px;
+      padding:2mm;
       border-radius:16px;
       box-shadow:none;
+      margin:0;
     }
   }
 
@@ -570,9 +578,33 @@
 
   /* Print */
   @media print{
-    body *{visibility:hidden !important;}
-    #printArea, #printArea *{visibility:visible !important;}
-    #printArea{position:absolute;left:0;top:0;width:100%;}
+    /* When printing, completely remove all layout boxes outside of the dedicated print area. Using
+       display:none ensures elements such as the admin panel and main menu (which normally use
+       flexbox with min-height:100vh) do not reserve space and create unwanted blank pages. */
+    body *{
+      display:none !important;
+      visibility:hidden !important;
+    }
+    /* Show the hidden print area and all of its descendants. The display override
+       ensures they participate in layout, while visibility makes them visible. */
+    #printArea, #printArea *{
+      display:revert !important;
+      visibility:visible !important;
+    }
+    /* Position the print area at the top of the page. Absolute positioning keeps it out
+       of the normal flow so that other hidden elements cannot affect pagination. */
+    #printArea{
+      position:absolute;
+      left:0;
+      top:0;
+      width:100%;
+    }
+    /* Remove any scrollbars and allow content to expand naturally in print. */
+    html, body{
+      margin:0 !important;
+      padding:0 !important;
+      overflow:visible !important;
+    }
     .no-print{display:none !important;}
   }
 
