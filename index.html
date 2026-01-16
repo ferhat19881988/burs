@@ -3143,7 +3143,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       `;
       const extraCss = `
         /* Kartların birbirine girmemesi için fiziksel (mm) ölçüler */
-        .cards-grid{
+        .a4 .cards-grid{
           display:grid;
           grid-template-columns:repeat(2, 94mm);
           column-gap:2mm;
@@ -3152,9 +3152,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           align-items:start;
         }
 
-        .card-cell{
+        .a4 .card-cell{
           width:94mm;
-          height:74mm;
+          /* 8 kartın A4'e sığması için yükseklik azaltıldı. */
+          height:66mm;
           box-sizing:border-box;
           padding:2mm;
           border:1px dashed #777;
@@ -3167,7 +3168,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           page-break-inside:avoid;
         }
 
-        .card-cell .exam-card{ margin:0; }
+        .a4 .card-cell .exam-card{ margin:0; }
 
         /* ---------------------------------------
            SİYAH-BEYAZ (YÜKSEK KONTRAST) BASKI AYARI
@@ -3175,78 +3176,80 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
            - Kenarlıkları keskinleştirir
            - Tüm metni siyaha çeker
         ----------------------------------------*/
-        .exam-card,
-        .exam-card *{
+        .a4 .exam-card,
+        .a4 .exam-card *{
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
 
-        .exam-card{
+        .a4 .exam-card{
           background:#fff !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
           filter:none !important;
+          /* Kartların daha kısa hücrelere sığması için minimum yükseklik azaltıldı */
+          min-height:55mm !important;
         }
-        .exam-card:before,
-        .exam-card:after{
+        .a4 .exam-card:before,
+        .a4 .exam-card:after{
           display:none !important;
           content:none !important;
         }
 
-        .exam-card-header{
+        .a4 .exam-card-header{
           background:#fff !important;
           color:#000 !important;
           border:1px solid #000 !important;
         }
 
-        .card-title,
-        .card-type,
-        .card-sub{
+        .a4 .card-title,
+        .a4 .card-type,
+        .a4 .card-sub{
           color:#000 !important;
         }
 
-        .exam-card-header .card-type{
+        .a4 .exam-card-header .card-type{
           background:transparent !important;
           border:1px solid #000 !important;
         }
 
-        .card-mark{
+        .a4 .card-mark{
           background:transparent !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
           color:#000 !important;
         }
 
-        .kv{
+        .a4 .kv{
           border-bottom:1px solid #000 !important;
         }
-        .kv.is-tc{
+        .a4 .kv.is-tc{
           border-bottom:none !important;
         }
-        .kv .k,
-        .kv .v{
+        .a4 .kv .k,
+        .a4 .kv .v{
           color:#000 !important;
         }
 
-        .big-no{
+        .a4 .big-no{
           background:#fff !important;
           border:2px solid #000 !important;
         }
-        .big-no span,
-        .big-no strong{
+        .a4 .big-no span,
+        .a4 .big-no strong{
           color:#000 !important;
         }
 
-        .exam-card-footer{
+        .a4 .exam-card-footer{
           border-top:1px solid #000 !important;
           color:#000 !important;
         }
-        .exam-card-footer .fr-k,
-        .exam-card-footer .fr-v{
+        .a4 .exam-card-footer .fr-k,
+        .a4 .exam-card-footer .fr-v{
           color:#000 !important;
         }
 
-        .place-pill{
+        .a4 .place-pill{
           background:transparent !important;
           border:1px solid #000 !important;
           color:#000 !important;
@@ -3254,8 +3257,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
         /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
         @media (max-width: 575.98px){
-          .cards-grid{ grid-template-columns: 1fr; gap:12px; }
-          .card-cell{ border:none !important; padding:0 !important; height:auto !important; width:auto !important; }
+          .a4 .cards-grid{ grid-template-columns: 1fr; gap:12px; }
+          .a4 .card-cell{ border:none !important; padding:0 !important; height:auto !important; width:auto !important; }
         }
       `;
       // When printing bulk cards, omit header titles so the sheet only contains cards.
@@ -3267,16 +3270,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       });
     };
 
+    // Modernised and isolated list printing. This implementation collects the filtered
+    // or selected student entries, lets the user choose which columns to include,
+    // the sort order and whether to group by exam. It then renders a clean table
+    // into the print document. All styling is scoped to the print area via `.a4`
+    // prefixes so it does not affect the admin panel or other tables.
     window.printListOutput = async () => {
       const selectedIds = selectedAdminIds();
       const filtered = getAdminFilteredList();
       const list = selectedIds.length ? filtered.filter(s => selectedIds.includes(s.id)) : filtered;
-
-      if(list.length === 0){
-        Swal.fire("Uyarı","Liste boş. Önce filtre/arama yapın veya seçim yapın.","warning");
+      if (list.length === 0) {
+        Swal.fire("Uyarı", "Liste boş. Önce filtre/arama yapın veya seçim yapın.", "warning");
         return;
       }
-
+      // Prompt the user for column, sort and grouping preferences
       const { value: cfg } = await Swal.fire({
         title: "Liste Çıktısı",
         html: `
@@ -3285,7 +3292,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
               <div class="fw-semibold">Kayıt Sayısı: ${list.length}</div>
               <div class="text-secondary small">${selectedIds.length ? "Seçilen kayıtlar yazdırılacak." : "Mevcut filtre/arama sonucu yazdırılacak."}</div>
             </div>
-
             <div class="fw-semibold mb-1">Alanlar</div>
             <div class="row g-2">
               ${[
@@ -3307,105 +3313,102 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
                 </div>
               `).join("")}
             </div>
-
             <hr class="my-2">
-
             <div class="fw-semibold mb-1">Sıralama</div>
             <select id="lf_sort" class="form-select">
               <option value="no">Öğrenci No (artan)</option>
               <option value="name">Ad Soyad (A-Z)</option>
               <option value="exam">Sınav + No</option>
             </select>
-
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" id="lf_group" checked>
               <label class="form-check-label" for="lf_group">Sınava göre grupla (başlık + sayfa sonu)</label>
             </div>
           </div>
         `,
-        showCancelButton: true,
-        confirmButtonText: "Çıktı Oluştur",
-        cancelButtonText: "Vazgeç",
-        preConfirm: () => {
-          const on = (k) => document.getElementById(`lf_${k}`).checked;
-          return {
-            fields: {
-              no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
-              phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
-            },
-            sort: document.getElementById("lf_sort").value,
-            group: document.getElementById("lf_group").checked
-          };
-        }
+      showCancelButton: true,
+      confirmButtonText: "Çıktı Oluştur",
+      cancelButtonText: "Vazgeç",
+      preConfirm: () => {
+        const on = (k) => document.getElementById(`lf_${k}`).checked;
+        return {
+          fields: {
+            no: on("no"), tc: on("tc"), name: on("name"), school: on("school"), parent: on("parent"),
+            phone1: on("phone1"), phone2: on("phone2"), exam: on("exam"), datetime: on("datetime")
+          },
+          sort: document.getElementById("lf_sort").value,
+          group: document.getElementById("lf_group").checked
+        };
+      }
       });
-      if(!cfg) return;
-
+      if (!cfg) return;
+      // Clone list for sorting
       const rows = [...list];
-
-      if(cfg.sort === "name"){
-        rows.sort((a,b)=> String(a.studentName).localeCompare(String(b.studentName), "tr-TR"));
-      } else if(cfg.sort === "exam"){
-        rows.sort((a,b)=>{
-          if(a.examName !== b.examName) return String(a.examName).localeCompare(String(b.examName),"tr-TR");
+      // Apply sort
+      if (cfg.sort === "name") {
+        rows.sort((a,b) => String(a.studentName).localeCompare(String(b.studentName), "tr-TR"));
+      } else if (cfg.sort === "exam") {
+        rows.sort((a,b) => {
+          if (a.examName !== b.examName) return String(a.examName).localeCompare(String(b.examName),"tr-TR");
           return (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0);
         });
       } else {
-        rows.sort((a,b)=> (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0));
+        rows.sort((a,b) => (parseInt(a.studentNo,10)||0)-(parseInt(b.studentNo,10)||0));
       }
-
+      // Determine which columns to show
       const cols = [];
-      if(cfg.fields.no) cols.push(["Öğrenci No", s=>escapeHtml(s.studentNo)]);
-      if(cfg.fields.tc) cols.push(["T.C.", s=>escapeHtml(s.tc)]);
-      if(cfg.fields.name) cols.push(["Ad Soyad", s=>escapeHtml(s.studentName)]);
-      if(cfg.fields.school) cols.push(["Okul", s=>escapeHtml(s.school || "")]);
-      if(cfg.fields.parent) cols.push(["Veli", s=>escapeHtml(s.parentName || "")]);
-      if(cfg.fields.phone1) cols.push(["Telefon 1", s=>escapeHtml(s.phone1 || "")]);
-      if(cfg.fields.phone2) cols.push(["Telefon 2", s=>escapeHtml(s.phone2 || "")]);
-      if(cfg.fields.exam) cols.push(["Sınav", s=>escapeHtml(s.examName || "")]);
-      if(cfg.fields.datetime) cols.push(["Tarih / Saat", s=>escapeHtml(`${s.examDate || ""} ${s.examTime || ""}`.trim())]);
-
-      const makeTable = (arr) => `
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr>
-              ${cols.map(c=>`<th style="border:1px solid #cbd5e1;background:#0f172a;color:#fff;padding:6px;text-align:left;">${c[0]}</th>`).join("")}
-            </tr>
-          </thead>
-          <tbody>
-            ${arr.map(s=>`
+      if (cfg.fields.no) cols.push(["Öğrenci No", s => escapeHtml(s.studentNo)]);
+      if (cfg.fields.tc) cols.push(["T.C.", s => escapeHtml(s.tc)]);
+      if (cfg.fields.name) cols.push(["Ad Soyad", s => escapeHtml(s.studentName)]);
+      if (cfg.fields.school) cols.push(["Okul", s => escapeHtml(s.school || "")]);
+      if (cfg.fields.parent) cols.push(["Veli", s => escapeHtml(s.parentName || "")]);
+      if (cfg.fields.phone1) cols.push(["Telefon 1", s => escapeHtml(s.phone1 || "")]);
+      if (cfg.fields.phone2) cols.push(["Telefon 2", s => escapeHtml(s.phone2 || "")]);
+      if (cfg.fields.exam) cols.push(["Sınav", s => escapeHtml(s.examName || "")]);
+      if (cfg.fields.datetime) cols.push(["Tarih / Saat", s => escapeHtml(`${s.examDate || ""} ${s.examTime || ""}`.trim())]);
+      // Helper to build a table of the selected columns
+      const makeTable = (arr) => {
+        return `
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
               <tr>
-                ${cols.map(c=>`<td style="border:1px solid #cbd5e1;padding:6px;vertical-align:top;">${c[1](s)}</td>`).join("")}
+                ${cols.map(c => `<th style="border:1px solid #cbd5e1;background:#0f172a;color:#fff;padding:6px;text-align:left;">${c[0]}</th>`).join("")}
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-
-      // Build body HTML without outer A4 wrapper – printInPage will handle it
+            </thead>
+            <tbody>
+              ${arr.map(s => `
+                <tr>
+                  ${cols.map(c => `<td style="border:1px solid #cbd5e1;padding:6px;vertical-align:top;">${c[1](s)}</td>`).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      };
+      // Build the body HTML. If grouping is enabled, split by exam name and insert
+      // a header + page break between groups.
       let bodyHtml = "";
-      if(cfg.group){
-        const by = {};
-        rows.forEach(s => { (by[s.examName] ||= []).push(s); });
-        const keys = Object.keys(by).sort((a,b)=> a.localeCompare(b, "tr-TR"));
+      if (cfg.group) {
+        const grouped = {};
+        rows.forEach(s => { (grouped[s.examName] ||= []).push(s); });
+        const keys = Object.keys(grouped).sort((a,b) => a.localeCompare(b, "tr-TR"));
         keys.forEach((k, idx) => {
-          // Build section for this exam group: header + table
-          const sectionHeader = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
-          const tableHtml = makeTable(by[k]);
-          // Wrap in a container that enforces page break after each group except the last
+          const header = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+          const tableHtml = makeTable(grouped[k]);
           if (idx < keys.length - 1) {
-            bodyHtml += `<div style="page-break-after: always;">${sectionHeader}${tableHtml}</div>`;
+            bodyHtml += `<div style="page-break-after: always;">${header}${tableHtml}</div>`;
           } else {
-            bodyHtml += `${sectionHeader}${tableHtml}`;
+            bodyHtml += `${header}${tableHtml}`;
           }
         });
       } else {
         bodyHtml = makeTable(rows);
       }
-      // Define basic table styles for printing
+      // Scoped styles for printing: prefix with .a4 so that they only apply in the print document
       const extraCss = `
-        table{ width:100%; border-collapse:collapse; font-size:12px; }
-        th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
-        td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
+        .a4 table{ width:100%; border-collapse:collapse; font-size:12px; }
+        .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
+        .a4 td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
       `;
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
       printDocument({
@@ -3539,9 +3542,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       });
       // Define extra CSS for printing
       const extraCss = `
-        table{ width:100%; border-collapse:collapse; font-size:12px; }
-        th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; }
-        td{ border:1px solid #cbd5e1; padding:6px; }
+        /* Stil kuralları yalnızca yazdırma alanında geçerli olacak şekilde .a4 ile sınırlı */
+        .a4 table{ width:100%; border-collapse:collapse; font-size:12px; }
+        .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; }
+        .a4 td{ border:1px solid #cbd5e1; padding:6px; }
       `;
       // Determine subtitle: use provided dateLine if exists, else today's date
       const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
