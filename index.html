@@ -3174,60 +3174,47 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         </div>
       `;
       const extraCss = `
-        /* Kartların birbirine girmemesi için fiziksel (mm) ölçüler */
+        /* Two-column card grid for A4 printing with consistent margins */
         .a4 .cards-grid{
           display:grid;
-          /* Her satıra iki kart gelecek şekilde sütun genişlikleri tanımlandı */
-          grid-template-columns:repeat(2, 94mm);
-          column-gap:2mm;
-          /* Satır aralığı daha küçük tutularak sayfa yüksekliği içinde taşma engellendi */
-          row-gap:3mm;
+          grid-template-columns:repeat(2, 95mm);
+          column-gap:5mm;
+          row-gap:5mm;
           justify-content:center;
           align-items:start;
         }
 
+        /* Card container with cut lines (dashed border) and fixed sizing */
         .a4 .card-cell{
-          width:94mm;
-          /* Kart yüksekliği otomatik ancak en az belirtilen kadar; böylece içerik tam görünür */
-          min-height:64mm;
+          width:95mm;
+          min-height:70mm;
           height:auto;
           box-sizing:border-box;
-          /* Kart ile kesme çizgisi arasında boşluk bırakmak için dolgu */
-          padding:3mm;
-          /* Kesme çizgileri için border yerine outline kullanıldı. Outline, içeriğin dışında çizilir ve kartın tasarımına dokunmaz. */
-          border:none;
-          outline:1px dashed #777;
-          outline-offset:0;
-          /* Taşmaları engellemek için içeriğin kesilmesi kaldırıldı */
+          padding:4mm;
+          border:1px dashed #888;
+          border-radius:6px;
           overflow:visible;
           display:flex;
           align-items:center;
           justify-content:center;
-          /* Her kart baskı sayfasında bölünmeyecek şekilde ayarlandı */
           break-inside:avoid;
           page-break-inside:avoid;
         }
 
+        /* Remove margin from card itself when printing */
         .a4 .card-cell .exam-card{ margin:0; }
 
-        /* ---------------------------------------
-           SİYAH-BEYAZ (YÜKSEK KONTRAST) BASKI AYARI
-           - Renk/gradyanları kapatır
-           - Kenarlıkları keskinleştirir
-           - Tüm metni siyaha çeker
-        ----------------------------------------*/
+        /* High-contrast black/white styling for clear print */
         .a4 .exam-card,
         .a4 .exam-card *{
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-
         .a4 .exam-card{
           background:#fff !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
           filter:none !important;
-          /* Kartların daha kısa hücrelere sığması için minimum yükseklik azaltıldı */
           min-height:55mm !important;
         }
         .a4 .exam-card:before,
@@ -3235,31 +3222,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           display:none !important;
           content:none !important;
         }
-
         .a4 .exam-card-header{
           background:#fff !important;
           color:#000 !important;
           border:1px solid #000 !important;
         }
-
         .a4 .card-title,
         .a4 .card-type,
         .a4 .card-sub{
           color:#000 !important;
         }
-
         .a4 .exam-card-header .card-type{
           background:transparent !important;
           border:1px solid #000 !important;
         }
-
         .a4 .card-mark{
           background:transparent !important;
           border:1px solid #000 !important;
           box-shadow:none !important;
           color:#000 !important;
         }
-
         .a4 .kv{
           border-bottom:1px solid #000 !important;
         }
@@ -3270,7 +3252,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .a4 .kv .v{
           color:#000 !important;
         }
-
         .a4 .big-no{
           background:#fff !important;
           border:2px solid #000 !important;
@@ -3279,7 +3260,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .a4 .big-no strong{
           color:#000 !important;
         }
-
         .a4 .exam-card-footer{
           border-top:1px solid #000 !important;
           color:#000 !important;
@@ -3288,31 +3268,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         .a4 .exam-card-footer .fr-v{
           color:#000 !important;
         }
-
         .a4 .place-pill{
           background:transparent !important;
           border:1px solid #000 !important;
           color:#000 !important;
         }
 
-        /* Telefon/ dar ekranlarda kartlar yan yana sıkışmasın */
+        /* Mobile fallback: stack cards vertically */
         @media (max-width: 575.98px){
-          .a4 .cards-grid{ grid-template-columns: 1fr; gap:12px; }
-          /* Mobilde kartlar yan yana sıkışmasın; border yerine outline kaldırıldı */
+          .a4 .cards-grid{ grid-template-columns: 1fr; gap:8mm; }
           .a4 .card-cell{
-            outline:none !important;
             padding:0 !important;
-            height:auto !important;
             width:auto !important;
+            min-height:auto !important;
           }
         }
 
-        /*
-         * Sayfa geçişleri sonrasında üst ve alt boşlukların her sayfada eşit olmasını sağlamak için
-         * @page margin ayarı 10mm olarak tanımlanıyor. Ayrıca .a4 kapsayıcısının dolgusunu
-         * yazdırma sırasında kaldırarak çift boşluk oluşması engelleniyor. Böylece toplu kart
-         * basımında ilk sayfadan sonraki sayfalarda kağıt ile kart arasındaki mesafe tutarlı kalır.
-         */
+        /* Ensure consistent page margins and prevent double padding */
         @media print{
           @page{ size:A4; margin:10mm; }
           .a4{ padding:0; }
