@@ -2045,95 +2045,81 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
-    // Türkçe karakter güvenli (UTF-8) HTML kaçışlama
-    const safe = (s) => String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-    // Türkçe kurallarına uygun büyük harf dönüşümü (İ/ı, Ş/ş vb.)
-    const upperTR = (s) => String(s ?? "").toLocaleUpperCase("tr-TR");
-
-    const name = upperTR(data.studentName);
-    const school = upperTR(data.school);
-
-    const tc = String(data.tc || "");
-    const tcFmt = (tc.length === 11)
-      ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
-      : tc;
-
-    const no = String(data.studentNo || "");
-
-    // Sınav adı (verideki hali korunur; yalnızca HTML kaçışlanır)
-    const exam = safe(data.examName || "");
-
-    // Kart görselindeki biçime yakın: tarih + saat aralığı
-    const dateTime = safe(`${data.examDate || ""} • ${data.examTime || ""}`.trim());
-
+    // Türkçe karakter güvenli temizleme fonksiyonu
+    const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Türkçe kurallarına uygun büyük harf dönüşümü
+    const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
+    
+    const name = upper(data.studentName);
+    const school = upper(data.school);
+    const tc = data.tc || "";
+    // TC formatlama (11 hane ise aralıklı, değilse olduğu gibi)
+    const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
+    const no = data.studentNo || "";
+    // Sınav adını olduğu gibi al (büyük harf zorlamadık, veri nasıl gelirse)
+    const exam = safe(data.examName); 
+    const date = `${data.examDate || ""} • ${data.examTime || ""}`;
     const place = safe(data.place || "Fenomen Eğitim Kurumları");
 
     return `
-      <div class="biz-wrapper">
+    <div class="biz-wrapper">
         <div class="biz-card">
-
-          <div class="biz-header">
-            <div class="biz-brand">
-              <div class="biz-logo" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></div>
-              <div class="biz-brand-text">
-                <div class="biz-title">FENOMEN EĞİTİM KURUMLARI</div>
-                <div class="biz-subtitle">Öğrenci Giriş Belgesi</div>
-              </div>
-            </div>
-            <div class="biz-badge">GİRİŞ KARTI</div>
-          </div>
-
-          <div class="biz-body">
-            <div class="biz-lines">
-              <div class="biz-line">
-                <div class="biz-key">Öğrenci:</div>
-                <div class="biz-val biz-val-strong" title="${safe(name)}">${safe(name)}</div>
-              </div>
-              <div class="biz-line">
-                <div class="biz-key">Okul:</div>
-                <div class="biz-val biz-val-strong" title="${safe(school)}">${safe(school)}</div>
-              </div>
-              <div class="biz-line">
-                <div class="biz-key">T.C.:</div>
-                <div class="biz-val biz-val-mono">${safe(tcFmt)}</div>
-              </div>
+            <div class="biz-header">
+                <div class="biz-header-left">
+                    <div class="biz-title">FENOMEN EĞİTİM KURUMLARI</div>
+                    <div class="biz-subtitle">Öğrenci Sınav Giriş Belgesi</div>
+                </div>
+                <div class="biz-badge">GİRİŞ KARTI</div>
             </div>
 
-            <div class="biz-no-wrap">
-              <div class="biz-no-pill">
-                <div class="biz-no-label">ÖĞRENCİ NUMARASI</div>
-                <div class="biz-no-value">${safe(no)}</div>
-              </div>
+            <div class="biz-body">
+                <div class="biz-info-col">
+                    <div class="biz-row">
+                        <div class="biz-lbl">ÖĞRENCİ</div>
+                        <div class="biz-val name" title="${safe(name)}">${safe(name)}</div>
+                    </div>
+                    <div class="biz-row">
+                        <div class="biz-lbl">OKUL</div>
+                        <div class="biz-val school" title="${safe(school)}">${safe(school)}</div>
+                    </div>
+                    <div class="biz-row">
+                        <div class="biz-lbl">T.C. NO</div>
+                        <div class="biz-val tc">${safe(tcFmt)}</div>
+                    </div>
+                </div>
+                
+                <div class="biz-num-box">
+                    <div class="biz-num-lbl">ÖĞRENCİ NO</div>
+                    <div class="biz-num-val">${safe(no)}</div>
+                </div>
             </div>
-          </div>
 
-          <div class="biz-footer">
-            <div class="biz-f-row">
-              <div class="biz-f-ico" aria-hidden="true"><i class="fa-regular fa-file-lines"></i></div>
-              <div class="biz-f-key">SINAV:</div>
-              <div class="biz-f-val" title="${exam}">${exam}</div>
+            <div class="biz-footer">
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">SINAV ADI:</span>
+                        <span class="biz-f-val">${exam}</span>
+                    </div>
+                </div>
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">TARİH:</span>
+                        <span class="biz-f-val">${date}</span>
+                    </div>
+                </div>
+                <div class="biz-f-row">
+                    <div class="biz-icon"><i class="fa-solid fa-location-dot"></i></div>
+                    <div class="biz-f-content">
+                        <span class="biz-f-lbl">YER:</span>
+                        <span class="biz-f-val">${place}</span>
+                    </div>
+                </div>
             </div>
-
-            <div class="biz-f-row">
-              <div class="biz-f-ico" aria-hidden="true"><i class="fa-regular fa-clock"></i></div>
-              <div class="biz-f-key">SAAT:</div>
-              <div class="biz-f-val">${dateTime}</div>
-            </div>
-
-            <div class="biz-f-row">
-              <div class="biz-f-ico" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>
-              <div class="biz-f-key">YER:</div>
-              <div class="biz-f-val" title="${place}">${place}</div>
-            </div>
-          </div>
-
         </div>
-      </div>
+    </div>
     `;
 };
 
@@ -3240,30 +3226,18 @@ window.generateBizCardHTML = function(data) {
     // 'subset=latin-ext' parametresi Türkçe karakterlerin font dosyasında bulunmasını garanti eder.
     const printCss = `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap&subset=latin-ext');
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
+        
         @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background: #eee;
-            font-family: 'Inter', 'Poppins', 'Noto Sans', 'DejaVu Sans', 'Segoe UI', Arial, sans-serif;
-            text-rendering: geometricPrecision;
-            -webkit-font-smoothing: antialiased;
-        }
+        
+        body { margin: 0; padding: 0; background: #eee; font-family: 'Inter', sans-serif; }
 
         .print-sheet {
-            width: 210mm;
-            height: 296mm;
-            background: white;
+            width: 210mm; height: 296mm; background: white;
             margin: 0 auto;
-            padding-top: 10mm;
-            padding-left: 12mm;
-            position: relative;
-            page-break-after: always;
-            overflow: hidden;
+            padding-top: 10mm; padding-left: 12mm;
+            position: relative; page-break-after: always; overflow: hidden;
         }
 
         /* 2x4 Grid: 88mm x 64mm */
@@ -3271,249 +3245,94 @@ window.generateBizCardHTML = function(data) {
             display: grid;
             grid-template-columns: 88mm 88mm;
             grid-template-rows: repeat(4, 64mm);
-            column-gap: 8mm;
-            row-gap: 6mm;
+            column-gap: 8mm; row-gap: 6mm;
         }
 
-        /* Kesim çizgisi (dış çerçeve) */
+        /* Kesim Çizgisi */
         .biz-wrapper {
-            width: 100%;
-            height: 100%;
-            border: 1px dashed #cfcfcf;
+            width: 100%; height: 100%;
+            border: 1px dashed #ccc;
             padding: 2px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Kart gövdesi (örneğe birebir yakın) */
+        /* Kart Gövdesi */
         .biz-card {
-            width: 100%;
-            height: 100%;
-            border: 1px solid #b9b9b9;
-            border-radius: 12px;
+            width: 100%; height: 100%;
+            border: 1px solid #000;
+            border-radius: 6px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background:
-              radial-gradient(120mm 65mm at 18% 18%, rgba(255,255,255,.65), rgba(255,255,255,0) 60%),
-              radial-gradient(120mm 65mm at 95% 85%, rgba(0,0,0,.06), rgba(0,0,0,0) 60%),
-              linear-gradient(180deg, #fbfbfb 0%, #f2f2f2 100%);
-            position: relative;
+            display: flex; flex-direction: column;
+            background: #fff;
         }
 
-        /* Dalga/ışık efekti */
-        .biz-card::before{
-            content: "";
-            position: absolute;
-            inset: -20mm;
-            background:
-              conic-gradient(from 180deg,
-                rgba(0,0,0,.03),
-                rgba(255,255,255,.25),
-                rgba(0,0,0,.03),
-                rgba(255,255,255,.20),
-                rgba(0,0,0,.03)
-              );
-            filter: blur(8px);
-            opacity: .55;
-            transform: rotate(6deg);
-            pointer-events: none;
-        }
-        .biz-card > *{ position: relative; z-index: 1; }
-
-        /* Üst başlık bandı */
-        .biz-header{
+        /* Header */
+        .biz-header {
+            background: #111;
+            color: #fff;
+            padding: 6px 10px;
+            display: flex; justify-content: space-between; align-items: center;
             height: 16mm;
-            padding: 2.4mm 3mm;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: linear-gradient(180deg, #8a8a8a 0%, #5f5f5f 55%, #4a4a4a 100%);
-            border-bottom: 1px solid rgba(0,0,0,.22);
-            box-shadow: 0 1mm 2mm rgba(0,0,0,.12);
+            border-bottom: 1px solid #000;
+        }
+        .biz-header-left { display: flex; flex-direction: column; }
+        .biz-title { font-size: 13px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.1; }
+        .biz-subtitle { font-size: 8px; font-weight: 400; color: #bbb; margin-top: 2px; }
+        
+        .biz-badge {
+            background: #fff; color: #000;
+            font-size: 9px; font-weight: 800;
+            padding: 3px 6px; border-radius: 4px;
+            white-space: nowrap; border: 1px solid #000;
         }
 
-        .biz-brand{ display: flex; align-items: center; gap: 2.2mm; min-width: 0; }
-        .biz-logo{
-            width: 8.6mm;
-            height: 8.6mm;
-            border-radius: 999px;
-            background: rgba(255,255,255,.18);
-            border: 1px solid rgba(255,255,255,.28);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 10px;
-            flex: 0 0 auto;
-        }
-        .biz-brand-text{ display: flex; flex-direction: column; min-width: 0; }
-        .biz-title{
-            font-size: 11.6px;
-            font-weight: 900;
-            letter-spacing: .2px;
-            color: #fff;
-            line-height: 1.05;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .biz-subtitle{
-            font-size: 8.3px;
-            font-weight: 500;
-            color: rgba(255,255,255,.88);
-            line-height: 1.05;
-            margin-top: .6mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .biz-badge{
-            background: rgba(35,35,35,.95);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,.18);
-            font-size: 9px;
-            font-weight: 900;
-            letter-spacing: .25px;
-            padding: 1.5mm 3.2mm;
-            border-radius: 999px;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
-            white-space: nowrap;
-        }
-
-        /* Orta alan */
-        .biz-body{
+        /* Info Body */
+        .biz-body {
             flex: 1;
-            padding: 2.6mm 3.2mm 2mm 3.2mm;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
-
-        .biz-lines{ display: flex; flex-direction: column; gap: 1.2mm; }
-
-        .biz-line{
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 2mm;
-            padding-bottom: 1mm;
-            border-bottom: 1px dotted #bdbdbd;
-        }
-
-        .biz-key{
-            font-size: 10px;
-            font-weight: 800;
-            color: #2c2c2c;
-            flex: 0 0 auto;
-        }
-
-        .biz-val{
-            font-size: 10px;
-            font-weight: 800;
-            color: #111;
-            text-align: right;
-            min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .biz-val-strong{
-            font-size: 11px;
-            font-weight: 900;
-            letter-spacing: .15px;
-        }
-
-        .biz-val-mono{
-            font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', 'DejaVu Sans Mono', monospace;
-            letter-spacing: .45px;
-            font-size: 9.6px;
-            font-weight: 800;
-        }
-
-        /* Öğrenci numarası kapsülü */
-        .biz-no-wrap{
-            display: flex;
-            justify-content: center;
-            margin-top: 2.2mm;
-        }
-
-        .biz-no-pill{
-            width: calc(100% - 2mm);
-            height: 15mm;
-            border-radius: 999px;
-            background: linear-gradient(180deg, #5a5a5a 0%, #3a3a3a 55%, #2e2e2e 100%);
-            border: 1px solid rgba(0,0,0,.55);
-            box-shadow: 0 1.2mm 2.2mm rgba(0,0,0,.28);
-            display: flex;
+            padding: 6px 10px;
+            gap: 8px;
             align-items: center;
-            justify-content: space-between;
-            padding: 2mm 4mm;
-            gap: 3mm;
         }
+        .biz-info-col { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+        
+        .biz-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
+        .biz-lbl { font-size: 8px; font-weight: 700; color: #666; }
+        
+        /* Font ayarları ve Türkçe karakter uyumu için önemli */
+        .biz-val { font-size: 10px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .biz-val.name { font-size: 11.5px; font-weight: 900; }
+        .biz-val.school { white-space: normal; line-height: 1; font-size: 9px; }
+        .biz-val.tc { font-family: 'Inter', monospace; font-size: 10px; letter-spacing: 0.5px; }
 
-        .biz-no-label{
-            font-size: 7.2px;
-            font-weight: 800;
-            letter-spacing: .16em;
-            color: rgba(255,255,255,.90);
-            white-space: nowrap;
+        /* Numara Kutusu */
+        .biz-num-box {
+            width: 30mm; height: 100%;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
+        .biz-num-lbl { font-size: 6px; font-weight: 700; color: #555; margin-bottom: 0px; }
+        .biz-num-val { font-size: 24px; font-weight: 900; color: #000; line-height: 1; }
 
-        .biz-no-value{
-            font-size: 28px;
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: .8px;
-            line-height: 1;
-            white-space: nowrap;
+        /* Footer */
+        .biz-footer {
+            background: #f9fafb;
+            border-top: 1px solid #e5e5e5;
+            padding: 5px 10px;
+            display: flex; flex-direction: column; gap: 2px;
+            height: auto;
         }
-
-        /* Alt bilgi satırları */
-        .biz-footer{
-            padding: 2mm 3.2mm 2.6mm 3.2mm;
-            background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(245,245,245,.95));
+        .biz-f-row { display: flex; align-items: center; gap: 6px; }
+        .biz-icon { 
+            width: 14px; display: flex; justify-content: center; 
+            font-size: 9px; color: #000; 
         }
-
-        .biz-f-row{
-            display: flex;
-            align-items: center;
-            gap: 1.8mm;
-            margin-top: 1.1mm;
-            min-width: 0;
-        }
-
-        .biz-f-ico{
-            width: 4.6mm;
-            display: flex;
-            justify-content: center;
-            color: #111;
-            font-size: 10px;
-            flex: 0 0 auto;
-        }
-
-        .biz-f-key{
-            font-size: 8.6px;
-            font-weight: 900;
-            color: #111;
-            letter-spacing: .08em;
-            flex: 0 0 auto;
-        }
-
-        .biz-f-val{
-            font-size: 9.2px;
-            font-weight: 800;
-            color: #111;
-            text-align: left;
-            flex: 1 1 auto;
-            min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .biz-f-content { display: flex; align-items: baseline; gap: 4px; flex: 1; min-width: 0; }
+        .biz-f-lbl { font-size: 7px; font-weight: 700; color: #666; width: 42px; flex-shrink: 0; }
+        .biz-f-val { font-size: 9px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         @media print {
             body { background: white; }
@@ -3543,16 +3362,9 @@ window.generateBizCardHTML = function(data) {
                 // Fontların yüklenmesi için biraz daha uzun süre tanıyalım (1 saniye)
                 // Bu, PDF oluşturulurken fontların render edilmiş olmasını garantiler.
                 window.onload = function() {
-                    const doPrint = () => window.print();
-                    // PDF'de Türkçe karakter/harf bozulmasını önlemek için fontların yüklenmesini bekle.
-                    if (document.fonts && document.fonts.ready) {
-                        Promise.race([
-                            document.fonts.ready,
-                            new Promise(resolve => setTimeout(resolve, 2500))
-                        ]).then(() => setTimeout(doPrint, 120));
-                    } else {
-                        setTimeout(doPrint, 1200);
-                    }
+                    setTimeout(function(){ 
+                        window.print(); 
+                    }, 1000);
                 };
             <\/script>
         </body>
