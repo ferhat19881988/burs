@@ -368,6 +368,20 @@
     color:var(--ink);
   }
 
+  .kv.kv-name{
+    align-items:start;
+  }
+
+  .kv.kv-name .v.is-name{
+    display:block;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    line-height:1.06;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
   .kv.is-tc .v{font-size:9px;color:var(--muted);}
 
   .kv .v.clamp2{
@@ -1222,6 +1236,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     function toLowerTR(s){
       return (s || "").toLocaleLowerCase("tr-TR");
     }
+    function compareStudentNamesTR(a, b){
+      const nameA = normSpaces(a?.studentName || a?.name || "");
+      const nameB = normSpaces(b?.studentName || b?.name || "");
+      const cmp = nameA.localeCompare(nameB, "tr-TR", { sensitivity: "base", numeric: true });
+      if(cmp !== 0) return cmp;
+      return (parseInt(a?.studentNo, 10) || 0) - (parseInt(b?.studentNo, 10) || 0);
+    }
     function slugifyTR(text){
       return normSpaces(text)
         .toLocaleLowerCase("tr-TR")
@@ -1998,9 +2019,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           </div>
 
           <div class="exam-card-body">
-            <div class="kv">
+            <div class="kv kv-name">
               <div class="k">Öğrenci</div>
-              <div class="v is-name clamp2" title="${escapeHtml(studentName)}">${studentName}</div>
+              <div class="v is-name" title="${escapeHtml(studentName)}">${studentName}</div>
             </div>
 
             <div class="kv">
@@ -2077,11 +2098,11 @@ window.generateBizCardHTML = function(data) {
                 <div class="biz-info-col">
                     <div class="biz-row">
                         <div class="biz-lbl">ÖĞRENCİ</div>
-                        <div class="biz-val name" title="${safe(name)}">${safe(name)}</div>
+                        <div class="biz-val name biz-multiline" title="${safe(name)}">${safe(name)}</div>
                     </div>
                     <div class="biz-row">
                         <div class="biz-lbl">OKUL</div>
-                        <div class="biz-val school" title="${safe(school)}">${safe(school)}</div>
+                        <div class="biz-val school biz-multiline" title="${safe(school)}">${safe(school)}</div>
                     </div>
                     <div class="biz-row">
                         <div class="biz-lbl">T.C. NO</div>
@@ -2100,21 +2121,21 @@ window.generateBizCardHTML = function(data) {
                     <div class="biz-icon"><i class="fa-solid fa-pen-nib"></i></div>
                     <div class="biz-f-content">
                         <span class="biz-f-lbl">SINAV ADI:</span>
-                        <span class="biz-f-val">${exam}</span>
+                        <span class="biz-f-val biz-f-val-wrap">${exam}</span>
                     </div>
                 </div>
                 <div class="biz-f-row">
                     <div class="biz-icon"><i class="fa-regular fa-clock"></i></div>
                     <div class="biz-f-content">
                         <span class="biz-f-lbl">TARİH:</span>
-                        <span class="biz-f-val">${date}</span>
+                        <span class="biz-f-val biz-f-val-wrap">${date}</span>
                     </div>
                 </div>
                 <div class="biz-f-row">
                     <div class="biz-icon"><i class="fa-solid fa-location-dot"></i></div>
                     <div class="biz-f-content">
                         <span class="biz-f-lbl">YER:</span>
-                        <span class="biz-f-val">${place}</span>
+                        <span class="biz-f-val biz-f-val-wrap">${place}</span>
                     </div>
                 </div>
             </div>
@@ -3204,14 +3225,9 @@ window.generateBizCardHTML = function(data) {
     // Seçili ID'leri ana listeden bul
     let selected = dbStudents.filter(s => ids.includes(s.id));
     
-    // --- GÜNCELLEME: ÖĞRENCİ NO SIRALAMA ---
-    // parseInt kullanarak sayısal sıralama yapıyoruz (1, 2, 10 şeklinde gitmesi için)
-    selected.sort((a, b) => {
-        const noA = parseInt(a.studentNo, 10) || 0;
-        const noB = parseInt(b.studentNo, 10) || 0;
-        return noA - noB;
-    });
-    // ---------------------------------------
+    // Öğrencileri kart basımında ada göre A-Z sıralıyoruz.
+    // Eşit isimlerde öğrenci numarasını ikinci kriter olarak kullanıyoruz.
+    selected.sort((a, b) => compareStudentNamesTR(a, b));
 
     // A4 Sayfasına sığacak şekilde 8 kart (2 sütun x 4 satır)
     const cardsPerPage = 8; 
@@ -3299,19 +3315,27 @@ window.generateBizCardHTML = function(data) {
         .biz-body {
             flex: 1;
             display: flex;
-            padding: 6px 10px;
+            padding: 6px 10px 5px;
             gap: 8px;
-            align-items: center;
+            align-items: flex-start;
         }
         .biz-info-col { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
         
-        .biz-row { display: grid; grid-template-columns: 55px 1fr; align-items: baseline; }
+        .biz-row { display: grid; grid-template-columns: 50px 1fr; align-items: start; column-gap: 4px; }
         .biz-lbl { font-size: 8px; font-weight: 700; color: #666; }
         
-        .biz-val { font-size: 10px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .biz-val.name { font-size: 11.5px; font-weight: 900; }
-        .biz-val.school { white-space: normal; line-height: 1; font-size: 9px; }
-        .biz-val.tc { font-family: 'Inter', monospace; font-size: 10px; letter-spacing: 0.5px; }
+        .biz-val { font-size: 10px; font-weight: 800; color: #000; min-width: 0; }
+        .biz-val.name { font-size: 11.2px; font-weight: 900; }
+        .biz-val.school { font-size: 8.7px; }
+        .biz-val.tc { font-family: 'Inter', monospace; font-size: 10px; letter-spacing: 0.5px; white-space: nowrap; }
+        .biz-multiline {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            line-height: 1.05;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
 
         /* Numara Kutusu */
         .biz-num-box {
@@ -3338,9 +3362,17 @@ window.generateBizCardHTML = function(data) {
             width: 14px; display: flex; justify-content: center; 
             font-size: 9px; color: #000; 
         }
-        .biz-f-content { display: flex; align-items: baseline; gap: 4px; flex: 1; min-width: 0; }
+        .biz-f-content { display: flex; align-items: flex-start; gap: 4px; flex: 1; min-width: 0; }
         .biz-f-lbl { font-size: 7px; font-weight: 700; color: #666; width: 42px; flex-shrink: 0; }
-        .biz-f-val { font-size: 9px; font-weight: 800; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .biz-f-val { font-size: 9px; font-weight: 800; color: #000; min-width: 0; }
+        .biz-f-val-wrap {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            line-height: 1.05;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
 
         @media print {
             body { background: white; }
