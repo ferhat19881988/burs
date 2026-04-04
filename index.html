@@ -1472,7 +1472,37 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       });
     }
 
-    function populateAdminFilters(){
+    function getAdminFilterState(){
+      return {
+        exam: el("adminExamFilter")?.value || "all",
+        session: el("adminSessionFilter")?.value || "all",
+        search: el("adminSearch")?.value || ""
+      };
+    }
+
+    function restoreAdminFilterState(state = {}){
+      const examSel = el("adminExamFilter");
+      const sesSel = el("adminSessionFilter");
+      const searchInp = el("adminSearch");
+      if(!examSel || !sesSel || !searchInp) return;
+
+      const hasExam = Array.from(examSel.options).some(opt => opt.value === (state.exam || "all"));
+      examSel.value = hasExam ? (state.exam || "all") : "all";
+
+      if (typeof window.syncAdminSessionFilter === 'function') {
+        window.syncAdminSessionFilter();
+      }
+
+      const wantedSession = state.session || "all";
+      const hasSession = Array.from(sesSel.options).some(opt => opt.value === wantedSession);
+      sesSel.value = hasSession ? wantedSession : "all";
+
+      searchInp.value = state.search || "";
+    }
+
+    function populateAdminFilters(stateToPreserve = null){
+      const preservedState = stateToPreserve || getAdminFilterState();
+
       // Exam filter
       const examSel = el("adminExamFilter");
       if(!examSel) return;
@@ -1490,10 +1520,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         sesSel.innerHTML += `<option value="${t}">${t}</option>`;
       });
 
-    // After initial populate, sync session filter disabled state
-    if (typeof window.syncAdminSessionFilter === 'function') {
-      window.syncAdminSessionFilter();
-    }
+      restoreAdminFilterState(preservedState);
     }
 
   /**
@@ -2289,11 +2316,12 @@ window.generateBizCardHTML = function(data) {
     }
 
     window.refreshAdminData = async () => {
+      const filterState = getAdminFilterState();
       showLoading(true);
       try{
         await fetchExamData(false);
         await fetchAdminData();
-        populateAdminFilters();
+        populateAdminFilters(filterState);
         renderAdminTable();
       } finally {
         showLoading(false);
@@ -3677,14 +3705,10 @@ window.generateBizCardHTML = function(data) {
         (by[key] ||= []).push(s);
       });
       const keys = Object.keys(by).sort((a,b)=> a.localeCompare(b, "tr-TR"));
-      keys.forEach((k, idx) => {
-        const header = `<div style="font-weight:800;margin:4mm 0 2mm;">${escapeHtml(k)}</div>`;
+      keys.forEach((k) => {
+        const header = `<div class="attendance-section-title">${escapeHtml(k)}</div>`;
         const tableHtml = makeTable(by[k].sort((a,b) => String(a.studentName).localeCompare(String(b.studentName), "tr-TR")));
-        if (idx < keys.length - 1) {
-          bodyHtml += `<div style="page-break-after: always;">${header}${tableHtml}</div>`;
-        } else {
-          bodyHtml += `${header}${tableHtml}`;
-        }
+        bodyHtml += `<section class="attendance-page">${header}${tableHtml}</section>`;
       });
       // Define extra CSS for printing
       const extraCss = `
@@ -3692,6 +3716,15 @@ window.generateBizCardHTML = function(data) {
         .a4 table{ width:100%; border-collapse:collapse; font-size:12px; }
         .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; }
         .a4 td{ border:1px solid #cbd5e1; padding:6px; }
+        .a4 .attendance-section-title{ font-weight:800; margin:4mm 0 2mm; }
+        .a4 .attendance-page{ break-inside:avoid; page-break-inside:avoid; }
+        @media print{
+          .a4 .attendance-page + .attendance-page{
+            break-before:page;
+            page-break-before:always;
+            padding-top:10mm;
+          }
+        }
       `;
       // Determine subtitle: use provided dateLine if exists, else today's date
       const subtitleLine = dateLine ? escapeHtml(dateLine) : escapeHtml(new Date().toLocaleDateString("tr-TR"));
