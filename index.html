@@ -3582,6 +3582,10 @@ window.generateBizCardHTML = function(data) {
         .a4 th{ border:1px solid #cbd5e1; background:#0f172a; color:#fff; padding:6px; text-align:left; }
         .a4 td{ border:1px solid #cbd5e1; padding:6px; vertical-align:top; }
         .a4 div{ break-inside: avoid; page-break-inside: avoid; }
+        @media print{
+          @page{ size:A4; margin:12mm 0 0 0; }
+          .a4{ padding:0 10mm 10mm 10mm !important; }
+        }
       `;
       const subtitleStr = escapeHtml(new Date().toLocaleString("tr-TR")) + ` • Kayıt: ${rows.length}`;
       // printDocument fonksiyonunu kullanarak çıktı oluştur
@@ -3719,10 +3723,11 @@ window.generateBizCardHTML = function(data) {
         .a4 .attendance-section-title{ font-weight:800; margin:4mm 0 2mm; }
         .a4 .attendance-page{ break-inside:avoid; page-break-inside:avoid; }
         @media print{
+          @page{ size:A4; margin:12mm 0 0 0; }
+          .a4{ padding:0 10mm 10mm 10mm !important; }
           .a4 .attendance-page + .attendance-page{
             break-before:page;
             page-break-before:always;
-            padding-top:10mm;
           }
         }
       `;
