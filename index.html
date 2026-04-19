@@ -1507,8 +1507,21 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     function populateExamDropdown(){
       const select = el("examSelect");
       select.innerHTML = '<option value="">Sınav Seçiniz...</option>';
-      window.examData.forEach((exam, idx) => {
-        select.innerHTML += `<option value="${idx}">${exam.name}</option>`;
+
+      const activeExams = window.examData.filter(exam => {
+        const total = parseInt(exam?.seansCount || 0, 10) || 0;
+        for(let i = 0; i < total; i++){
+          const date = exam?.dates?.[i] || exam?.dates?.[0] || "";
+          if(isFutureOrTodayDate(date)) return true;
+        }
+        return false;
+      });
+
+      activeExams.forEach((exam) => {
+        const originalIdx = window.examData.findIndex(item => item.key === exam.key);
+        if(originalIdx >= 0){
+          select.innerHTML += `<option value="${originalIdx}">${exam.name}</option>`;
+        }
       });
     }
 
