@@ -733,7 +733,7 @@
         <button class="main-btn btn-info" onclick="openStudentInfo()">
           <i class="fa-solid fa-magnifying-glass fa-2x"></i>
           <div style="font-weight:700;">Kayıtlı Bilgisi</div>
-          <div class="wizard-sub">Sadece T.C. ile sorgula ve iptal et</div>
+          <div class="wizard-sub">TC / Öğrenci No ile sorgula ve iptal et</div>
         </button>
       </div>
       <div class="col-md-4">
@@ -959,10 +959,7 @@
             </div>
             <div class="hint mt-2">Bu bölüm yalnızca örnek önizlemedir. Baskı alınamaz.</div>
 
-            <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
-              <button class="btn btn-outline-primary" onclick="printRegisteredEntryCard()"><i class="fa-solid fa-print"></i> Giriş Kartını Yazdır</button>
-              <button class="btn btn-primary" onclick="returnToMain()"><i class="fa-solid fa-house"></i> Ana Sayfaya Dön</button>
-            </div>
+            <button class="btn btn-primary mt-4" onclick="returnToMain()"><i class="fa-solid fa-house"></i> Ana Sayfaya Dön</button>
           </div>
         </div>
 
@@ -980,15 +977,15 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label fw-semibold">T.C. Kimlik Numarası</label>
+            <label class="form-label fw-semibold">T.C. Kimlik veya Öğrenci No</label>
             <div class="input-group input-group-lg">
-              <input type="text" class="form-control" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="11 haneli T.C. Kimlik Numarası" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
+              <input type="text" class="form-control" id="searchInfoInput" maxlength="11" inputmode="numeric" autocomplete="off" placeholder="T.C. / Öğrenci No (maks. 11)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)" />
               <button class="btn btn-primary" type="button" onclick="searchStudentInfo()">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <span class="d-none d-md-inline"> Sorgula</span>
               </button>
             </div>
-            <div class="hint mt-1">Girdiğiniz T.C. kimlik numarasına ait tüm başvurular listelenir.</div>
+            <div class="hint mt-1">Girdiğiniz bilgi ile tüm başvurular listelenir.</div>
           </div>
 
           <hr class="my-4" />
@@ -1112,29 +1109,24 @@
       <div class="card-body">
         <div class="row g-2 mb-3 admin-toolbar no-print">
           <div class="col-md-3">
-            <label class="form-label fw-semibold mb-1">Sınav Filtresi</label>
-            <select class="form-select" id="adminDateFilter" onchange="syncAdminSpecialExamFilter(); syncAdminSessionFilter(); scheduleAdminRender()">
-              <option value="future">Gelecek Sınavlar</option>
-              <option value="past">Geçmiş Sınavlar</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold mb-1">Sınav Özel</label>
-            <select class="form-select" id="adminSpecialExamFilter" onchange="syncAdminSessionFilter(); renderAdminTable()">
-              <option value="all">Tüm Seçilen Sınavlar</option>
+            <label class="form-label fw-semibold mb-1">Sınav</label>
+            <!-- Call syncAdminSessionFilter on change to update session options and disabled state -->
+            <select class="form-select" id="adminExamFilter" onchange="syncAdminSessionFilter(); renderAdminTable()">
+              <option value="all">Tüm Sınavlar</option>
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Seans Saati</label>
+            <!-- Session filter will be disabled when all exams selected -->
             <select class="form-select" id="adminSessionFilter" onchange="renderAdminTable()" disabled>
               <option value="all">Tüm Seanslar</option>
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold mb-1">Arama</label>
-            <input type="text" class="form-control" id="adminSearch" placeholder="Ad, TC, No..." autocomplete="off" />
+            <input type="text" class="form-control" id="adminSearch" placeholder="Ad, TC, No..." onkeyup="renderAdminTable()" />
           </div>
-          <div class="col-12 d-grid gap-2">
+          <div class="col-md-3 d-grid gap-2">
             <button class="btn btn-success" onclick="adminQuickRegister()"><i class="fa-solid fa-plus"></i> Hızlı Öğrenci Kayıt</button>
           </div>
 
@@ -1144,6 +1136,7 @@
               <button class="btn btn-secondary" onclick="printAttendanceOutput()"><i class="fa-solid fa-clipboard-check"></i> Yoklama Çıktısı</button>
               <button class="btn btn-warning" onclick="printBulkCards()"><i class="fa-solid fa-id-card"></i> Toplu Kart Bas</button>
               <button class="btn btn-info" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> Excel'e Aktar</button>
+              <!-- Yeni: Excel Yükleme modülünü aç -->
               <button class="btn btn-info" onclick="openExcelUploadModal()"><i class="fa-solid fa-file-import"></i> Excel Yükle</button>
               <button class="btn btn-outline-danger" onclick="bulkDelete()"><i class="fa-solid fa-trash"></i> Seçileni Sil</button>
               <button class="btn btn-outline-warning" onclick="clearAdminSelection()"><i class="fa-solid fa-xmark"></i> Seçimi Kaldır</button>
@@ -1475,118 +1468,93 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const select = el("examSelect");
       select.innerHTML = '<option value="">Sınav Seçiniz...</option>';
       window.examData.forEach((exam, idx) => {
-        const hasUpcomingSession = (exam?.dates || []).some(date => isFutureOrTodayByDate(date));
-        if(!hasUpcomingSession) return;
         select.innerHTML += `<option value="${idx}">${exam.name}</option>`;
       });
     }
 
     function getAdminFilterState(){
       return {
-        dateBucket: el("adminDateFilter")?.value || "future",
-        examSpecial: el("adminSpecialExamFilter")?.value || "all",
+        exam: el("adminExamFilter")?.value || "all",
         session: el("adminSessionFilter")?.value || "all",
         search: el("adminSearch")?.value || ""
       };
     }
 
     function restoreAdminFilterState(state = {}){
-      const dateSel = el("adminDateFilter");
-      const examSel = el("adminSpecialExamFilter");
+      const examSel = el("adminExamFilter");
       const sesSel = el("adminSessionFilter");
       const searchInp = el("adminSearch");
-      if(!dateSel || !examSel || !sesSel || !searchInp) return;
+      if(!examSel || !sesSel || !searchInp) return;
 
-      const wantedBucket = state.dateBucket || "future";
-      dateSel.value = ["future","past"].includes(wantedBucket) ? wantedBucket : "future";
+      const hasExam = Array.from(examSel.options).some(opt => opt.value === (state.exam || "all"));
+      examSel.value = hasExam ? (state.exam || "all") : "all";
 
-      if (typeof window.syncAdminSpecialExamFilter === 'function') {
-        window.syncAdminSpecialExamFilter(state.examSpecial || "all");
-      }
       if (typeof window.syncAdminSessionFilter === 'function') {
-        window.syncAdminSessionFilter(state.session || "all");
+        window.syncAdminSessionFilter();
       }
+
+      const wantedSession = state.session || "all";
+      const hasSession = Array.from(sesSel.options).some(opt => opt.value === wantedSession);
+      sesSel.value = hasSession ? wantedSession : "all";
 
       searchInp.value = state.search || "";
     }
 
     function populateAdminFilters(stateToPreserve = null){
       const preservedState = stateToPreserve || getAdminFilterState();
-      const dateSel = el("adminDateFilter");
-      if(!dateSel) return;
-      dateSel.innerHTML = `
-        <option value="future">Gelecek Sınavlar</option>
-        <option value="past">Geçmiş Sınavlar</option>
-      `;
+
+      // Exam filter
+      const examSel = el("adminExamFilter");
+      if(!examSel) return;
+      examSel.innerHTML = '<option value="all">Tüm Sınavlar</option>';
+      window.examData.forEach(exam => {
+        examSel.innerHTML += `<option value="${exam.name}">${exam.name}</option>`;
+      });
+
+      // Session filter (dynamic based on available times across exams)
+      const sesSel = el("adminSessionFilter");
+      const times = new Set();
+      window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      Array.from(times).sort().forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+
       restoreAdminFilterState(preservedState);
-      bindAdminSearchInput();
     }
 
-    window.syncAdminSpecialExamFilter = (preferredValue = null) => {
-      const dateSel = el('adminDateFilter');
-      const examSel = el('adminSpecialExamFilter');
-      if(!dateSel || !examSel) return;
-      const bucket = dateSel.value || 'future';
-      const examNames = Array.from(new Set(
-        (dbStudents || [])
-          .filter(s => getExamBucket(s) === bucket)
-          .map(s => String(s.examName || '').trim())
-          .filter(Boolean)
-      )).sort((a,b) => a.localeCompare(b, 'tr-TR', { sensitivity:'base', numeric:true }));
-
-      examSel.innerHTML = '<option value="all">Tüm Seçilen Sınavlar</option>' + examNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-      const wanted = preferredValue || examSel.dataset.currentValue || 'all';
-      examSel.value = Array.from(examSel.options).some(opt => opt.value === wanted) ? wanted : 'all';
-      examSel.dataset.currentValue = examSel.value;
-    };
-
-    window.syncAdminSessionFilter = (preferredValue = null) => {
-      const dateSel = el('adminDateFilter');
-      const examSel = el('adminSpecialExamFilter');
-      const sesSel = el('adminSessionFilter');
-      if(!dateSel || !examSel || !sesSel) return;
-      const bucket = dateSel.value || 'future';
-      const examName = examSel.value || 'all';
-
-      const times = Array.from(new Set(
-        (dbStudents || [])
-          .filter(s => getExamBucket(s) === bucket)
-          .filter(s => examName === 'all' || String(s.examName) === String(examName))
-          .map(s => String(s.examTime || '').trim())
-          .filter(Boolean)
-      )).sort((a,b) => a.localeCompare(b, 'tr-TR', { sensitivity:'base', numeric:true }));
-
-      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>' + times.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-      const wanted = preferredValue || sesSel.dataset.currentValue || 'all';
-      sesSel.value = Array.from(sesSel.options).some(opt => opt.value === wanted) ? wanted : 'all';
-      sesSel.dataset.currentValue = sesSel.value;
-      sesSel.disabled = times.length === 0;
-    };
-
-    function bindAdminSearchInput(){
-      const searchEl = el('adminSearch');
-      if(!searchEl || searchEl.dataset.bound === '1') return;
-      searchEl.dataset.bound = '1';
-      let timer = null;
-      const trigger = () => {
-        if(timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-          timer = null;
-          renderAdminTable();
-        }, 160);
-      };
-      searchEl.addEventListener('input', trigger);
-      searchEl.addEventListener('keyup', trigger);
-      searchEl.addEventListener('search', trigger);
+  /**
+   * Synchronize session dropdown based on selected exam.
+   * When "Tüm Sınavlar" is selected, the session dropdown is disabled
+   * and populated with all available session times. When a specific exam
+   * is selected, only that exam's session times are shown and the control
+   * is enabled.
+   */
+  window.syncAdminSessionFilter = () => {
+    const examSel = el('adminExamFilter');
+    const sesSel = el('adminSessionFilter');
+    if(!examSel || !sesSel) return;
+    const selected = examSel.value;
+    // If "all", show all times and disable dropdown
+    if(selected === 'all'){
+      const times = new Set();
+      window.examData.forEach(ex => (ex.times || []).forEach(t => times.add(t)));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      Array.from(times).sort().forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+      sesSel.value = 'all';
+      sesSel.disabled = true;
+    } else {
+      const exam = window.examData.find(ex => String(ex.name) === String(selected));
+      sesSel.innerHTML = '<option value="all">Tüm Seanslar</option>';
+      (exam?.times || []).forEach(t => {
+        sesSel.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+      sesSel.disabled = false;
+      sesSel.value = 'all';
     }
-
-    window.scheduleAdminRender = () => {
-      const examSel = el('adminSpecialExamFilter');
-      const sesSel = el('adminSessionFilter');
-      if(examSel) examSel.dataset.currentValue = 'all';
-      if(sesSel) sesSel.dataset.currentValue = 'all';
-      renderAdminTable();
-    };
+  };
 
     // --- Navigation ---
     window.startNewRegistration = () => {
@@ -1613,7 +1581,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       el("sessionTableBody").innerHTML = "";
       window.selectedExam = null;
       window.selectedSession = null;
-      window.lastRegisteredStudent = null;
       currentWizardStep = 1;
       setWizardPills(1);
     };
@@ -1648,11 +1615,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       window.selectedExam = window.examData[parseInt(idx,10)];
       window.selectedSession = null;
 
+      // Minimal data sanity
       if(!window.selectedExam || !window.selectedExam.seansCount){
         tbody.innerHTML = '<tr><td colspan="4"><span class="text-danger">Bu sınav için seans bilgisi bulunamadı.</span></td></tr>';
         return;
       }
 
+      // Fetch counts once
       showLoading(true);
       let counts = {};
       try{
@@ -1662,13 +1631,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       }
 
       let html = "";
-      let visibleCount = 0;
       for(let i=0;i<window.selectedExam.seansCount;i++){
         const date = window.selectedExam.dates[i] || window.selectedExam.dates[0] || "Tarih Yok";
-        if(!isFutureOrTodayByDate(date)) continue;
-        visibleCount++;
         const time = window.selectedExam.times[i] || "Saat Yok";
         const maxQuota = window.selectedExam.quotas[i] ?? 0;
+
         const used = parseInt(counts?.[i] ?? 0, 10) || 0;
         const remaining = Math.max((maxQuota - used), 0);
 
@@ -1699,12 +1666,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           </tr>
         `;
       }
-
-      if(!visibleCount){
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary py-4">Bu sınav için bugün veya ileri tarihli aktif seans bulunmuyor.</td></tr>';
-        return;
-      }
-
       tbody.innerHTML = html;
     };
 
@@ -2032,7 +1993,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         await set(newStudentRef, studentData);
 
         // 4) Show card preview
-        window.lastRegisteredStudent = studentData;
         el("finalCardPreview").innerHTML = generateCardHTML(studentData);
         changeStep(5);
 
@@ -2211,81 +2171,6 @@ window.generateBizCardHTML = function(data) {
     `;
 };
 
-    window.printRegisteredEntryCard = () => {
-      const data = window.lastRegisteredStudent;
-      if(!data){
-        Swal.fire("Uyarı","Yazdırılacak giriş kartı bulunamadı.","warning");
-        return;
-      }
-
-      const bodyHtml = `
-        <div class="entry-card-sheet">
-          <div class="entry-card-label">A4 / 3 Giriş Kartı</div>
-          <div class="entry-card-holder">
-            ${generateCardHTML(data)}
-          </div>
-        </div>
-      `;
-
-      const extraCss = `
-        .a4{ padding:0 !important; width:210mm; }
-        .entry-card-sheet{
-          width:210mm;
-          min-height:99mm;
-          max-height:99mm;
-          padding:8mm 10mm;
-          display:flex;
-          flex-direction:column;
-          justify-content:center;
-          page-break-after:auto;
-        }
-        .entry-card-label{
-          text-align:center;
-          font-weight:800;
-          font-size:12px;
-          margin-bottom:4mm;
-          color:#475569;
-        }
-        .entry-card-holder{
-          display:flex;
-          justify-content:center;
-          align-items:center;
-        }
-        .entry-card-holder .exam-card{
-          width:180mm !important;
-          min-height:74mm;
-          aspect-ratio:auto !important;
-          height:auto !important;
-          padding:4.5mm;
-          box-shadow:none;
-        }
-        .entry-card-holder .exam-card-header{ padding:4.5mm 5mm; }
-        .entry-card-holder .card-mark{ width:8mm; height:8mm; font-size:4mm; border-radius:3mm; }
-        .entry-card-holder .card-title{ font-size:14px; }
-        .entry-card-holder .card-type{ font-size:11px; }
-        .entry-card-holder .card-sub{ font-size:10px; }
-        .entry-card-holder .kv{ grid-template-columns:28mm 1fr; gap:4mm; }
-        .entry-card-holder .kv .k{ font-size:11px; }
-        .entry-card-holder .kv .v{ font-size:14px; }
-        .entry-card-holder .kv .v.is-name{ font-size:17px; }
-        .entry-card-holder .big-no strong{ font-size:28px; }
-        .entry-card-holder .exam-card-footer .fr-k{ font-size:10px; min-width:22mm; }
-        .entry-card-holder .exam-card-footer .fr-v{ font-size:12px; }
-        .entry-card-holder .exam-card-footer .fr-v.exam-name{ font-size:14px; }
-        @media print{
-          @page{ size:A4 portrait; margin:0; }
-          .a4{ padding:0 !important; width:210mm; }
-        }
-      `;
-
-      printDocument({
-        title: "",
-        subtitle: "",
-        bodyHtml,
-        extraCss
-      });
-    };
-
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -2302,11 +2187,7 @@ window.generateBizCardHTML = function(data) {
       const resDiv = el("studentInfoResult");
 
       if(!keyRaw){
-        Swal.fire("Uyarı","Lütfen T.C. kimlik numarası giriniz.","warning");
-        return;
-      }
-      if(!isValidTC(keyDigits)){
-        Swal.fire("Uyarı","Sorgulama sadece 11 haneli T.C. kimlik numarası ile yapılabilir.","warning");
+        Swal.fire("Uyarı","Lütfen T.C. veya öğrenci numarası giriniz.","warning");
         return;
       }
 
@@ -2432,12 +2313,6 @@ window.generateBizCardHTML = function(data) {
     async function fetchAdminData(){
       const snap = await get(child(ref(db), "bursluluk/students"));
       dbStudents = snap.exists() ? Object.values(snap.val()) : [];
-      dbStudents = dbStudents.map(s => ({
-        ...s,
-        __searchText: toLowerTR(normSpaces(`${s.studentName || ''} ${s.tc || ''} ${s.studentNo || ''}`)),
-        __examBucket: getExamBucket(s),
-        __examDateValue: getRecordExamDateValue(s)
-      }));
     }
 
     window.refreshAdminData = async () => {
@@ -2488,21 +2363,41 @@ window.generateBizCardHTML = function(data) {
     };
 
     window.renderAdminTable = () => {
-      const filtered = getAdminFilteredList();
+      const filterExam = el("adminExamFilter").value;
+      const filterSession = el("adminSessionFilter").value;
+      const search = toLowerTR(normSpaces(el("adminSearch").value));
+
       const tbody = el("adminTableBody");
-      if(!tbody) return;
+      tbody.innerHTML = "";
+
+      let filtered = dbStudents.filter(s => {
+        const matchExam = (filterExam === "all") || (s.examName === filterExam);
+        const matchSession = (filterSession === "all") || (s.examTime === filterSession);
+        const hay = toLowerTR(`${s.studentName} ${s.tc} ${s.studentNo}`);
+        const matchSearch = !search || hay.includes(search);
+        return matchExam && matchSession && matchSearch;
+      });
+
+      filtered.sort((a,b) => {
+        if(a.examName !== b.examName) return a.examName.localeCompare(b.examName, "tr-TR");
+        if(a.examDate !== b.examDate) return String(a.examDate).localeCompare(String(b.examDate), "tr-TR");
+        if(a.examTime !== b.examTime) return String(a.examTime).localeCompare(String(b.examTime), "tr-TR");
+        return (parseInt(a.studentNo,10)||0) - (parseInt(b.studentNo,10)||0);
+      });
 
       if(filtered.length === 0){
+        // Adjust colspan to match number of columns (checkbox + eight data columns)
         tbody.innerHTML = `<tr><td colspan="9" class="text-center text-secondary py-4">Kayıt bulunamadı.</td></tr>`;
-        window.adminCurrentFiltered = [];
-        updateAdminMasterCheckbox();
         return;
       }
 
+      // Persist current filtered list globally for master checkbox calculations
       window.adminCurrentFiltered = filtered;
-      const rowsHtml = filtered.map((s, idx) => {
+
+      filtered.forEach((s, idx) => {
+        // Determine checkbox checked state based on adminSelectedIds set
         const checkedAttr = window.adminSelectedIds.has(s.id) ? 'checked' : '';
-        return `
+        tbody.innerHTML += `
           <tr>
             <td><input type="checkbox" class="admin-chk" data-index="${idx}" value="${s.id}" ${checkedAttr}></td>
             <td class="fw-semibold">${escapeHtml(String(s.studentNo ?? ""))}</td>
@@ -2520,50 +2415,69 @@ window.generateBizCardHTML = function(data) {
             </td>
           </tr>
         `;
-      }).join('');
-      tbody.innerHTML = rowsHtml;
+      });
 
+      // Attach shift-range selection events to admin checkboxes
       const adminCheckboxes = document.querySelectorAll('.admin-chk');
       adminCheckboxes.forEach((cb) => {
         cb.addEventListener('click', (ev) => {
           const idx = parseInt(cb.getAttribute('data-index'), 10);
           if (Number.isNaN(idx)) return;
+          // If Shift key held and there is a previous anchor, toggle range selection
           if (ev.shiftKey && window.adminLastSelectIndex !== null && window.adminLastSelectIndex !== undefined) {
+            // Prevent default toggle behaviour of this checkbox during range select
             ev.preventDefault();
             const start = Math.min(idx, window.adminLastSelectIndex);
             const end = Math.max(idx, window.adminLastSelectIndex);
+            // Determine new selection state based on clicked row's current state
             const currentId = filtered[idx].id;
             const currentlySelected = window.adminSelectedIds.has(currentId);
             const newVal = !currentlySelected;
             for (let j = start; j <= end; j++) {
               const recId = filtered[j].id;
-              if (newVal) window.adminSelectedIds.add(recId);
-              else window.adminSelectedIds.delete(recId);
+              if (newVal) {
+                window.adminSelectedIds.add(recId);
+              } else {
+                window.adminSelectedIds.delete(recId);
+              }
             }
+            // Update anchor index to current clicked row
             window.adminLastSelectIndex = idx;
+            // Re-render table to show updated range selection and update master checkbox
             renderAdminTable();
             return;
           }
+          // Otherwise toggle selection for single row and set new anchor
           const id = filtered[idx].id;
-          if (window.adminSelectedIds.has(id)) window.adminSelectedIds.delete(id);
-          else window.adminSelectedIds.add(id);
+          if (window.adminSelectedIds.has(id)) {
+            window.adminSelectedIds.delete(id);
+          } else {
+            window.adminSelectedIds.add(id);
+          }
+          // Set anchor index for potential shift-selection on next click
           window.adminLastSelectIndex = idx;
+          // Update master checkbox state
           updateAdminMasterCheckbox();
         });
+        // On change, update master checkbox state (used for select all checkbox)
         cb.addEventListener('change', () => {
           updateAdminMasterCheckbox();
         });
       });
 
-      updateAdminMasterCheckbox();
-    };
-
-    window.updateAdminMasterCheckbox = () => {
-      const masterCb = el('selectAll');
-      if(masterCb){
-        const current = window.adminCurrentFiltered || [];
-        masterCb.checked = current.length > 0 && current.every(s => window.adminSelectedIds.has(s.id));
+      // After rendering rows and attaching events, update master checkbox based on current selection state
+      const masterCheck = el('selectAll');
+      if(masterCheck){
+        masterCheck.checked = (window.adminCurrentFiltered || []).every(s => window.adminSelectedIds.has(s.id));
       }
+
+      // Helper to update master checkbox state
+      window.updateAdminMasterCheckbox = () => {
+        const masterCb = el('selectAll');
+        if(masterCb){
+          masterCb.checked = (window.adminCurrentFiltered || []).every(s => window.adminSelectedIds.has(s.id));
+        }
+      };
     };
 
     window.toggleSelectAll = () => {
@@ -3307,21 +3221,25 @@ window.generateBizCardHTML = function(data) {
     }
 
     function getAdminFilteredList(){
-      const dateBucket = el("adminDateFilter")?.value || "future";
-      const specialExam = el("adminSpecialExamFilter")?.value || "all";
-      const filterSession = el("adminSessionFilter")?.value || "all";
-      const search = toLowerTR(normSpaces(el("adminSearch")?.value || ""));
+      const filterExam = el("adminExamFilter").value;
+      const filterSession = el("adminSessionFilter").value;
+      const search = toLowerTR(normSpaces(el("adminSearch").value));
 
       let filtered = dbStudents.filter(s => {
-        const matchBucket = (s.__examBucket || getExamBucket(s)) === dateBucket;
-        const matchExam = (specialExam === "all") || (String(s.examName) === String(specialExam));
-        const matchSession = (filterSession === "all") || (String(s.examTime) === String(filterSession));
-        const hay = s.__searchText || toLowerTR(normSpaces(`${s.studentName || ''} ${s.tc || ''} ${s.studentNo || ''}`));
+        const matchExam = (filterExam === "all") || (s.examName === filterExam);
+        const matchSession = (filterSession === "all") || (s.examTime === filterSession);
+        const hay = toLowerTR(`${s.studentName} ${s.tc} ${s.studentNo}`);
         const matchSearch = !search || hay.includes(search);
-        return matchBucket && matchExam && matchSession && matchSearch;
+        return matchExam && matchSession && matchSearch;
       });
 
-      filtered.sort(compareExamSchedule);
+      filtered.sort((a,b)=>{
+        if(a.examName !== b.examName) return a.examName.localeCompare(b.examName, "tr-TR");
+        if(a.examDate !== b.examDate) return String(a.examDate).localeCompare(String(b.examDate), "tr-TR");
+        if(a.examTime !== b.examTime) return String(a.examTime).localeCompare(String(b.examTime), "tr-TR");
+        return (parseInt(a.studentNo,10)||0) - (parseInt(b.studentNo,10)||0);
+      });
+
       return filtered;
     }
 
