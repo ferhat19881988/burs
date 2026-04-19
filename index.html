@@ -2260,26 +2260,16 @@ window.generateBizCardHTML = function(data) {
       try{
         const snap = await get(child(ref(db), "bursluluk/students"));
         const list = snap.exists() ? Object.values(snap.val()) : [];
-        const matches = list
+        const found = list
           .filter(s => String(s.tc || "") === keyDigits)
-          .sort((a,b) => {
-            const dateA = parseTRDateParts(a?.examDate)?.getTime() || 0;
-            const dateB = parseTRDateParts(b?.examDate)?.getTime() || 0;
-            if(dateA !== dateB) return dateA - dateB;
-            return (a.regTs || 0) - (b.regTs || 0);
-          });
-
-        const found = matches.filter(s => isFutureOrTodayDate(s?.examDate));
+          .sort((a,b) => (a.regTs||0) - (b.regTs||0));
 
         if(found.length === 0){
-          const onlyPastNotice = matches.length > 0
-            ? `<div class="alert alert-info" style="border-radius:16px;">Bu T.C. numarasına ait yalnızca <b>geçmiş tarihli</b> başvurular bulunduğu için aktif kayıt gösterilmemektedir.</div>`
-            : `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla bugün veya ileri tarihli herhangi bir başvuru bulunamadı.</div>`;
-          resDiv.innerHTML = onlyPastNotice;
+          resDiv.innerHTML = `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla herhangi bir başvuru bulunamadı.</div>`;
           return;
         }
 
-        let html = `<div class="mb-3 fw-semibold">Aktif Başvurular (${found.length})</div>`;
+        let html = `<div class="mb-3 fw-semibold">Bulunan Başvurular (${found.length})</div>`;
         found.forEach(s => {
           html += `
             <div class="p-3 mb-3" style="border:1px solid rgba(2,6,23,.08);border-radius:18px;background:linear-gradient(180deg,#fff, #f8fafc);">
@@ -2288,7 +2278,7 @@ window.generateBizCardHTML = function(data) {
                   <div class="fw-semibold">${escapeHtml(s.studentName)}</div>
                   <div class="hint mb-0">${escapeHtml(s.examName)} • ${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}</div>
                 </div>
-                <span class="badge-soft badge-ok">Aktif Kayıt</span>
+                <span class="badge-soft badge-ok">Kayıtlı</span>
               </div>
 
               <div class="mt-3">${generateCardHTML(s)}</div>
@@ -3062,106 +3052,6 @@ window.generateBizCardHTML = function(data) {
 
     // --- Printing ---
 
-    function generateSingleLgsPrintHTML(data){
-      const studentName = escapeHtml(toUpperTR(normSpaces(data?.studentName || "-")));
-      const school = escapeHtml(normSpaces(data?.school || "-"));
-      const tcRaw = String(data?.tc || "");
-      const tcDigits = digitsOnly(tcRaw);
-      const tcPretty = tcDigits.length === 11
-        ? `${tcDigits.slice(0,3)} ${tcDigits.slice(3,6)} ${tcDigits.slice(6,9)} ${tcDigits.slice(9)}`
-        : escapeHtml(tcRaw || "-");
-      const studentNoRaw = String(data?.studentNo ?? "-");
-      const studentNo = escapeHtml(studentNoRaw);
-      const exam = escapeHtml(normSpaces(data?.examName || data?.exam || data?.exam_title || "-"));
-      const examDate = escapeHtml(data?.examDate || "-");
-      const examTime = escapeHtml(data?.examTime || "-");
-      const place = escapeHtml(normSpaces(data?.place || data?.examPlace || data?.location || "Fenomen Eğitim Kurumları"));
-      const documentCode = escapeHtml((`${slugifyTR(data?.examName || 'sinav').toUpperCase()}-${studentNoRaw}`).replace(/[^A-Z0-9-]/g, "") || `SINAV-${studentNoRaw}`);
-
-      return `
-        <div class="lux-ticket-sheet">
-          <article class="lux-ticket" aria-label="Premium sınav giriş belgesi">
-            <div class="lux-ticket__mesh"></div>
-            <div class="lux-ticket__orb lux-ticket__orb--one"></div>
-            <div class="lux-ticket__orb lux-ticket__orb--two"></div>
-            <div class="lux-ticket__line"></div>
-
-            <header class="lux-ticket__header">
-              <div class="lux-ticket__brand">
-                <div class="lux-ticket__logo"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div class="lux-ticket__brand-copy">
-                  <div class="lux-ticket__institution">FENOMEN EĞİTİM KURUMLARI</div>
-                  <div class="lux-ticket__subtitle">LGS Provası • Kurum İçi Uygulama</div>
-                </div>
-              </div>
-              <div class="lux-ticket__badge">SINAV GİRİŞ BELGESİ</div>
-            </header>
-
-            <section class="lux-ticket__content">
-              <div class="lux-ticket__left">
-                <div class="lux-ticket__eyebrow">Öğrenci Profili</div>
-                <div class="lux-ticket__name">${studentName}</div>
-
-                <div class="lux-ticket__identity-grid">
-                  <div class="lux-info-chip lux-info-chip--wide">
-                    <span>T.C. Kimlik No</span>
-                    <strong class="lux-mono">${tcPretty}</strong>
-                  </div>
-                  <div class="lux-info-chip lux-info-chip--wide">
-                    <span>Okulu</span>
-                    <strong>${school}</strong>
-                  </div>
-                </div>
-
-                <div class="lux-ticket__left-bottom">
-                  <div class="lux-ticket__number-card">
-                    <span>Öğrenci No</span>
-                    <strong>${studentNo}</strong>
-                  </div>
-                  <div class="lux-ticket__note-chip">
-                    <i class="fa-regular fa-clock"></i>
-                    <span>Sınavdan 30 dakika önce kurumda olunuz.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="lux-ticket__right">
-                <div class="lux-ticket__panel-title">Sınav Planı</div>
-                <div class="lux-ticket__panel-grid">
-                  <div class="lux-panel-card lux-panel-card--full">
-                    <span>Sınav</span>
-                    <strong>${exam}</strong>
-                  </div>
-                  <div class="lux-panel-card">
-                    <span>Tarih</span>
-                    <strong>${examDate}</strong>
-                  </div>
-                  <div class="lux-panel-card">
-                    <span>Saat</span>
-                    <strong>${examTime}</strong>
-                  </div>
-                  <div class="lux-panel-card lux-panel-card--full">
-                    <span>Sınav Yeri</span>
-                    <strong>${place}</strong>
-                  </div>
-                </div>
-
-                <div class="lux-ticket__code-box">
-                  <span>Belge Kodu</span>
-                  <strong>${documentCode}</strong>
-                </div>
-              </div>
-            </section>
-
-            <footer class="lux-ticket__footer">
-              <div class="lux-ticket__footer-left">Fenomen Eğitim Kurumları</div>
-              <div class="lux-ticket__footer-right">Belgenizi sınav günü yanınızda bulundurunuz.</div>
-            </footer>
-          </article>
-        </div>
-      `;
-    }
-
     window.printSingleExamCard = () => {
       const data = window.lastCompletedRegistration;
       if(!data){
@@ -3169,339 +3059,57 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      const bodyHtml = generateSingleLgsPrintHTML(data);
+      const bodyHtml = `
+        <div class="single-card-sheet">
+          <div class="single-card-slot">
+            ${window.generateBizCardHTML(data)}
+          </div>
+        </div>
+      `;
+
       const extraCss = `
-        @page{ size:A4 portrait; margin:0; }
-        :root{
-          --lux-bg:#eef2f8;
-          --lux-card-1:#08111f;
-          --lux-card-2:#0d2241;
-          --lux-card-3:#13335e;
-          --lux-gold:#d7a64d;
-          --lux-gold-2:#f0c978;
-          --lux-white:#ffffff;
-          --lux-soft:#d9e3f6;
-          --lux-soft-2:rgba(255,255,255,.08);
-          --lux-border:rgba(255,255,255,.14);
-          --lux-muted:rgba(232,239,249,.78);
-          --lux-shadow:0 22px 48px rgba(6,13,24,.28);
-        }
-        *{ box-sizing:border-box; }
-        body{
-          margin:0;
-          background:var(--lux-bg);
-          color:var(--lux-white);
-          font-family:'Poppins', Arial, sans-serif;
-          -webkit-print-color-adjust:exact;
-          print-color-adjust:exact;
-        }
-        .a4.single-root{
+        @page { size:A4 portrait; margin:0; }
+        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
+        .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:12mm 12mm 0;
-          background:var(--lux-bg);
-        }
-        .lux-ticket-sheet{
-          width:100%;
-          min-height:136mm;
+          padding:12mm;
           display:flex;
           align-items:flex-start;
           justify-content:center;
         }
-        .lux-ticket{
+        .single-card-slot{
           width:186mm;
-          min-height:124mm;
-          position:relative;
-          overflow:hidden;
-          border-radius:24px;
-          background:
-            radial-gradient(circle at 14% 18%, rgba(240,201,120,.09) 0%, rgba(240,201,120,0) 30%),
-            radial-gradient(circle at 88% 12%, rgba(65,128,233,.14) 0%, rgba(65,128,233,0) 28%),
-            linear-gradient(135deg, var(--lux-card-1) 0%, var(--lux-card-2) 52%, var(--lux-card-3) 100%);
-          box-shadow:var(--lux-shadow), inset 0 0 0 1px rgba(255,255,255,.05), inset 0 0 0 2px rgba(215,166,77,.22);
-        }
-        .lux-ticket__mesh{
-          position:absolute;
-          inset:0;
-          background:
-            linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-          background-size:14mm 14mm;
-          mask-image:linear-gradient(180deg, rgba(0,0,0,.75), transparent 92%);
-          pointer-events:none;
-        }
-        .lux-ticket__orb{
-          position:absolute;
-          border-radius:50%;
-          pointer-events:none;
-          filter:blur(1px);
-        }
-        .lux-ticket__orb--one{
-          width:68mm;
-          height:68mm;
-          right:-16mm;
-          top:-18mm;
-          background:radial-gradient(circle, rgba(53,119,214,.34) 0%, rgba(53,119,214,0) 68%);
-        }
-        .lux-ticket__orb--two{
-          width:46mm;
-          height:46mm;
-          left:-10mm;
-          bottom:-10mm;
-          background:radial-gradient(circle, rgba(215,166,77,.32) 0%, rgba(215,166,77,0) 72%);
-        }
-        .lux-ticket__line{
-          position:absolute;
-          top:0;
-          bottom:0;
-          left:8.5mm;
-          width:1.3mm;
-          background:linear-gradient(180deg, rgba(240,201,120,.95) 0%, rgba(240,201,120,.55) 48%, rgba(240,201,120,0) 100%);
-          border-radius:999px;
-          opacity:.92;
-        }
-        .lux-ticket__header{
-          position:relative;
-          z-index:1;
+          height:92mm;
           display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap:8mm;
-          padding:8mm 9mm 6mm 14mm;
-        }
-        .lux-ticket__brand{
-          display:flex;
-          align-items:center;
-          gap:10px;
-          min-width:0;
-        }
-        .lux-ticket__logo{
-          width:15mm;
-          height:15mm;
-          border-radius:50%;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.04));
-          border:1px solid rgba(255,255,255,.15);
-          box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-          color:var(--lux-gold-2);
-          font-size:17px;
-          flex:0 0 auto;
-        }
-        .lux-ticket__institution{
-          font-size:15px;
-          line-height:1.12;
-          font-weight:900;
-          letter-spacing:.2px;
-          color:#fff;
-        }
-        .lux-ticket__subtitle{
-          margin-top:1.6mm;
-          font-size:9.2px;
-          font-weight:500;
-          color:var(--lux-muted);
-        }
-        .lux-ticket__badge{
-          min-height:14mm;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          padding:0 6mm;
-          border-radius:999px;
-          background:linear-gradient(135deg, rgba(215,166,77,.26), rgba(215,166,77,.12));
-          border:1px solid rgba(240,201,120,.34);
-          color:#fff;
-          font-size:11px;
-          font-weight:800;
-          letter-spacing:.14em;
-          text-transform:uppercase;
-          white-space:nowrap;
-        }
-        .lux-ticket__content{
-          position:relative;
-          z-index:1;
-          display:grid;
-          grid-template-columns:1.12fr .88fr;
-          gap:6mm;
-          padding:0 9mm 0 14mm;
           align-items:stretch;
+          justify-content:center;
         }
-        .lux-ticket__eyebrow,
-        .lux-ticket__panel-title{
-          display:inline-flex;
-          align-items:center;
-          min-height:8mm;
-          padding:0 4mm;
-          border-radius:999px;
-          background:rgba(255,255,255,.08);
-          border:1px solid rgba(255,255,255,.10);
-          color:var(--lux-gold-2);
-          font-size:8.4px;
-          font-weight:800;
-          letter-spacing:.18em;
-          text-transform:uppercase;
-          backdrop-filter:blur(6px);
+        .single-card-slot .biz-wrapper{
+          width:100%;
+          height:100%;
+          border:1px dashed #bbb;
+          padding:2mm;
         }
-        .lux-ticket__name{
-          margin-top:4mm;
-          font-size:19px;
-          line-height:1.18;
-          font-weight:900;
-          color:#fff;
-          letter-spacing:.2px;
-          text-wrap:balance;
-          word-break:break-word;
-          overflow-wrap:anywhere;
-        }
-        .lux-ticket__identity-grid{
-          margin-top:5mm;
-          display:grid;
-          gap:3.2mm;
-        }
-        .lux-info-chip,
-        .lux-panel-card,
-        .lux-ticket__code-box,
-        .lux-ticket__note-chip{
-          background:linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.05));
-          border:1px solid var(--lux-border);
-          box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-          backdrop-filter:blur(8px);
-        }
-        .lux-info-chip,
-        .lux-panel-card,
-        .lux-ticket__code-box{
-          border-radius:16px;
-          padding:3.6mm 4mm;
-        }
-        .lux-info-chip span,
-        .lux-panel-card span,
-        .lux-ticket__code-box span,
-        .lux-ticket__footer-left,
-        .lux-ticket__footer-right{
-          display:block;
-          font-size:8px;
-          line-height:1.35;
-          font-weight:700;
-          letter-spacing:.14em;
-          text-transform:uppercase;
-          color:var(--lux-muted);
-        }
-        .lux-info-chip strong,
-        .lux-panel-card strong,
-        .lux-ticket__code-box strong{
-          display:block;
-          margin-top:1.4mm;
-          font-size:11.6px;
-          line-height:1.35;
-          font-weight:800;
-          color:#fff;
-          word-break:break-word;
-          overflow-wrap:anywhere;
-        }
-        .lux-mono{
-          font-family:'Courier New', monospace;
-          letter-spacing:.45px;
-        }
-        .lux-ticket__left-bottom{
-          margin-top:4.5mm;
-          display:grid;
-          grid-template-columns:40mm 1fr;
-          gap:3.2mm;
-          align-items:stretch;
-        }
-        .lux-ticket__number-card{
-          border-radius:18px;
-          padding:4mm 4.5mm;
-          background:linear-gradient(135deg, #f4d28f 0%, #d7a64d 55%, #b87c26 100%);
-          color:#08111f;
-          box-shadow:0 10px 24px rgba(9,17,31,.20), inset 0 1px 0 rgba(255,255,255,.35);
-        }
-        .lux-ticket__number-card span{
-          display:block;
-          font-size:7.8px;
-          font-weight:800;
-          letter-spacing:.18em;
-          text-transform:uppercase;
-          color:rgba(8,17,31,.72);
-        }
-        .lux-ticket__number-card strong{
-          display:block;
-          margin-top:2mm;
-          font-size:28px;
-          line-height:1;
-          font-weight:900;
-          color:#08111f;
-        }
-        .lux-ticket__note-chip{
-          border-radius:18px;
-          padding:4mm 4.5mm;
-          display:flex;
-          align-items:center;
-          gap:8px;
-          color:#fff;
-        }
-        .lux-ticket__note-chip i{
-          color:var(--lux-gold-2);
-          font-size:13px;
-          flex:0 0 auto;
-        }
-        .lux-ticket__note-chip span{
-          font-size:10px;
-          line-height:1.45;
-          font-weight:600;
-          color:#f7fbff;
-          text-transform:none;
-          letter-spacing:0;
-        }
-        .lux-ticket__panel-grid{
-          margin-top:4mm;
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:3.2mm;
-        }
-        .lux-panel-card--full{
-          grid-column:1 / -1;
-        }
-        .lux-ticket__code-box{
-          margin-top:3.2mm;
-          border-radius:18px;
-          background:linear-gradient(135deg, rgba(215,166,77,.18), rgba(255,255,255,.06));
-          border-color:rgba(240,201,120,.25);
-        }
-        .lux-ticket__footer{
-          position:relative;
-          z-index:1;
-          margin:5mm 9mm 7mm 14mm;
-          padding-top:4mm;
-          border-top:1px solid rgba(255,255,255,.12);
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:8mm;
-        }
-        .lux-ticket__footer-left{
-          color:rgba(255,255,255,.74);
-        }
-        .lux-ticket__footer-right{
-          text-align:right;
-          color:rgba(255,255,255,.92);
-        }
-        @media print{
-          html, body{
-            margin:0 !important;
-            padding:0 !important;
-            background:var(--lux-bg) !important;
-          }
-          .a4.single-root{
-            width:auto;
-            min-height:auto;
-            padding:12mm 12mm 0;
-          }
-          .lux-ticket{
-            box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), inset 0 0 0 2px rgba(215,166,77,.22);
-          }
-        }
+        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
+        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
+        .single-card-slot .biz-title{ font-size:18px; }
+        .single-card-slot .biz-subtitle{ font-size:10px; }
+        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
+        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
+        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
+        .single-card-slot .biz-lbl{ font-size:10px; }
+        .single-card-slot .biz-val{ font-size:14px; }
+        .single-card-slot .biz-val.name{ font-size:16px; }
+        .single-card-slot .biz-val.school{ font-size:12px; }
+        .single-card-slot .biz-val.tc{ font-size:13px; }
+        .single-card-slot .biz-num-box{ width:44mm; }
+        .single-card-slot .biz-num-lbl{ font-size:8px; }
+        .single-card-slot .biz-num-val{ font-size:34px; }
+        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
+        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
+        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
+        .single-card-slot .biz-f-val{ font-size:12px; }
       `;
 
       const area = el("printArea");
@@ -3509,9 +3117,9 @@ window.generateBizCardHTML = function(data) {
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
-        window.removeEventListener("afterprint", cleanup);
+        window.removeEventListener('afterprint', cleanup);
       };
-      window.addEventListener("afterprint", cleanup);
+      window.addEventListener('afterprint', cleanup);
     };
 
     function openPrintWindow(title, bodyHtml, extraCss=""){
