@@ -3061,7 +3061,7 @@ window.generateBizCardHTML = function(data) {
         <div class="single-card-sheet">
           <div class="single-card-cutline">
             <div class="single-card-slot">
-              ${window.generateBizCardHTML(data)}
+              ${generateCardHTML(data, { theme: 'orange' })}
             </div>
           </div>
         </div>
@@ -3074,212 +3074,132 @@ window.generateBizCardHTML = function(data) {
           min-height:297mm;
           padding:0;
           margin:0;
+          background:#fff;
         }
         .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:8mm 10mm 0;
+          padding:8mm 8mm 0;
           display:flex;
           justify-content:center;
           align-items:flex-start;
           background:#fff;
         }
         .single-card-cutline{
-          width:190mm;
-          min-height:96mm;
+          width:194mm;
+          min-height:102mm;
           border:1px dashed #cfcfcf;
           padding:4mm;
           display:flex;
-          align-items:stretch;
           justify-content:center;
+          align-items:center;
         }
         .single-card-slot{
-          width:100%;
-          height:88mm;
+          width:186mm;
+          min-height:92mm;
           display:flex;
-          align-items:stretch;
-          justify-content:center;
-        }
-        .single-card-slot .biz-wrapper{
-          width:100%;
-          height:100%;
-        }
-        .single-card-slot .biz-card{
-          width:100%;
-          height:100%;
-          position:relative;
-          overflow:hidden;
-          border-radius:7mm;
-          border:0.45mm solid #efc3aa;
-          background:linear-gradient(180deg,#fff7f1 0%, #ffffff 18%, #fffaf7 100%);
-          box-shadow:none;
-        }
-        .single-card-slot .biz-topband{
-          position:absolute;
-          inset:0 0 auto 0;
-          height:9mm;
-          background:linear-gradient(90deg,#f97316 0%, #fb8c00 55%, #ffb347 100%);
-        }
-        .single-card-slot .biz-header{
-          position:relative;
-          display:grid;
-          grid-template-columns:11mm 1fr auto;
-          gap:4mm;
-          align-items:center;
-          padding:5.8mm 6.5mm 3.5mm;
-        }
-        .single-card-slot .biz-brand-mark{
-          width:10mm;
-          height:10mm;
-          border-radius:50%;
-          background:#ffffff;
-          color:#f97316;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size:4.2mm;
-          box-shadow:0 0 0 .5mm rgba(255,255,255,.35);
-        }
-        .single-card-slot .biz-header-main{ min-width:0; }
-        .single-card-slot .biz-title{
-          font-size:4.8mm;
-          line-height:1.05;
-          font-weight:900;
-          color:#ffffff;
-          letter-spacing:.02em;
-        }
-        .single-card-slot .biz-subtitle{
-          display:inline-flex;
-          align-items:center;
-          margin-top:1.5mm;
-          padding:1.1mm 4mm;
-          border-radius:999px;
-          background:rgba(255,255,255,.2);
-          border:.35mm solid rgba(255,255,255,.32);
-          color:#fff7ed;
-          font-size:2.9mm;
-          font-weight:700;
-        }
-        .single-card-slot .biz-badge{
-          align-self:start;
-          margin-top:.2mm;
-          padding:1.8mm 4mm;
-          border-radius:999px;
-          background:#ffffff;
-          color:#f97316;
-          font-size:3.1mm;
-          font-weight:900;
-          white-space:nowrap;
-        }
-        .single-card-slot .biz-body{
-          display:grid;
-          grid-template-columns:1fr 39mm;
-          gap:5mm;
-          padding:3.6mm 6.5mm 4mm;
-          align-items:stretch;
-        }
-        .single-card-slot .biz-details{
-          display:flex;
-          flex-direction:column;
-          gap:1.6mm;
-          min-width:0;
-        }
-        .single-card-slot .biz-detail-row{
-          display:grid;
-          grid-template-columns:24mm 1fr;
-          gap:3mm;
-          align-items:start;
-          padding-bottom:1.8mm;
-          border-bottom:.35mm dashed rgba(148,163,184,.45);
-        }
-        .single-card-slot .biz-detail-tc{ border-bottom:none; padding-bottom:0; }
-        .single-card-slot .biz-lbl{
-          font-size:2.8mm;
-          font-weight:800;
-          letter-spacing:.08em;
-          color:#64748b;
-        }
-        .single-card-slot .biz-val{
-          min-width:0;
-          font-size:4mm;
-          font-weight:800;
-          line-height:1.15;
-          color:#0f172a;
-          text-align:right;
-          word-break:break-word;
-          overflow-wrap:anywhere;
-        }
-        .single-card-slot .biz-name{
-          font-size:5.4mm;
-          font-weight:900;
-          letter-spacing:.01em;
-        }
-        .single-card-slot .biz-tc{
-          font-size:3.3mm;
-          color:#334155;
-        }
-        .single-card-slot .biz-num-box{
-          border-radius:5mm;
-          background:linear-gradient(180deg,#fff1e8 0%, #fff7f2 100%);
-          border:.4mm solid #f2c7af;
-          padding:4.3mm 3.8mm;
-          display:flex;
-          flex-direction:column;
           justify-content:center;
           align-items:center;
-          gap:1.6mm;
         }
-        .single-card-slot .biz-num-lbl{
-          font-size:2.7mm;
-          font-weight:900;
-          color:#64748b;
-          text-align:center;
-          letter-spacing:.08em;
+        .single-card-slot .exam-card{
+          width:186mm !important;
+          height:auto !important;
+          min-height:88mm !important;
+          aspect-ratio:auto !important;
+          margin:0 auto !important;
+          border-radius:7mm !important;
+          padding:5.5mm !important;
+          box-shadow:none !important;
+          border:.45mm solid rgba(234,88,12,.22) !important;
+          background:
+            radial-gradient(150mm 90mm at 8% 0%, rgba(253,186,116,.18), transparent 58%),
+            radial-gradient(150mm 90mm at 100% 100%, rgba(249,115,22,.10), transparent 56%),
+            linear-gradient(180deg, #fffdfb 0%, #ffffff 100%) !important;
         }
-        .single-card-slot .biz-num-val{
-          font-size:10.8mm;
-          line-height:1;
-          font-weight:900;
-          color:#ea580c;
+        .single-card-slot .exam-card-header{
+          padding:4mm 4.5mm !important;
+          border-radius:5mm !important;
+          gap:4mm !important;
         }
-        .single-card-slot .biz-footer{
-          margin:0 6.5mm 0;
-          padding:3.6mm 0 0;
-          border-top:.35mm dashed rgba(148,163,184,.45);
+        .single-card-slot .card-mark{
+          width:8mm !important;
+          height:8mm !important;
+          border-radius:2.4mm !important;
+          font-size:3.6mm !important;
         }
-        .single-card-slot .biz-foot-grid{
-          display:grid;
-          grid-template-columns:1.2fr 1fr 1fr;
-          gap:3.2mm;
+        .single-card-slot .card-title{
+          font-size:4.6mm !important;
+          font-weight:900 !important;
+          line-height:1.05 !important;
         }
-        .single-card-slot .biz-foot-item{
-          min-width:0;
+        .single-card-slot .card-sub{
+          font-size:2.8mm !important;
+          line-height:1.15 !important;
+          padding:1.3mm 3.4mm !important;
         }
-        .single-card-slot .biz-foot-head{
-          display:flex;
-          align-items:center;
-          gap:1.8mm;
-          font-size:2.7mm;
-          font-weight:900;
-          color:#475569;
-          letter-spacing:.08em;
-          margin-bottom:1.3mm;
+        .single-card-slot .card-type{
+          font-size:3.1mm !important;
+          padding:1.5mm 3.8mm !important;
+          font-weight:900 !important;
         }
-        .single-card-slot .biz-foot-head i{
-          color:#f97316;
-          font-size:3mm;
+        .single-card-slot .exam-card-body{
+          margin-top:3.5mm !important;
+          gap:2.2mm !important;
         }
-        .single-card-slot .biz-foot-value{
-          font-size:3.5mm;
-          line-height:1.18;
-          font-weight:800;
-          color:#0f172a;
-          word-break:break-word;
-          overflow-wrap:anywhere;
+        .single-card-slot .kv{
+          grid-template-columns:26mm 1fr !important;
+          gap:4mm !important;
+          padding-bottom:2mm !important;
         }
-        .single-card-slot .biz-foot-item-exam .biz-foot-value{
-          font-size:3.8mm;
-          font-weight:900;
+        .single-card-slot .kv .k{
+          font-size:2.8mm !important;
+          font-weight:800 !important;
+          letter-spacing:.06em !important;
+        }
+        .single-card-slot .kv .v{
+          font-size:4.1mm !important;
+          line-height:1.12 !important;
+        }
+        .single-card-slot .kv .v.is-name{
+          font-size:6mm !important;
+          font-weight:900 !important;
+        }
+        .single-card-slot .kv.is-tc .v{
+          font-size:3.1mm !important;
+        }
+        .single-card-slot .big-no{
+          margin-top:1mm !important;
+          padding:3.2mm 4mm !important;
+          border-radius:4.5mm !important;
+        }
+        .single-card-slot .big-no span{
+          font-size:2.7mm !important;
+          font-weight:900 !important;
+          letter-spacing:.08em !important;
+        }
+        .single-card-slot .big-no strong{
+          font-size:8.2mm !important;
+          line-height:1 !important;
+        }
+        .single-card-slot .exam-card-footer{
+          margin-top:2mm !important;
+          padding-top:2.4mm !important;
+          font-size:3mm !important;
+        }
+        .single-card-slot .exam-card-footer .footer-row{
+          gap:3mm !important;
+          margin-top:1.2mm !important;
+        }
+        .single-card-slot .exam-card-footer .fr-k{
+          min-width:18mm !important;
+          font-size:2.6mm !important;
+        }
+        .single-card-slot .exam-card-footer .fr-v{
+          font-size:3.5mm !important;
+          line-height:1.15 !important;
+        }
+        .single-card-slot .exam-card-footer .fr-v.exam-name{
+          font-size:3.8mm !important;
         }
       `;
 
