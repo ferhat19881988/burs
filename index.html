@@ -2233,6 +2233,53 @@ window.generateBizCardHTML = function(data) {
     `;
 };
 
+    // --- Premium Exam Entry Card Generator ---
+    // Bu fonksiyon, LGS sınav giriş belgesi tarzında modern bir tasarım üretir.
+    // Mevcut sınav bilgilerinden yola çıkarak iki sütunlu, renkli başlığa sahip
+    // bir kart oluşturur. Kart, ad soyad, T.C. numarası, okul, öğrenci numarası,
+    // sınav tarihi/saati ve sınav yerini barındırır. Tasarım yalnızca tekli yazdırma
+    // işlemlerinde kullanılır ve diğer kart tasarımlarını etkilemez.
+    window.generatePremiumExamCardHTML = function(data) {
+      const safe = (s) => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
+      const name = upper(data.studentName);
+      const school = upper(data.school);
+      const tc = data.tc || "";
+      const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
+      const no = data.studentNo || "";
+      const exam = safe(data.examName);
+      const dateStr = `${safe(data.examDate || "")} ${safe(data.examTime || "")}`.trim();
+      const place = safe(data.place || "Fenomen Eğitim Kurumları");
+      return `
+        <div class="premium-card">
+          <div class="premium-header">
+            <div class="ph-left">
+              <div class="ph-title">${exam}</div>
+              <div class="ph-subtitle">Sınav Giriş Belgesi</div>
+            </div>
+            <div class="ph-right">
+              <div class="ph-badge">GİRİŞ</div>
+            </div>
+          </div>
+          <div class="premium-body">
+            <div class="pb-left">
+              <div class="pb-row"><span class="pb-label">Ad Soyad:</span><span class="pb-value pb-name" title="${name}">${name}</span></div>
+              <div class="pb-row"><span class="pb-label">T.C.:</span><span class="pb-value">${tcFmt}</span></div>
+              <div class="pb-row"><span class="pb-label">Okul:</span><span class="pb-value pb-school" title="${school}">${school}</span></div>
+            </div>
+            <div class="pb-right">
+              <div class="pb-row"><span class="pb-label">Öğrenci No:</span><span class="pb-value pb-no">${safe(no)}</span></div>
+              <div class="pb-row"><span class="pb-label">Tarih / Saat:</span><span class="pb-value">${dateStr}</span></div>
+              <div class="pb-row"><span class="pb-label">Yer:</span><span class="pb-value pb-place" title="${place}">${place}</span></div>
+            </div>
+          </div>
+          <div class="premium-footer">
+            <div class="pf-note">Sınava giriş belgesi olmadan sınav salonuna giriş yapılamaz. Lütfen nüfus cüzdanınızı yanınızda bulundurunuz.</div>
+          </div>
+        </div>
+      `;
+    };
+
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -2244,15 +2291,18 @@ window.generateBizCardHTML = function(data) {
     };
 
     window.searchStudentInfo = async () => {
+      // Kullanıcının girdiği T.C. numarasını normalize ederek sadece rakamları al
       const keyRaw = normSpaces(el("searchInfoInput").value);
       const keyDigits = digitsOnly(keyRaw);
       const resDiv = el("studentInfoResult");
 
+      // TC formatı geçerli değilse uyar ve çık
       if(!isValidTC(keyDigits)){
         Swal.fire("Uyarı","Lütfen sadece 11 haneli T.C. Kimlik Numarası giriniz.","warning");
         return;
       }
 
+      // Arama alanında TC'yi temiz biçimde göster
       el("searchInfoInput").value = keyDigits;
       resDiv.innerHTML = `<div class="text-center text-secondary py-3"><div class="spinner-border" role="status"></div><div class="mt-2">Aranıyor...</div></div>`;
 
@@ -2260,12 +2310,14 @@ window.generateBizCardHTML = function(data) {
       try{
         const snap = await get(child(ref(db), "bursluluk/students"));
         const list = snap.exists() ? Object.values(snap.val()) : [];
+        // Sadece istenen TC'ye sahip ve bugünden sonraki ya da bugüne ait kayıtları filtrele
         const found = list
           .filter(s => String(s.tc || "") === keyDigits)
+          .filter(s => isFutureOrTodayDate(s.examDate))
           .sort((a,b) => (a.regTs||0) - (b.regTs||0));
 
         if(found.length === 0){
-          resDiv.innerHTML = `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla herhangi bir başvuru bulunamadı.</div>`;
+          resDiv.innerHTML = `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla geleceğe yönelik herhangi bir başvuru bulunamadı.</div>`;
           return;
         }
 
@@ -3059,61 +3111,37 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
+      // Premium sınav giriş kartı markup ve stilini oluştur
       const bodyHtml = `
-        <div class="single-card-sheet">
-          <div class="single-card-slot">
-            ${window.generateBizCardHTML(data)}
+        <div class="premium-card-sheet">
+          <div class="premium-card-slot">
+            ${window.generatePremiumExamCardHTML(data)}
           </div>
         </div>
       `;
 
       const extraCss = `
         @page { size:A4 portrait; margin:0; }
-        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
-        .single-card-sheet{
-          width:210mm;
-          min-height:297mm;
-          padding:12mm;
-          display:flex;
-          align-items:flex-start;
-          justify-content:center;
-        }
-        .single-card-slot{
-          width:186mm;
-          height:92mm;
-          display:flex;
-          align-items:stretch;
-          justify-content:center;
-        }
-        .single-card-slot .biz-wrapper{
-          width:100%;
-          height:100%;
-          border:1px dashed #bbb;
-          padding:2mm;
-        }
-        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
-        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
-        .single-card-slot .biz-title{ font-size:18px; }
-        .single-card-slot .biz-subtitle{ font-size:10px; }
-        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
-        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
-        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
-        .single-card-slot .biz-lbl{ font-size:10px; }
-        .single-card-slot .biz-val{ font-size:14px; }
-        .single-card-slot .biz-val.name{ font-size:16px; }
-        .single-card-slot .biz-val.school{ font-size:12px; }
-        .single-card-slot .biz-val.tc{ font-size:13px; }
-        .single-card-slot .biz-num-box{ width:44mm; }
-        .single-card-slot .biz-num-lbl{ font-size:8px; }
-        .single-card-slot .biz-num-val{ font-size:34px; }
-        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
-        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
-        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
-        .single-card-slot .biz-f-val{ font-size:12px; }
+        .premium-card-sheet { width:210mm; min-height:297mm; display:flex; align-items:center; justify-content:center; padding:0; }
+        .premium-card-slot { width:186mm; height:105mm; display:flex; align-items:center; justify-content:center; }
+        .premium-card { width:100%; height:100%; border:1px solid #ddd; border-radius:8px; overflow:hidden; font-family:'Poppins', sans-serif; color:#0f172a; background:#fff; display:flex; flex-direction:column; }
+        .premium-header { background:linear-gradient(135deg, #2563eb, #7c3aed); color:#fff; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; }
+        .premium-header .ph-title { font-size:16px; font-weight:600; }
+        .premium-header .ph-subtitle { font-size:10px; opacity:.9; }
+        .premium-header .ph-badge { background:rgba(255,255,255,.2); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600; }
+        .premium-body { flex:1; padding:12px; display:flex; gap:16px; }
+        .pb-left, .pb-right { flex:1; display:flex; flex-direction:column; gap:6px; }
+        .pb-row { display:flex; gap:4px; font-size:12px; }
+        .pb-label { width:90px; font-weight:600; color:#64748b; }
+        .pb-value { flex:1; font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pb-name { font-size:14px; }
+        .pb-no { font-size:20px; }
+        .premium-footer { background:#f1f5f9; padding:6px 12px; font-size:9px; color:#64748b; }
+        .pf-note { line-height:1.3; }
       `;
 
       const area = el("printArea");
-      area.innerHTML = `<style>${extraCss}</style><div class="a4 single-root">${bodyHtml}</div>`;
+      area.innerHTML = `<style>${extraCss}</style><div class="a4 premium-root">${bodyHtml}</div>`;
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
