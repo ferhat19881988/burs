@@ -2233,53 +2233,6 @@ window.generateBizCardHTML = function(data) {
     `;
 };
 
-    // --- Premium Exam Entry Card Generator ---
-    // Bu fonksiyon, LGS sınav giriş belgesi tarzında modern bir tasarım üretir.
-    // Mevcut sınav bilgilerinden yola çıkarak iki sütunlu, renkli başlığa sahip
-    // bir kart oluşturur. Kart, ad soyad, T.C. numarası, okul, öğrenci numarası,
-    // sınav tarihi/saati ve sınav yerini barındırır. Tasarım yalnızca tekli yazdırma
-    // işlemlerinde kullanılır ve diğer kart tasarımlarını etkilemez.
-    window.generatePremiumExamCardHTML = function(data) {
-      const safe = (s) => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
-      const name = upper(data.studentName);
-      const school = upper(data.school);
-      const tc = data.tc || "";
-      const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
-      const no = data.studentNo || "";
-      const exam = safe(data.examName);
-      const dateStr = `${safe(data.examDate || "")} ${safe(data.examTime || "")}`.trim();
-      const place = safe(data.place || "Fenomen Eğitim Kurumları");
-      return `
-        <div class="premium-card">
-          <div class="premium-header">
-            <div class="ph-left">
-              <div class="ph-title">${exam}</div>
-              <div class="ph-subtitle">Sınav Giriş Belgesi</div>
-            </div>
-            <div class="ph-right">
-              <div class="ph-badge">GİRİŞ</div>
-            </div>
-          </div>
-          <div class="premium-body">
-            <div class="pb-left">
-              <div class="pb-row"><span class="pb-label">Ad Soyad:</span><span class="pb-value pb-name" title="${name}">${name}</span></div>
-              <div class="pb-row"><span class="pb-label">T.C.:</span><span class="pb-value">${tcFmt}</span></div>
-              <div class="pb-row"><span class="pb-label">Okul:</span><span class="pb-value pb-school" title="${school}">${school}</span></div>
-            </div>
-            <div class="pb-right">
-              <div class="pb-row"><span class="pb-label">Öğrenci No:</span><span class="pb-value pb-no">${safe(no)}</span></div>
-              <div class="pb-row"><span class="pb-label">Tarih / Saat:</span><span class="pb-value">${dateStr}</span></div>
-              <div class="pb-row"><span class="pb-label">Yer:</span><span class="pb-value pb-place" title="${place}">${place}</span></div>
-            </div>
-          </div>
-          <div class="premium-footer">
-            <div class="pf-note">Sınava giriş belgesi olmadan sınav salonuna giriş yapılamaz. Lütfen nüfus cüzdanınızı yanınızda bulundurunuz.</div>
-          </div>
-        </div>
-      `;
-    };
-
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -2291,18 +2244,15 @@ window.generateBizCardHTML = function(data) {
     };
 
     window.searchStudentInfo = async () => {
-      // Kullanıcının girdiği T.C. numarasını normalize ederek sadece rakamları al
       const keyRaw = normSpaces(el("searchInfoInput").value);
       const keyDigits = digitsOnly(keyRaw);
       const resDiv = el("studentInfoResult");
 
-      // TC formatı geçerli değilse uyar ve çık
       if(!isValidTC(keyDigits)){
         Swal.fire("Uyarı","Lütfen sadece 11 haneli T.C. Kimlik Numarası giriniz.","warning");
         return;
       }
 
-      // Arama alanında TC'yi temiz biçimde göster
       el("searchInfoInput").value = keyDigits;
       resDiv.innerHTML = `<div class="text-center text-secondary py-3"><div class="spinner-border" role="status"></div><div class="mt-2">Aranıyor...</div></div>`;
 
@@ -2310,18 +2260,26 @@ window.generateBizCardHTML = function(data) {
       try{
         const snap = await get(child(ref(db), "bursluluk/students"));
         const list = snap.exists() ? Object.values(snap.val()) : [];
-        // Sadece istenen TC'ye sahip ve bugünden sonraki ya da bugüne ait kayıtları filtrele
-        const found = list
+        const matches = list
           .filter(s => String(s.tc || "") === keyDigits)
-          .filter(s => isFutureOrTodayDate(s.examDate))
-          .sort((a,b) => (a.regTs||0) - (b.regTs||0));
+          .sort((a,b) => {
+            const dateA = parseTRDateParts(a?.examDate)?.getTime() || 0;
+            const dateB = parseTRDateParts(b?.examDate)?.getTime() || 0;
+            if(dateA !== dateB) return dateA - dateB;
+            return (a.regTs || 0) - (b.regTs || 0);
+          });
+
+        const found = matches.filter(s => isFutureOrTodayDate(s?.examDate));
 
         if(found.length === 0){
-          resDiv.innerHTML = `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla geleceğe yönelik herhangi bir başvuru bulunamadı.</div>`;
+          const onlyPastNotice = matches.length > 0
+            ? `<div class="alert alert-info" style="border-radius:16px;">Bu T.C. numarasına ait yalnızca <b>geçmiş tarihli</b> başvurular bulunduğu için aktif kayıt gösterilmemektedir.</div>`
+            : `<div class="alert alert-warning" style="border-radius:16px;">Bu T.C. numarasıyla bugün veya ileri tarihli herhangi bir başvuru bulunamadı.</div>`;
+          resDiv.innerHTML = onlyPastNotice;
           return;
         }
 
-        let html = `<div class="mb-3 fw-semibold">Bulunan Başvurular (${found.length})</div>`;
+        let html = `<div class="mb-3 fw-semibold">Aktif Başvurular (${found.length})</div>`;
         found.forEach(s => {
           html += `
             <div class="p-3 mb-3" style="border:1px solid rgba(2,6,23,.08);border-radius:18px;background:linear-gradient(180deg,#fff, #f8fafc);">
@@ -2330,7 +2288,7 @@ window.generateBizCardHTML = function(data) {
                   <div class="fw-semibold">${escapeHtml(s.studentName)}</div>
                   <div class="hint mb-0">${escapeHtml(s.examName)} • ${escapeHtml(s.examDate)} • ${escapeHtml(s.examTime)}</div>
                 </div>
-                <span class="badge-soft badge-ok">Kayıtlı</span>
+                <span class="badge-soft badge-ok">Aktif Kayıt</span>
               </div>
 
               <div class="mt-3">${generateCardHTML(s)}</div>
@@ -3104,6 +3062,124 @@ window.generateBizCardHTML = function(data) {
 
     // --- Printing ---
 
+    function generateSingleLgsPrintHTML(data){
+      const studentName = escapeHtml(toUpperTR(normSpaces(data?.studentName || "-")));
+      const school = escapeHtml(normSpaces(data?.school || "-"));
+      const tcRaw = String(data?.tc || "");
+      const tcDigits = digitsOnly(tcRaw);
+      const tcPretty = tcDigits.length === 11
+        ? `${tcDigits.slice(0,3)} ${tcDigits.slice(3,6)} ${tcDigits.slice(6,9)} ${tcDigits.slice(9)}`
+        : escapeHtml(tcRaw || "-");
+      const studentNoRaw = String(data?.studentNo ?? "-");
+      const studentNo = escapeHtml(studentNoRaw);
+      const exam = escapeHtml(normSpaces(data?.examName || data?.exam || data?.exam_title || "-"));
+      const examDate = escapeHtml(data?.examDate || "-");
+      const examTime = escapeHtml(data?.examTime || "-");
+      const place = escapeHtml(normSpaces(data?.place || data?.examPlace || data?.location || "Fenomen Eğitim Kurumları"));
+      const docCodeBase = `${slugifyTR(data?.examName || 'sinav').toUpperCase()}-${studentNoRaw}`.replace(/[^A-Z0-9-]/g, "");
+      const documentCode = escapeHtml(docCodeBase || `SINAV-${studentNoRaw}`);
+      const noteTime = escapeHtml(`${data?.examDate || "-"} ${data?.examTime || ""}`.trim());
+
+      return `
+        <div class="lgs-print-page">
+          <div class="lgs-print-shell">
+            <div class="lgs-watermark lgs-watermark-one"></div>
+            <div class="lgs-watermark lgs-watermark-two"></div>
+
+            <div class="lgs-topbar"></div>
+
+            <header class="lgs-header">
+              <div class="lgs-brand-block">
+                <div class="lgs-brand-emblem"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div>
+                  <div class="lgs-ministry">FENOMEN EĞİTİM KURUMLARI</div>
+                  <div class="lgs-directorate">LGS PROVASI / KURUM İÇİ UYGULAMA</div>
+                </div>
+              </div>
+
+              <div class="lgs-title-block">
+                <div class="lgs-doc-title">SINAVA GİRİŞ BELGESİ</div>
+                <div class="lgs-doc-sub">Öğrenciye özeldir • Belge kodu: ${documentCode}</div>
+              </div>
+            </header>
+
+            <section class="lgs-main-grid">
+              <div class="lgs-photo-panel">
+                <div class="lgs-photo-box">
+                  <div class="lgs-photo-circle"><i class="fa-solid fa-user-graduate"></i></div>
+                  <div class="lgs-photo-label">ÖĞRENCİ ALANI</div>
+                  <div class="lgs-photo-note">Belge, kayıt sistemindeki bilgilerle oluşturulmuştur.</div>
+                </div>
+
+                <div class="lgs-no-card">
+                  <span>ÖĞRENCİ NO</span>
+                  <strong>${studentNo}</strong>
+                </div>
+              </div>
+
+              <div class="lgs-info-panel">
+                <div class="lgs-section-title">Kimlik Bilgileri</div>
+                <div class="lgs-info-grid">
+                  <div class="lgs-field lgs-field-full">
+                    <div class="lgs-label">Adı Soyadı</div>
+                    <div class="lgs-value lgs-value-strong">${studentName}</div>
+                  </div>
+                  <div class="lgs-field">
+                    <div class="lgs-label">T.C. Kimlik No</div>
+                    <div class="lgs-value lgs-value-mono">${tcPretty}</div>
+                  </div>
+                  <div class="lgs-field">
+                    <div class="lgs-label">Okulu</div>
+                    <div class="lgs-value">${school}</div>
+                  </div>
+                </div>
+
+                <div class="lgs-section-title mt-space">Sınav Bilgileri</div>
+                <div class="lgs-exam-table">
+                  <div class="lgs-exam-row lgs-exam-row-full">
+                    <div class="lgs-exam-head">Sınav</div>
+                    <div class="lgs-exam-body">${exam}</div>
+                  </div>
+                  <div class="lgs-exam-row">
+                    <div class="lgs-exam-head">Tarih</div>
+                    <div class="lgs-exam-body">${examDate}</div>
+                  </div>
+                  <div class="lgs-exam-row">
+                    <div class="lgs-exam-head">Saat</div>
+                    <div class="lgs-exam-body">${examTime}</div>
+                  </div>
+                  <div class="lgs-exam-row lgs-exam-row-full">
+                    <div class="lgs-exam-head">Sınav Yeri</div>
+                    <div class="lgs-exam-body">${place}</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="lgs-notes">
+              <div class="lgs-notes-title">Önemli Uyarılar</div>
+              <ol>
+                <li>Belgenizi sınav günü yanınızda bulundurunuz ve görevliye ibraz ediniz.</li>
+                <li>Sınav saatinden en az <b>30 dakika önce</b> kurumda hazır bulunmanız önerilir.</li>
+                <li>Bilgilerinizde hata olduğunu düşünüyorsanız sınav öncesinde kurumla iletişime geçiniz.</li>
+              </ol>
+            </section>
+
+            <footer class="lgs-footer-band">
+              <div class="lgs-footer-item">
+                <span class="lgs-footer-label">Kayıtlı sınav zamanı</span>
+                <strong>${noteTime}</strong>
+              </div>
+              <div class="lgs-footer-item lgs-footer-signature">
+                <span class="lgs-footer-label">Kurum Onayı</span>
+                <div class="lgs-sign-line"></div>
+              </div>
+            </footer>
+          </div>
+        </div>
+      `;
+    }
+
     window.printSingleExamCard = () => {
       const data = window.lastCompletedRegistration;
       if(!data){
@@ -3111,43 +3187,371 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      // Premium sınav giriş kartı markup ve stilini oluştur
-      const bodyHtml = `
-        <div class="premium-card-sheet">
-          <div class="premium-card-slot">
-            ${window.generatePremiumExamCardHTML(data)}
-          </div>
-        </div>
-      `;
-
+      const bodyHtml = generateSingleLgsPrintHTML(data);
       const extraCss = `
-        @page { size:A4 portrait; margin:0; }
-        .premium-card-sheet { width:210mm; min-height:297mm; display:flex; align-items:center; justify-content:center; padding:0; }
-        .premium-card-slot { width:186mm; height:105mm; display:flex; align-items:center; justify-content:center; }
-        .premium-card { width:100%; height:100%; border:1px solid #ddd; border-radius:8px; overflow:hidden; font-family:'Poppins', sans-serif; color:#0f172a; background:#fff; display:flex; flex-direction:column; }
-        .premium-header { background:linear-gradient(135deg, #2563eb, #7c3aed); color:#fff; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; }
-        .premium-header .ph-title { font-size:16px; font-weight:600; }
-        .premium-header .ph-subtitle { font-size:10px; opacity:.9; }
-        .premium-header .ph-badge { background:rgba(255,255,255,.2); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600; }
-        .premium-body { flex:1; padding:12px; display:flex; gap:16px; }
-        .pb-left, .pb-right { flex:1; display:flex; flex-direction:column; gap:6px; }
-        .pb-row { display:flex; gap:4px; font-size:12px; }
-        .pb-label { width:90px; font-weight:600; color:#64748b; }
-        .pb-value { flex:1; font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .pb-name { font-size:14px; }
-        .pb-no { font-size:20px; }
-        .premium-footer { background:#f1f5f9; padding:6px 12px; font-size:9px; color:#64748b; }
-        .pf-note { line-height:1.3; }
+        @page{ size:A4 portrait; margin:0; }
+        :root{
+          --lgs-blue:#0f2d63;
+          --lgs-blue-2:#1d4f91;
+          --lgs-gold:#d8a130;
+          --lgs-border:#d7e0ef;
+          --lgs-text:#10213d;
+          --lgs-muted:#5e6c84;
+          --lgs-soft:#f4f7fb;
+        }
+        *{ box-sizing:border-box; }
+        body{
+          margin:0;
+          background:#eef3f9;
+          -webkit-print-color-adjust:exact;
+          print-color-adjust:exact;
+          font-family:'Poppins', Arial, sans-serif;
+          color:var(--lgs-text);
+        }
+        .a4.single-root{
+          width:210mm;
+          min-height:297mm;
+          padding:10mm;
+          background:#eef3f9;
+        }
+        .lgs-print-page{
+          width:100%;
+          min-height:277mm;
+          display:flex;
+          align-items:stretch;
+          justify-content:center;
+        }
+        .lgs-print-shell{
+          width:100%;
+          min-height:277mm;
+          position:relative;
+          overflow:hidden;
+          border-radius:20px;
+          background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+          border:1px solid var(--lgs-border);
+          box-shadow:0 16px 40px rgba(15,45,99,.10);
+        }
+        .lgs-watermark{
+          position:absolute;
+          border-radius:50%;
+          pointer-events:none;
+          opacity:.55;
+        }
+        .lgs-watermark-one{
+          width:170mm;
+          height:170mm;
+          background:radial-gradient(circle, rgba(15,45,99,.08) 0%, rgba(15,45,99,0) 66%);
+          right:-45mm;
+          top:-55mm;
+        }
+        .lgs-watermark-two{
+          width:120mm;
+          height:120mm;
+          background:radial-gradient(circle, rgba(216,161,48,.10) 0%, rgba(216,161,48,0) 70%);
+          left:-34mm;
+          bottom:-26mm;
+        }
+        .lgs-topbar{
+          height:7mm;
+          background:linear-gradient(90deg, var(--lgs-blue) 0%, var(--lgs-blue-2) 68%, var(--lgs-gold) 100%);
+        }
+        .lgs-header{
+          padding:11mm 12mm 7mm;
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:12mm;
+          border-bottom:1px solid var(--lgs-border);
+        }
+        .lgs-brand-block{
+          display:flex;
+          align-items:center;
+          gap:10px;
+          max-width:92mm;
+        }
+        .lgs-brand-emblem{
+          width:18mm;
+          height:18mm;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:#fff;
+          background:linear-gradient(135deg, var(--lgs-blue), var(--lgs-blue-2));
+          box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
+          font-size:19px;
+          flex:0 0 auto;
+        }
+        .lgs-ministry{
+          font-size:15px;
+          font-weight:900;
+          line-height:1.15;
+          letter-spacing:.3px;
+        }
+        .lgs-directorate{
+          margin-top:2px;
+          font-size:10px;
+          color:var(--lgs-muted);
+          font-weight:600;
+          letter-spacing:.2px;
+        }
+        .lgs-title-block{
+          text-align:right;
+          padding:4mm 0 0;
+        }
+        .lgs-doc-title{
+          font-size:18px;
+          font-weight:900;
+          letter-spacing:.6px;
+          color:var(--lgs-blue);
+        }
+        .lgs-doc-sub{
+          margin-top:2mm;
+          font-size:10px;
+          color:var(--lgs-muted);
+          font-weight:600;
+        }
+        .lgs-main-grid{
+          padding:9mm 12mm 6mm;
+          display:grid;
+          grid-template-columns:48mm 1fr;
+          gap:9mm;
+          align-items:start;
+        }
+        .lgs-photo-panel{
+          display:flex;
+          flex-direction:column;
+          gap:6mm;
+        }
+        .lgs-photo-box{
+          background:linear-gradient(180deg, #f6f9fd 0%, #edf3fb 100%);
+          border:1px solid var(--lgs-border);
+          border-radius:18px;
+          padding:7mm 5mm;
+          text-align:center;
+          min-height:83mm;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+        }
+        .lgs-photo-circle{
+          width:26mm;
+          height:26mm;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:linear-gradient(135deg, rgba(15,45,99,.14), rgba(29,79,145,.22));
+          color:var(--lgs-blue);
+          font-size:26px;
+          margin-bottom:4mm;
+        }
+        .lgs-photo-label{
+          font-size:10px;
+          font-weight:800;
+          letter-spacing:.2em;
+          color:var(--lgs-blue);
+        }
+        .lgs-photo-note{
+          margin-top:3mm;
+          font-size:9px;
+          line-height:1.45;
+          color:var(--lgs-muted);
+        }
+        .lgs-no-card{
+          border-radius:16px;
+          border:1px solid rgba(216,161,48,.32);
+          background:linear-gradient(180deg, rgba(216,161,48,.14), rgba(216,161,48,.06));
+          padding:5mm 4mm;
+          text-align:center;
+        }
+        .lgs-no-card span{
+          display:block;
+          font-size:9px;
+          color:var(--lgs-muted);
+          font-weight:700;
+          letter-spacing:.18em;
+        }
+        .lgs-no-card strong{
+          display:block;
+          margin-top:1.5mm;
+          font-size:28px;
+          line-height:1;
+          color:var(--lgs-blue);
+          font-weight:900;
+        }
+        .lgs-info-panel{
+          min-width:0;
+        }
+        .lgs-section-title{
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+          padding:2.4mm 4mm;
+          background:rgba(15,45,99,.05);
+          border:1px solid rgba(15,45,99,.08);
+          color:var(--lgs-blue);
+          border-radius:999px;
+          font-size:10px;
+          font-weight:800;
+          letter-spacing:.08em;
+          text-transform:uppercase;
+        }
+        .mt-space{ margin-top:6mm; }
+        .lgs-info-grid{
+          margin-top:4mm;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:4mm;
+        }
+        .lgs-field{
+          border:1px solid var(--lgs-border);
+          border-radius:16px;
+          background:#fff;
+          padding:4mm 4.5mm;
+          min-width:0;
+        }
+        .lgs-field-full{ grid-column:1 / -1; }
+        .lgs-label{
+          font-size:9px;
+          font-weight:700;
+          color:var(--lgs-muted);
+          text-transform:uppercase;
+          letter-spacing:.12em;
+        }
+        .lgs-value{
+          margin-top:1.8mm;
+          font-size:13px;
+          font-weight:700;
+          line-height:1.35;
+          word-break:break-word;
+          overflow-wrap:anywhere;
+        }
+        .lgs-value-strong{
+          font-size:16px;
+          font-weight:900;
+          letter-spacing:.2px;
+          color:#081934;
+        }
+        .lgs-value-mono{
+          font-family:'Courier New', monospace;
+          letter-spacing:.6px;
+        }
+        .lgs-exam-table{
+          margin-top:4mm;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:4mm;
+        }
+        .lgs-exam-row{
+          border:1px solid var(--lgs-border);
+          border-radius:16px;
+          background:linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+          padding:4mm 4.5mm;
+          min-height:22mm;
+        }
+        .lgs-exam-row-full{ grid-column:1 / -1; }
+        .lgs-exam-head{
+          font-size:9px;
+          font-weight:700;
+          color:var(--lgs-muted);
+          text-transform:uppercase;
+          letter-spacing:.12em;
+        }
+        .lgs-exam-body{
+          margin-top:1.8mm;
+          font-size:13px;
+          font-weight:800;
+          line-height:1.4;
+          word-break:break-word;
+          overflow-wrap:anywhere;
+        }
+        .lgs-notes{
+          margin:2mm 12mm 0;
+          padding:6mm 6mm 4mm;
+          border-radius:18px;
+          background:linear-gradient(180deg, #fffaf1 0%, #fff 100%);
+          border:1px solid rgba(216,161,48,.28);
+        }
+        .lgs-notes-title{
+          font-size:12px;
+          font-weight:900;
+          color:#9a6a08;
+          letter-spacing:.08em;
+          text-transform:uppercase;
+          margin-bottom:3mm;
+        }
+        .lgs-notes ol{
+          margin:0;
+          padding-left:18px;
+        }
+        .lgs-notes li{
+          margin:0 0 2.4mm;
+          font-size:10px;
+          line-height:1.55;
+          color:#5b4a23;
+        }
+        .lgs-footer-band{
+          margin:6mm 12mm 0;
+          padding:5mm 0 0;
+          border-top:1px solid var(--lgs-border);
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:8mm;
+          align-items:end;
+        }
+        .lgs-footer-item{
+          min-width:0;
+        }
+        .lgs-footer-label{
+          display:block;
+          font-size:9px;
+          font-weight:700;
+          color:var(--lgs-muted);
+          text-transform:uppercase;
+          letter-spacing:.12em;
+          margin-bottom:2mm;
+        }
+        .lgs-footer-item strong{
+          font-size:12px;
+          font-weight:800;
+          color:var(--lgs-text);
+        }
+        .lgs-footer-signature{
+          text-align:right;
+        }
+        .lgs-sign-line{
+          width:100%;
+          height:0;
+          border-top:1.2px solid #6b7c98;
+          margin-top:10mm;
+        }
+        @media print{
+          html, body{
+            margin:0 !important;
+            padding:0 !important;
+            background:#eef3f9 !important;
+          }
+          .a4.single-root{
+            width:auto;
+            min-height:auto;
+            padding:10mm;
+          }
+          .lgs-print-shell{
+            box-shadow:none;
+          }
+        }
       `;
 
       const area = el("printArea");
-      area.innerHTML = `<style>${extraCss}</style><div class="a4 premium-root">${bodyHtml}</div>`;
+      area.innerHTML = `<style>${extraCss}</style><div class="a4 single-root">${bodyHtml}</div>`;
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
-        window.removeEventListener('afterprint', cleanup);
+        window.removeEventListener("afterprint", cleanup);
       };
-      window.addEventListener('afterprint', cleanup);
+      window.addEventListener("afterprint", cleanup);
     };
 
     function openPrintWindow(title, bodyHtml, extraCss=""){
