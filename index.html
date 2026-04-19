@@ -957,7 +957,7 @@
             <div class="card-preview-wrap mt-4">
               <div id="finalCardPreview"></div>
             </div>
-            <div class="hint mt-2">Bu bölüm yalnızca örnek önizlemedir. Baskı alınamaz.</div>
+            <div class="hint mt-2">Önizlemede gördüğünüz kart, yazdırma ekranında aynı tasarımla hazırlanır.</div>
 
             <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
               <button class="btn btn-outline-primary" onclick="printSingleExamCard()"><i class="fa-solid fa-print"></i> Giriş Kartını Yazdır</button>
@@ -3059,61 +3059,102 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      const bodyHtml = `
-        <div class="single-card-sheet">
-          <div class="single-card-slot">
-            ${window.generateBizCardHTML(data)}
-          </div>
-        </div>
-      `;
+      const previewHtml = (el("finalCardPreview")?.innerHTML || "").trim() || generateCardHTML(data);
 
       const extraCss = `
         @page { size:A4 portrait; margin:0; }
-        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
-        .single-card-sheet{
+        html, body{
+          background:#ffffff !important;
+          -webkit-print-color-adjust:exact;
+          print-color-adjust:exact;
+        }
+        #printArea{
+          width:210mm;
+          min-height:297mm;
+          margin:0 auto;
+          background:#ffffff;
+        }
+        .single-preview-print{
           width:210mm;
           min-height:297mm;
           padding:12mm;
           display:flex;
           align-items:flex-start;
           justify-content:center;
+          background:#ffffff;
         }
-        .single-card-slot{
+        .single-preview-print .print-card-frame{
           width:186mm;
-          height:92mm;
+          min-height:96mm;
+          padding:4mm;
+          border:1px dashed rgba(2, 6, 23, .20);
+          border-radius:6mm;
           display:flex;
-          align-items:stretch;
+          align-items:center;
           justify-content:center;
+          background:#ffffff;
         }
-        .single-card-slot .biz-wrapper{
-          width:100%;
-          height:100%;
-          border:1px dashed #bbb;
-          padding:2mm;
+        .single-preview-print .exam-card{
+          width:100% !important;
+          max-width:none !important;
+          aspect-ratio:90 / 55 !important;
+          height:auto !important;
+          min-height:auto !important;
+          margin:0 !important;
+          padding:4.5mm !important;
+          border-radius:6mm !important;
+          box-shadow:none !important;
         }
-        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
-        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
-        .single-card-slot .biz-title{ font-size:18px; }
-        .single-card-slot .biz-subtitle{ font-size:10px; }
-        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
-        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
-        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
-        .single-card-slot .biz-lbl{ font-size:10px; }
-        .single-card-slot .biz-val{ font-size:14px; }
-        .single-card-slot .biz-val.name{ font-size:16px; }
-        .single-card-slot .biz-val.school{ font-size:12px; }
-        .single-card-slot .biz-val.tc{ font-size:13px; }
-        .single-card-slot .biz-num-box{ width:44mm; }
-        .single-card-slot .biz-num-lbl{ font-size:8px; }
-        .single-card-slot .biz-num-val{ font-size:34px; }
-        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
-        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
-        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
-        .single-card-slot .biz-f-val{ font-size:12px; }
+        .single-preview-print .exam-card-header{ padding:4mm 4.5mm !important; }
+        .single-preview-print .card-mark{
+          width:8mm !important;
+          height:8mm !important;
+          border-radius:2.5mm !important;
+          font-size:4mm !important;
+        }
+        .single-preview-print .card-title{ font-size:4.2mm !important; }
+        .single-preview-print .card-type{ font-size:3.1mm !important; }
+        .single-preview-print .card-sub{ font-size:2.8mm !important; }
+        .single-preview-print .exam-card-body{ margin-top:3.5mm !important; gap:2.6mm !important; }
+        .single-preview-print .kv{
+          grid-template-columns:22mm 1fr !important;
+          gap:3mm !important;
+          padding-bottom:2mm !important;
+        }
+        .single-preview-print .kv .k{ font-size:3mm !important; }
+        .single-preview-print .kv .v{ font-size:3.5mm !important; }
+        .single-preview-print .kv .v.is-name{ font-size:4.8mm !important; }
+        .single-preview-print .kv.is-tc .v{ font-size:3mm !important; }
+        .single-preview-print .big-no{
+          padding:3mm 4mm !important;
+          border-radius:4mm !important;
+        }
+        .single-preview-print .big-no span{ font-size:2.8mm !important; }
+        .single-preview-print .big-no strong{ font-size:7.5mm !important; }
+        .single-preview-print .exam-card-footer{
+          margin-top:2.5mm !important;
+          padding-top:2.5mm !important;
+          font-size:2.9mm !important;
+        }
+        .single-preview-print .exam-card-footer .footer-row{
+          margin-top:1.2mm !important;
+          gap:2mm !important;
+        }
+        .single-preview-print .exam-card-footer .fr-k{ font-size:2.6mm !important; min-width:18mm !important; }
+        .single-preview-print .exam-card-footer .fr-v{ font-size:3.2mm !important; }
+        .single-preview-print .exam-card-footer .fr-v.exam-name{ font-size:3.4mm !important; }
+      `;
+
+      const bodyHtml = `
+        <div class="single-preview-print">
+          <div class="print-card-frame">
+            ${previewHtml}
+          </div>
+        </div>
       `;
 
       const area = el("printArea");
-      area.innerHTML = `<style>${extraCss}</style><div class="a4 single-root">${bodyHtml}</div>`;
+      area.innerHTML = `<style>${extraCss}</style>${bodyHtml}`;
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
