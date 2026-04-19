@@ -3216,6 +3216,7 @@ window.generateBizCardHTML = function(data) {
 
       const extraCss = `
         @page { size:A4 portrait; margin:0; }
+        body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         .a4.single-root{
           width:210mm;
           min-height:297mm;
@@ -3226,7 +3227,7 @@ window.generateBizCardHTML = function(data) {
         .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:9mm 8mm 0;
+          padding:10mm 8mm 0;
           display:flex;
           justify-content:center;
           align-items:flex-start;
@@ -3234,7 +3235,7 @@ window.generateBizCardHTML = function(data) {
         }
         .single-card-cutline{
           width:194mm;
-          min-height:104mm;
+          min-height:108mm;
           border:1px dashed #d7d7d7;
           padding:4mm;
           display:flex;
@@ -3242,195 +3243,30 @@ window.generateBizCardHTML = function(data) {
           align-items:center;
         }
         .single-card-slot{
-          width:186mm;
-          min-height:94mm;
+          width:182mm;
           display:flex;
           justify-content:center;
           align-items:center;
         }
-        .single-card-slot .exam-card{
-          width:186mm !important;
-          min-height:90mm !important;
+        .single-card-slot .exam-card,
+        .single-card-slot .premium-card{
+          width:182mm !important;
+          max-width:none !important;
+          min-height:auto !important;
           height:auto !important;
           aspect-ratio:auto !important;
-          padding:0 !important;
           margin:0 auto !important;
-          border-radius:7mm !important;
+        }
+        .single-card-slot .exam-card{
+          padding:0 !important;
+          border-radius:24px !important;
+          box-shadow:0 18px 40px rgba(15,23,42,.10) !important;
+          border:1px solid rgba(15,23,42,.08) !important;
           overflow:hidden !important;
-          border:.45mm solid rgba(15,23,42,.10) !important;
-          box-shadow:none !important;
-          background:linear-gradient(180deg,#fffdfb 0%, #fff7f1 100%) !important;
         }
         .single-card-slot .exam-card::before,
         .single-card-slot .exam-card::after{
           display:none !important;
-        }
-        .single-card-slot .exam-card-header{
-          margin:0 !important;
-          padding:5mm 6mm 4.2mm !important;
-          border-radius:0 !important;
-          background:linear-gradient(135deg,#0f172a 0%, #1e293b 54%, #f97316 54%, #fb923c 100%) !important;
-          gap:4mm !important;
-          align-items:flex-start !important;
-        }
-        .single-card-slot .card-brand{
-          gap:3.2mm !important;
-          align-items:flex-start !important;
-        }
-        .single-card-slot .card-mark{
-          width:9mm !important;
-          height:9mm !important;
-          border-radius:50% !important;
-          font-size:4mm !important;
-          background:#ffffff !important;
-          color:#f97316 !important;
-          box-shadow:none !important;
-          margin-top:.4mm !important;
-        }
-        .single-card-slot .card-title{
-          font-size:5.2mm !important;
-          line-height:1.05 !important;
-          font-weight:900 !important;
-          color:#ffffff !important;
-          letter-spacing:.03em !important;
-          white-space:normal !important;
-          overflow:visible !important;
-          text-overflow:clip !important;
-        }
-        .single-card-slot .card-sub{
-          display:inline-flex !important;
-          width:auto !important;
-          margin-top:1.6mm !important;
-          padding:1.2mm 3.2mm !important;
-          border-radius:999px !important;
-          background:rgba(255,255,255,.12) !important;
-          border:.35mm solid rgba(255,255,255,.16) !important;
-          color:#e2e8f0 !important;
-          font-size:2.7mm !important;
-          font-weight:700 !important;
-          line-height:1.1 !important;
-        }
-        .single-card-slot .exam-card-header > .card-type{
-          margin-left:auto !important;
-          background:#fff7ed !important;
-          color:#c2410c !important;
-          border:none !important;
-          padding:1.7mm 3.4mm !important;
-          border-radius:999px !important;
-          font-size:3mm !important;
-          font-weight:900 !important;
-          letter-spacing:.08em !important;
-          white-space:nowrap !important;
-          box-shadow:0 1mm 2.4mm rgba(0,0,0,.08) !important;
-        }
-        .single-card-slot .exam-card-body{
-          padding:4.6mm 6mm 5mm !important;
-          margin-top:0 !important;
-          gap:2mm !important;
-          background:linear-gradient(180deg,#fffdfb 0%, #fff8f3 100%) !important;
-        }
-        .single-card-slot .kv{
-          grid-template-columns:23mm 1fr !important;
-          gap:4mm !important;
-          align-items:center !important;
-          padding:0 0 2.2mm !important;
-          border-bottom:.35mm solid rgba(15,23,42,.10) !important;
-        }
-        .single-card-slot .kv .k{
-          font-size:2.7mm !important;
-          font-weight:900 !important;
-          letter-spacing:.09em !important;
-          color:#64748b !important;
-          text-transform:uppercase !important;
-        }
-        .single-card-slot .kv .v{
-          font-size:4.2mm !important;
-          font-weight:800 !important;
-          line-height:1.12 !important;
-          color:#0f172a !important;
-          text-align:right !important;
-        }
-        .single-card-slot .kv.kv-name{
-          padding-bottom:2.5mm !important;
-        }
-        .single-card-slot .kv .v.is-name{
-          font-size:6.2mm !important;
-          line-height:1.04 !important;
-          font-weight:900 !important;
-          color:#0b1f44 !important;
-          letter-spacing:.01em !important;
-        }
-        .single-card-slot .kv.is-tc .v{
-          font-size:3.2mm !important;
-          font-weight:800 !important;
-          color:#334155 !important;
-        }
-        .single-card-slot .big-no{
-          margin-top:1.6mm !important;
-          padding:3.4mm 4.2mm !important;
-          border-radius:4.5mm !important;
-          background:linear-gradient(90deg,rgba(249,115,22,.10) 0%, rgba(251,146,60,.18) 100%) !important;
-          border:.45mm solid rgba(249,115,22,.24) !important;
-          gap:4mm !important;
-        }
-        .single-card-slot .big-no span{
-          font-size:2.8mm !important;
-          font-weight:900 !important;
-          letter-spacing:.1em !important;
-          color:#7c2d12 !important;
-          text-transform:uppercase !important;
-        }
-        .single-card-slot .big-no strong{
-          font-size:8.8mm !important;
-          line-height:1 !important;
-          font-weight:900 !important;
-          color:#ea580c !important;
-        }
-        .single-card-slot .exam-card-footer{
-          margin-top:2.6mm !important;
-          padding-top:0 !important;
-          border-top:none !important;
-          display:grid !important;
-          grid-template-columns:1.15fr 1fr 1fr !important;
-          gap:2.4mm !important;
-        }
-        .single-card-slot .exam-card-footer .footer-row{
-          margin-top:0 !important;
-          display:flex !important;
-          flex-direction:column !important;
-          align-items:flex-start !important;
-          justify-content:flex-start !important;
-          gap:1.2mm !important;
-          padding:2.8mm 3.2mm !important;
-          border-radius:3.6mm !important;
-          background:#ffffff !important;
-          border:.35mm solid rgba(15,23,42,.08) !important;
-          min-height:18mm !important;
-        }
-        .single-card-slot .exam-card-footer .fr-k{
-          min-width:0 !important;
-          font-size:2.45mm !important;
-          line-height:1 !important;
-          font-weight:900 !important;
-          color:#64748b !important;
-          opacity:1 !important;
-          letter-spacing:.1em !important;
-        }
-        .single-card-slot .exam-card-footer .fr-k i{
-          color:#f97316 !important;
-          margin-right:1.2mm !important;
-        }
-        .single-card-slot .exam-card-footer .fr-v{
-          width:100% !important;
-          text-align:left !important;
-          font-size:3.35mm !important;
-          line-height:1.18 !important;
-          color:#0f172a !important;
-          font-weight:800 !important;
-        }
-        .single-card-slot .exam-card-footer .fr-v.exam-name{
-          font-size:3.7mm !important;
-          font-weight:900 !important;
         }
       `;
 
