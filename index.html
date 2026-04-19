@@ -3052,66 +3052,6 @@ window.generateBizCardHTML = function(data) {
 
     // --- Printing ---
 
-    function generatePremiumPrintCardHTML(data){
-      const safe = (s) => escapeHtml(String(s || ""));
-      const studentName = toUpperTR(normSpaces(data.studentName || ""));
-      const school = normSpaces(data.school || "");
-      const tc = String(data.tc || "");
-      const tcPretty = tc.length === 11
-        ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
-        : tc;
-      const no = safe(data.studentNo || "");
-      const dateLine = safe(`${data.examDate || ""} - ${data.examTime || ""}`.replace(/\s+-\s+$/, "").trim());
-      const place = safe(normSpaces(data.place || data.examPlace || "Fenomen Eğitim Kurumları"));
-
-      return `
-        <div class="ticket-shell">
-          <div class="ticket-card-core" aria-label="Öğrenci giriş kartı">
-            <div class="ticket-head">
-              <div class="ticket-head-left">
-                <div class="ticket-logo"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div class="ticket-brand-stack">
-                  <div class="ticket-brand-title">FENOMEN EĞİTİM KURUMLARI</div>
-                  <div class="ticket-brand-sub">Öğrenci Giriş Belgesi</div>
-                </div>
-              </div>
-              <div class="ticket-head-badge">GİRİŞ KARTI</div>
-            </div>
-
-            <div class="ticket-content">
-              <div class="ticket-section-caption">Öğrenci</div>
-
-              <div class="ticket-student-row">
-                <div class="ticket-school-block">
-                  <div class="ticket-school-label"><i class="fa-solid fa-school"></i> Okul</div>
-                  <div class="ticket-school-value">${safe(school)}</div>
-                </div>
-                <div class="ticket-student-value">${safe(studentName)}</div>
-              </div>
-
-              <div class="ticket-tc-row">
-                <span class="ticket-tc-key">T.C.</span>
-                <span class="ticket-tc-value">${safe(tcPretty)}</span>
-              </div>
-
-              <div class="ticket-no-box">
-                <div class="ticket-no-label"><i class="fa-regular fa-id-card"></i> ÖĞRENCİ NUMARASI</div>
-                <div class="ticket-no-value">${no}</div>
-              </div>
-
-              <div class="ticket-exam-box">
-                <div class="ticket-exam-title"><i class="fa-regular fa-calendar"></i> SINAV</div>
-                <div class="ticket-exam-line"><i class="fa-regular fa-clock"></i><span>${dateLine}</span></div>
-                <div class="ticket-exam-line"><i class="fa-solid fa-location-dot"></i><span>${place}</span></div>
-              </div>
-            </div>
-
-            <div class="ticket-bottom-band"></div>
-          </div>
-        </div>
-      `;
-    }
-
     window.printSingleExamCard = () => {
       const data = window.lastCompletedRegistration;
       if(!data){
@@ -3120,235 +3060,56 @@ window.generateBizCardHTML = function(data) {
       }
 
       const bodyHtml = `
-        <div class="single-card-sheet premium-ticket-sheet">
-          ${generatePremiumPrintCardHTML(data)}
+        <div class="single-card-sheet">
+          <div class="single-card-slot">
+            ${window.generateBizCardHTML(data)}
+          </div>
         </div>
       `;
 
       const extraCss = `
-        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
         @page { size:A4 portrait; margin:0; }
-        *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        body{ margin:0; padding:0; background:#f2ecec; font-family:'Poppins',sans-serif; }
         .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
-        .premium-ticket-sheet{
+        .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:16mm 0 0;
+          padding:12mm;
           display:flex;
-          justify-content:center;
           align-items:flex-start;
-          background:radial-gradient(circle at 0 0, rgba(255,255,255,.96), rgba(241,233,233,.98));
+          justify-content:center;
         }
-        .ticket-shell{
-          width:170mm;
-          padding:4mm;
-          border-radius:10mm;
-          background:linear-gradient(180deg,#ece3e3 0%, #d8cfcf 100%);
-          box-shadow:0 6px 22px rgba(140,113,113,.16);
+        .single-card-slot{
+          width:186mm;
+          height:92mm;
+          display:flex;
+          align-items:stretch;
+          justify-content:center;
         }
-        .ticket-card-core{
-          position:relative;
+        .single-card-slot .biz-wrapper{
           width:100%;
-          min-height:92mm;
-          overflow:hidden;
-          border-radius:7mm;
-          background:linear-gradient(180deg, #fcf8f8 0%, #f7f0f0 100%);
-          border:1px solid rgba(244,174,84,.55);
+          height:100%;
+          border:1px dashed #bbb;
+          padding:2mm;
         }
-        .ticket-card-core::before{
-          content:"";
-          position:absolute;
-          inset:0;
-          background:
-            radial-gradient(circle at 8% 18%, rgba(255,170,60,.18) 0 1px, transparent 1px 100%),
-            radial-gradient(circle at 92% 34%, rgba(255,170,60,.16) 0 1px, transparent 1px 100%),
-            radial-gradient(circle at 88% 84%, rgba(255,170,60,.17) 0 1px, transparent 1px 100%);
-          background-size:8mm 8mm, 8mm 8mm, 8mm 8mm;
-          opacity:.85;
-          pointer-events:none;
-        }
-        .ticket-head,
-        .ticket-content,
-        .ticket-bottom-band{ position:relative; z-index:1; }
-        .ticket-head{
-          height:17mm;
-          padding:2.8mm 5.5mm;
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:4mm;
-          background:linear-gradient(90deg,#f57a08 0%, #f79a1f 58%, #f7c14e 100%);
-          border-radius:0 0 7mm 7mm;
-        }
-        .ticket-head-left{ display:flex; align-items:center; gap:3mm; min-width:0; }
-        .ticket-logo{
-          width:10.8mm;
-          height:10.8mm;
-          border-radius:50%;
-          background:linear-gradient(180deg,#ffb24a 0%, #ff8b10 100%);
-          color:#fff;
-          border:1px solid rgba(255,255,255,.85);
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size:4.9mm;
-          flex:0 0 auto;
-        }
-        .ticket-brand-stack{ min-width:0; }
-        .ticket-brand-title{
-          color:#fff;
-          font-weight:900;
-          font-size:6.2mm;
-          line-height:1;
-          white-space:nowrap;
-        }
-        .ticket-brand-sub{
-          display:inline-flex;
-          align-items:center;
-          margin-top:1.2mm;
-          min-height:5.5mm;
-          padding:.4mm 2.6mm;
-          border-radius:999px;
-          border:1px solid rgba(255,255,255,.58);
-          background:rgba(255,255,255,.14);
-          color:#fff;
-          font-size:3.2mm;
-          font-weight:700;
-          white-space:nowrap;
-        }
-        .ticket-head-badge{
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          min-height:7mm;
-          padding:.6mm 3.5mm;
-          border-radius:999px;
-          border:1px solid rgba(255,255,255,.66);
-          background:rgba(255,255,255,.18);
-          color:#fff;
-          font-size:4.1mm;
-          font-weight:800;
-          white-space:nowrap;
-          flex:0 0 auto;
-        }
-        .ticket-content{
-          padding:4.6mm 5.5mm 17mm;
-        }
-        .ticket-section-caption{
-          font-size:4.7mm;
-          font-weight:800;
-          color:#6f7386;
-          margin-bottom:1.2mm;
-        }
-        .ticket-student-row{
-          display:grid;
-          grid-template-columns:38mm 1fr;
-          gap:6mm;
-          align-items:end;
-          padding-bottom:2.2mm;
-          border-bottom:1px dashed rgba(208,198,198,.95);
-        }
-        .ticket-school-label{
-          display:flex;
-          align-items:center;
-          gap:1.2mm;
-          color:#727589;
-          font-size:3.7mm;
-          font-weight:700;
-        }
-        .ticket-school-label i{ color:#f59a25; }
-        .ticket-school-value{
-          margin-top:1.6mm;
-          color:#41527d;
-          font-size:4mm;
-          font-weight:700;
-          word-break:break-word;
-        }
-        .ticket-student-value{
-          text-align:right;
-          color:#213e75;
-          font-size:7.1mm;
-          line-height:1.02;
-          font-weight:900;
-          word-break:break-word;
-        }
-        .ticket-tc-row{
-          display:flex;
-          gap:2mm;
-          align-items:center;
-          padding:2.4mm 0 2.8mm;
-          border-bottom:1px dashed rgba(208,198,198,.95);
-        }
-        .ticket-tc-key,
-        .ticket-tc-value{
-          color:#4c587a;
-          font-size:3.8mm;
-          font-weight:800;
-        }
-        .ticket-no-box{
-          margin-top:3.2mm;
-          padding:3mm 4mm;
-          border-radius:5mm;
-          background:#f7efee;
-          border:1px solid rgba(238,190,150,.96);
-        }
-        .ticket-no-label{
-          display:flex;
-          align-items:center;
-          gap:1.2mm;
-          color:#5d6e95;
-          font-size:3.6mm;
-          font-weight:800;
-        }
-        .ticket-no-label i{ color:#f6911d; }
-        .ticket-no-value{
-          margin-top:1mm;
-          color:#ff6e00;
-          font-size:9.2mm;
-          line-height:1;
-          font-weight:900;
-        }
-        .ticket-exam-box{
-          width:72mm;
-          margin-top:3.3mm;
-          padding:2.8mm 3.5mm;
-          border-radius:5.2mm;
-          background:#f7f3f3;
-          box-shadow:0 2px 8px rgba(160,142,142,.10);
-          border:1px solid rgba(233,225,225,.95);
-        }
-        .ticket-exam-title{
-          display:flex;
-          align-items:center;
-          gap:1.3mm;
-          color:#c15b11;
-          font-size:4.2mm;
-          font-weight:900;
-          margin-bottom:1.2mm;
-        }
-        .ticket-exam-title i,
-        .ticket-exam-line i{ color:#f38d1b; }
-        .ticket-exam-line{
-          display:flex;
-          align-items:flex-start;
-          gap:1.4mm;
-          color:#40517a;
-          font-size:3.7mm;
-          font-weight:700;
-          line-height:1.18;
-          margin-top:.8mm;
-        }
-        .ticket-exam-line span{ word-break:break-word; }
-        .ticket-bottom-band{
-          position:absolute;
-          left:0;
-          right:0;
-          bottom:0;
-          height:10mm;
-          background:linear-gradient(90deg,#edc8a7 0%, #fdb146 38%, #fa9319 100%);
-        }
+        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
+        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
+        .single-card-slot .biz-title{ font-size:18px; }
+        .single-card-slot .biz-subtitle{ font-size:10px; }
+        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
+        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
+        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
+        .single-card-slot .biz-lbl{ font-size:10px; }
+        .single-card-slot .biz-val{ font-size:14px; }
+        .single-card-slot .biz-val.name{ font-size:16px; }
+        .single-card-slot .biz-val.school{ font-size:12px; }
+        .single-card-slot .biz-val.tc{ font-size:13px; }
+        .single-card-slot .biz-num-box{ width:44mm; }
+        .single-card-slot .biz-num-lbl{ font-size:8px; }
+        .single-card-slot .biz-num-val{ font-size:34px; }
+        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
+        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
+        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
+        .single-card-slot .biz-f-val{ font-size:12px; }
       `;
 
       const area = el("printArea");
