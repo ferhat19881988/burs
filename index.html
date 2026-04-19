@@ -3206,10 +3206,8 @@ window.generateBizCardHTML = function(data) {
 
       const bodyHtml = `
         <div class="single-card-sheet">
-          <div class="single-card-cutline">
-            <div class="single-card-slot">
-              ${generateCardHTML(data, { theme: 'orange' })}
-            </div>
+          <div class="single-card-slot">
+            ${generateCardHTML(data, { theme: 'orange' })}
           </div>
         </div>
       `;
@@ -3227,30 +3225,21 @@ window.generateBizCardHTML = function(data) {
         .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:10mm 8mm 0;
+          padding:14mm 0 0;
           display:flex;
           justify-content:center;
           align-items:flex-start;
           background:#ffffff;
         }
-        .single-card-cutline{
-          width:194mm;
-          min-height:108mm;
-          border:1px dashed #d7d7d7;
-          padding:4mm;
-          display:flex;
-          justify-content:center;
-          align-items:center;
-        }
         .single-card-slot{
-          width:182mm;
+          width:150mm;
           display:flex;
           justify-content:center;
-          align-items:center;
+          align-items:flex-start;
         }
         .single-card-slot .exam-card,
         .single-card-slot .premium-card{
-          width:182mm !important;
+          width:150mm !important;
           max-width:none !important;
           min-height:auto !important;
           height:auto !important;
@@ -3260,8 +3249,6 @@ window.generateBizCardHTML = function(data) {
         .single-card-slot .exam-card{
           padding:0 !important;
           border-radius:24px !important;
-          box-shadow:0 18px 40px rgba(15,23,42,.10) !important;
-          border:1px solid rgba(15,23,42,.08) !important;
           overflow:hidden !important;
         }
         .single-card-slot .exam-card::before,
