@@ -2155,81 +2155,79 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     // interfere with the main application styles.
    // --- Modern Business Card Generator ---
 window.generateBizCardHTML = function(data) {
-    // Türkçe karakter güvenli temizleme fonksiyonu
-    const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    
-    // Türkçe kurallarına uygun büyük harf dönüşümü
+    const safe = (s) => String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
     const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
-    
-    const name = upper(data.studentName);
-    const school = upper(data.school);
-    const tc = data.tc || "";
-    // TC formatlama (11 hane ise aralıklı, değilse olduğu gibi)
+    const examNameRaw = normSpaces(data.examName || data.exam || "");
+    const examName = safe(examNameRaw || "Sınav Bilgisi");
+    const studentName = safe(upper(data.studentName || ""));
+    const school = safe(upper(data.school || ""));
+    const tc = String(data.tc || "");
     const tcFmt = tc.length === 11 ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}` : tc;
-    const no = data.studentNo || "";
-    // Sınav adını olduğu gibi al (büyük harf zorlamadık, veri nasıl gelirse)
-    const exam = safe(data.examName); 
-    const date = `${data.examDate || ""} • ${data.examTime || ""}`;
+    const no = safe(data.studentNo || "");
+    const examDate = safe(data.examDate || "");
+    const examTime = safe(data.examTime || "");
     const place = safe(data.place || "Fenomen Eğitim Kurumları");
 
     return `
-    <div class="biz-wrapper">
+      <div class="biz-wrapper">
         <div class="biz-card">
-            <div class="biz-header">
-                <div class="biz-header-left">
-                    <div class="biz-title">FENOMEN EĞİTİM KURUMLARI</div>
-                    <div class="biz-subtitle">Öğrenci Sınav Giriş Belgesi</div>
-                </div>
-                <div class="biz-badge">GİRİŞ KARTI</div>
+          <div class="biz-topband"></div>
+
+          <div class="biz-header">
+            <div class="biz-brand-mark"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="biz-header-main">
+              <div class="biz-title">FENOMEN EĞİTİM KURUMLARI</div>
+              <div class="biz-subtitle">Öğrenci Sınav Giriş Belgesi</div>
+            </div>
+            <div class="biz-badge">GİRİŞ KARTI</div>
+          </div>
+
+          <div class="biz-body">
+            <div class="biz-details">
+              <div class="biz-detail-row biz-detail-name">
+                <div class="biz-lbl">ÖĞRENCİ</div>
+                <div class="biz-val biz-name" title="${studentName}">${studentName}</div>
+              </div>
+              <div class="biz-detail-row">
+                <div class="biz-lbl">OKUL</div>
+                <div class="biz-val" title="${school}">${school}</div>
+              </div>
+              <div class="biz-detail-row biz-detail-tc">
+                <div class="biz-lbl">T.C. NO</div>
+                <div class="biz-val biz-tc" title="${safe(tc)}">${safe(tcFmt)}</div>
+              </div>
             </div>
 
-            <div class="biz-body">
-                <div class="biz-info-col">
-                    <div class="biz-row">
-                        <div class="biz-lbl">ÖĞRENCİ</div>
-                        <div class="biz-val name biz-multiline" title="${safe(name)}">${safe(name)}</div>
-                    </div>
-                    <div class="biz-row">
-                        <div class="biz-lbl">OKUL</div>
-                        <div class="biz-val school biz-multiline" title="${safe(school)}">${safe(school)}</div>
-                    </div>
-                    <div class="biz-row">
-                        <div class="biz-lbl">T.C. NO</div>
-                        <div class="biz-val tc">${safe(tcFmt)}</div>
-                    </div>
-                </div>
-                
-                <div class="biz-num-box">
-                    <div class="biz-num-lbl">ÖĞRENCİ NO</div>
-                    <div class="biz-num-val">${safe(no)}</div>
-                </div>
+            <div class="biz-num-box">
+              <div class="biz-num-lbl">ÖĞRENCİ NUMARASI</div>
+              <div class="biz-num-val">${no}</div>
             </div>
+          </div>
 
-            <div class="biz-footer">
-                <div class="biz-f-row">
-                    <div class="biz-icon"><i class="fa-solid fa-pen-nib"></i></div>
-                    <div class="biz-f-content">
-                        <span class="biz-f-lbl">SINAV ADI:</span>
-                        <span class="biz-f-val biz-f-val-wrap">${exam}</span>
-                    </div>
-                </div>
-                <div class="biz-f-row">
-                    <div class="biz-icon"><i class="fa-regular fa-clock"></i></div>
-                    <div class="biz-f-content">
-                        <span class="biz-f-lbl">TARİH:</span>
-                        <span class="biz-f-val biz-f-val-wrap">${date}</span>
-                    </div>
-                </div>
-                <div class="biz-f-row">
-                    <div class="biz-icon"><i class="fa-solid fa-location-dot"></i></div>
-                    <div class="biz-f-content">
-                        <span class="biz-f-lbl">YER:</span>
-                        <span class="biz-f-val biz-f-val-wrap">${place}</span>
-                    </div>
-                </div>
+          <div class="biz-footer">
+            <div class="biz-foot-grid">
+              <div class="biz-foot-item biz-foot-item-exam">
+                <div class="biz-foot-head"><i class="fa-solid fa-pen-nib"></i><span>SINAV ADI</span></div>
+                <div class="biz-foot-value" title="${examName}">${examName}</div>
+              </div>
+              <div class="biz-foot-item biz-foot-item-datetime">
+                <div class="biz-foot-head"><i class="fa-regular fa-clock"></i><span>TARİH / SAAT</span></div>
+                <div class="biz-foot-value">${examDate} ${examTime ? `• ${examTime}` : ''}</div>
+              </div>
+              <div class="biz-foot-item biz-foot-item-place">
+                <div class="biz-foot-head"><i class="fa-solid fa-location-dot"></i><span>YER</span></div>
+                <div class="biz-foot-value">${place}</div>
+              </div>
             </div>
+          </div>
         </div>
-    </div>
+      </div>
     `;
 };
 
@@ -3060,10 +3058,11 @@ window.generateBizCardHTML = function(data) {
       }
 
       const bodyHtml = `
-        <div class="single-card-sheet premium-print-sheet">
-          <div class="single-card-guide">A4 / 1-3 Giriş Kartı Alanı</div>
-          <div class="single-card-slot premium-card-slot">
-            ${generateCardHTML(data, { theme: 'orange' })}
+        <div class="single-card-sheet">
+          <div class="single-card-cutline">
+            <div class="single-card-slot">
+              ${window.generateBizCardHTML(data)}
+            </div>
           </div>
         </div>
       `;
@@ -3074,136 +3073,213 @@ window.generateBizCardHTML = function(data) {
           width:210mm;
           min-height:297mm;
           padding:0;
-          background:#fff;
+          margin:0;
         }
-        .premium-print-sheet{
+        .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:12mm;
+          padding:8mm 10mm 0;
           display:flex;
-          flex-direction:column;
+          justify-content:center;
+          align-items:flex-start;
+          background:#fff;
+        }
+        .single-card-cutline{
+          width:190mm;
+          min-height:96mm;
+          border:1px dashed #cfcfcf;
+          padding:4mm;
+          display:flex;
+          align-items:stretch;
+          justify-content:center;
+        }
+        .single-card-slot{
+          width:100%;
+          height:88mm;
+          display:flex;
+          align-items:stretch;
+          justify-content:center;
+        }
+        .single-card-slot .biz-wrapper{
+          width:100%;
+          height:100%;
+        }
+        .single-card-slot .biz-card{
+          width:100%;
+          height:100%;
+          position:relative;
+          overflow:hidden;
+          border-radius:7mm;
+          border:0.45mm solid #efc3aa;
+          background:linear-gradient(180deg,#fff7f1 0%, #ffffff 18%, #fffaf7 100%);
+          box-shadow:none;
+        }
+        .single-card-slot .biz-topband{
+          position:absolute;
+          inset:0 0 auto 0;
+          height:9mm;
+          background:linear-gradient(90deg,#f97316 0%, #fb8c00 55%, #ffb347 100%);
+        }
+        .single-card-slot .biz-header{
+          position:relative;
+          display:grid;
+          grid-template-columns:11mm 1fr auto;
+          gap:4mm;
           align-items:center;
-          justify-content:flex-start;
-          background:
-            linear-gradient(180deg, #fff7ed 0%, #ffffff 18%, #ffffff 100%);
+          padding:5.8mm 6.5mm 3.5mm;
         }
-        .single-card-guide{
-          width:186mm;
-          margin:0 0 4mm;
-          text-align:left;
-          font-size:10px;
-          font-weight:700;
-          letter-spacing:.08em;
-          text-transform:uppercase;
-          color:#9a3412;
-        }
-        .premium-card-slot{
-          width:186mm;
-          height:96mm;
-          padding:2.2mm;
-          border:1px dashed rgba(234,88,12,.45);
-          border-radius:6mm;
+        .single-card-slot .biz-brand-mark{
+          width:10mm;
+          height:10mm;
+          border-radius:50%;
+          background:#ffffff;
+          color:#f97316;
           display:flex;
           align-items:center;
           justify-content:center;
-          background:linear-gradient(180deg, rgba(255,247,237,.9), rgba(255,255,255,.96));
+          font-size:4.2mm;
+          box-shadow:0 0 0 .5mm rgba(255,255,255,.35);
         }
-        .premium-card-slot .exam-card{
-          width:100% !important;
-          height:100% !important;
-          min-height:0 !important;
-          aspect-ratio:auto !important;
-          padding:4.2mm !important;
-          border-radius:5.2mm !important;
-          box-shadow:none !important;
-          border:1px solid rgba(234,88,12,.24) !important;
-          background:
-            radial-gradient(170mm 85mm at 0% 0%, rgba(253,186,116,.18), transparent 54%),
-            radial-gradient(170mm 85mm at 100% 100%, rgba(249,115,22,.12), transparent 50%),
-            linear-gradient(180deg, #fffdfb 0%, #ffffff 100%) !important;
+        .single-card-slot .biz-header-main{ min-width:0; }
+        .single-card-slot .biz-title{
+          font-size:4.8mm;
+          line-height:1.05;
+          font-weight:900;
+          color:#ffffff;
+          letter-spacing:.02em;
         }
-        .premium-card-slot .exam-card::before{ opacity:.32 !important; filter:blur(7px) !important; }
-        .premium-card-slot .exam-card::after{ opacity:.82 !important; }
-        .premium-card-slot .exam-card-header{
-          padding:4mm 4.4mm !important;
-          border-radius:4mm !important;
-          gap:4mm !important;
-          background:linear-gradient(135deg, #ea580c, #f59e0b) !important;
+        .single-card-slot .biz-subtitle{
+          display:inline-flex;
+          align-items:center;
+          margin-top:1.5mm;
+          padding:1.1mm 4mm;
+          border-radius:999px;
+          background:rgba(255,255,255,.2);
+          border:.35mm solid rgba(255,255,255,.32);
+          color:#fff7ed;
+          font-size:2.9mm;
+          font-weight:700;
         }
-        .premium-card-slot .card-mark{
-          width:8mm !important;
-          height:8mm !important;
-          border-radius:2.8mm !important;
-          font-size:4mm !important;
+        .single-card-slot .biz-badge{
+          align-self:start;
+          margin-top:.2mm;
+          padding:1.8mm 4mm;
+          border-radius:999px;
+          background:#ffffff;
+          color:#f97316;
+          font-size:3.1mm;
+          font-weight:900;
+          white-space:nowrap;
         }
-        .premium-card-slot .card-title{
-          font-size:5.4mm !important;
-          letter-spacing:.02em !important;
+        .single-card-slot .biz-body{
+          display:grid;
+          grid-template-columns:1fr 39mm;
+          gap:5mm;
+          padding:3.6mm 6.5mm 4mm;
+          align-items:stretch;
         }
-        .premium-card-slot .card-sub,
-        .premium-card-slot .card-type{
-          font-size:3.2mm !important;
-          padding:1.2mm 3mm !important;
-          border-radius:999px !important;
+        .single-card-slot .biz-details{
+          display:flex;
+          flex-direction:column;
+          gap:1.6mm;
+          min-width:0;
         }
-        .premium-card-slot .exam-card-body{
-          margin-top:3.4mm !important;
-          gap:2.3mm !important;
+        .single-card-slot .biz-detail-row{
+          display:grid;
+          grid-template-columns:24mm 1fr;
+          gap:3mm;
+          align-items:start;
+          padding-bottom:1.8mm;
+          border-bottom:.35mm dashed rgba(148,163,184,.45);
         }
-        .premium-card-slot .kv{
-          grid-template-columns:27mm 1fr !important;
-          gap:4mm !important;
-          padding-bottom:2.2mm !important;
+        .single-card-slot .biz-detail-tc{ border-bottom:none; padding-bottom:0; }
+        .single-card-slot .biz-lbl{
+          font-size:2.8mm;
+          font-weight:800;
+          letter-spacing:.08em;
+          color:#64748b;
         }
-        .premium-card-slot .kv .k{
-          font-size:3.4mm !important;
-          font-weight:800 !important;
+        .single-card-slot .biz-val{
+          min-width:0;
+          font-size:4mm;
+          font-weight:800;
+          line-height:1.15;
+          color:#0f172a;
+          text-align:right;
+          word-break:break-word;
+          overflow-wrap:anywhere;
         }
-        .premium-card-slot .kv .v{
-          font-size:4.1mm !important;
+        .single-card-slot .biz-name{
+          font-size:5.4mm;
+          font-weight:900;
+          letter-spacing:.01em;
         }
-        .premium-card-slot .kv .v.is-name{
-          font-size:5.3mm !important;
-          letter-spacing:.01em !important;
+        .single-card-slot .biz-tc{
+          font-size:3.3mm;
+          color:#334155;
         }
-        .premium-card-slot .kv.is-tc .v{
-          font-size:3.5mm !important;
-          color:#475569 !important;
+        .single-card-slot .biz-num-box{
+          border-radius:5mm;
+          background:linear-gradient(180deg,#fff1e8 0%, #fff7f2 100%);
+          border:.4mm solid #f2c7af;
+          padding:4.3mm 3.8mm;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          align-items:center;
+          gap:1.6mm;
         }
-        .premium-card-slot .big-no{
-          margin-top:1.2mm !important;
-          padding:3.2mm 4mm !important;
-          border-radius:4mm !important;
-          border:1px solid rgba(234,88,12,.18) !important;
-          background:linear-gradient(180deg, rgba(255,247,237,.95), rgba(255,255,255,.96)) !important;
+        .single-card-slot .biz-num-lbl{
+          font-size:2.7mm;
+          font-weight:900;
+          color:#64748b;
+          text-align:center;
+          letter-spacing:.08em;
         }
-        .premium-card-slot .big-no span{
-          font-size:3.3mm !important;
-          color:#64748b !important;
+        .single-card-slot .biz-num-val{
+          font-size:10.8mm;
+          line-height:1;
+          font-weight:900;
+          color:#ea580c;
         }
-        .premium-card-slot .big-no strong{
-          font-size:8mm !important;
-          color:#ea580c !important;
+        .single-card-slot .biz-footer{
+          margin:0 6.5mm 0;
+          padding:3.6mm 0 0;
+          border-top:.35mm dashed rgba(148,163,184,.45);
         }
-        .premium-card-slot .exam-card-footer{
-          margin-top:2.4mm !important;
-          padding-top:2.2mm !important;
-          font-size:3.4mm !important;
+        .single-card-slot .biz-foot-grid{
+          display:grid;
+          grid-template-columns:1.2fr 1fr 1fr;
+          gap:3.2mm;
         }
-        .premium-card-slot .exam-card-footer .footer-row{
-          gap:3mm !important;
-          margin-top:1.4mm !important;
+        .single-card-slot .biz-foot-item{
+          min-width:0;
         }
-        .premium-card-slot .exam-card-footer .fr-k{
-          min-width:24mm !important;
-          font-size:3mm !important;
-          color:#334155 !important;
+        .single-card-slot .biz-foot-head{
+          display:flex;
+          align-items:center;
+          gap:1.8mm;
+          font-size:2.7mm;
+          font-weight:900;
+          color:#475569;
+          letter-spacing:.08em;
+          margin-bottom:1.3mm;
         }
-        .premium-card-slot .exam-card-footer .fr-v,
-        .premium-card-slot .exam-card-footer .fr-v.exam-name{
-          font-size:3.9mm !important;
-          color:#0f172a !important;
-          font-weight:900 !important;
+        .single-card-slot .biz-foot-head i{
+          color:#f97316;
+          font-size:3mm;
+        }
+        .single-card-slot .biz-foot-value{
+          font-size:3.5mm;
+          line-height:1.18;
+          font-weight:800;
+          color:#0f172a;
+          word-break:break-word;
+          overflow-wrap:anywhere;
+        }
+        .single-card-slot .biz-foot-item-exam .biz-foot-value{
+          font-size:3.8mm;
+          font-weight:900;
         }
       `;
 
