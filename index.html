@@ -3076,106 +3076,86 @@ window.generateBizCardHTML = function(data) {
       const examDate = escapeHtml(data?.examDate || "-");
       const examTime = escapeHtml(data?.examTime || "-");
       const place = escapeHtml(normSpaces(data?.place || data?.examPlace || data?.location || "Fenomen Eğitim Kurumları"));
-      const docCodeBase = `${slugifyTR(data?.examName || 'sinav').toUpperCase()}-${studentNoRaw}`.replace(/[^A-Z0-9-]/g, "");
-      const documentCode = escapeHtml(docCodeBase || `SINAV-${studentNoRaw}`);
-      const noteTime = escapeHtml(`${data?.examDate || "-"} ${data?.examTime || ""}`.trim());
+      const documentCode = escapeHtml((`${slugifyTR(data?.examName || 'sinav').toUpperCase()}-${studentNoRaw}`).replace(/[^A-Z0-9-]/g, "") || `SINAV-${studentNoRaw}`);
 
       return `
-        <div class="lgs-print-page">
-          <div class="lgs-print-shell">
-            <div class="lgs-watermark lgs-watermark-one"></div>
-            <div class="lgs-watermark lgs-watermark-two"></div>
+        <div class="premium-ticket-sheet">
+          <article class="premium-ticket" aria-label="Yarı A4 sınav giriş belgesi">
+            <div class="premium-ticket__glow premium-ticket__glow--one"></div>
+            <div class="premium-ticket__glow premium-ticket__glow--two"></div>
 
-            <div class="lgs-topbar"></div>
-
-            <header class="lgs-header">
-              <div class="lgs-brand-block">
-                <div class="lgs-brand-emblem"><i class="fa-solid fa-graduation-cap"></i></div>
+            <header class="premium-ticket__header">
+              <div class="premium-ticket__brand">
+                <div class="premium-ticket__logo"><i class="fa-solid fa-graduation-cap"></i></div>
                 <div>
-                  <div class="lgs-ministry">FENOMEN EĞİTİM KURUMLARI</div>
-                  <div class="lgs-directorate">LGS PROVASI / KURUM İÇİ UYGULAMA</div>
+                  <div class="premium-ticket__institution">FENOMEN EĞİTİM KURUMLARI</div>
+                  <div class="premium-ticket__subtitle">LGS Provası / Kurum İçi Uygulama</div>
                 </div>
               </div>
 
-              <div class="lgs-title-block">
-                <div class="lgs-doc-title">SINAVA GİRİŞ BELGESİ</div>
-                <div class="lgs-doc-sub">Öğrenciye özeldir • Belge kodu: ${documentCode}</div>
+              <div class="premium-ticket__doc">
+                <div class="premium-ticket__doc-title">SINAVA GİRİŞ BELGESİ</div>
+                <div class="premium-ticket__doc-meta">Belge Kodu: ${documentCode}</div>
               </div>
             </header>
 
-            <section class="lgs-main-grid">
-              <div class="lgs-photo-panel">
-                <div class="lgs-photo-box">
-                  <div class="lgs-photo-circle"><i class="fa-solid fa-user-graduate"></i></div>
-                  <div class="lgs-photo-label">ÖĞRENCİ ALANI</div>
-                  <div class="lgs-photo-note">Belge, kayıt sistemindeki bilgilerle oluşturulmuştur.</div>
+            <section class="premium-ticket__body">
+              <div class="premium-ticket__identity">
+                <div class="premium-ticket__eyebrow">Öğrenci Bilgileri</div>
+                <div class="premium-ticket__name">${studentName}</div>
+
+                <div class="premium-ticket__stack">
+                  <div class="premium-ticket__line">
+                    <span class="premium-ticket__label">T.C. Kimlik No</span>
+                    <strong class="premium-ticket__value premium-ticket__value--mono">${tcPretty}</strong>
+                  </div>
+                  <div class="premium-ticket__line">
+                    <span class="premium-ticket__label">Okulu</span>
+                    <strong class="premium-ticket__value">${school}</strong>
+                  </div>
                 </div>
 
-                <div class="lgs-no-card">
-                  <span>ÖĞRENCİ NO</span>
+                <div class="premium-ticket__no-box">
+                  <span>Öğrenci No</span>
                   <strong>${studentNo}</strong>
                 </div>
               </div>
 
-              <div class="lgs-info-panel">
-                <div class="lgs-section-title">Kimlik Bilgileri</div>
-                <div class="lgs-info-grid">
-                  <div class="lgs-field lgs-field-full">
-                    <div class="lgs-label">Adı Soyadı</div>
-                    <div class="lgs-value lgs-value-strong">${studentName}</div>
-                  </div>
-                  <div class="lgs-field">
-                    <div class="lgs-label">T.C. Kimlik No</div>
-                    <div class="lgs-value lgs-value-mono">${tcPretty}</div>
-                  </div>
-                  <div class="lgs-field">
-                    <div class="lgs-label">Okulu</div>
-                    <div class="lgs-value">${school}</div>
-                  </div>
-                </div>
+              <div class="premium-ticket__exam">
+                <div class="premium-ticket__section-title">Sınav Planı</div>
 
-                <div class="lgs-section-title mt-space">Sınav Bilgileri</div>
-                <div class="lgs-exam-table">
-                  <div class="lgs-exam-row lgs-exam-row-full">
-                    <div class="lgs-exam-head">Sınav</div>
-                    <div class="lgs-exam-body">${exam}</div>
+                <div class="premium-ticket__grid">
+                  <div class="premium-ticket__card premium-ticket__card--full">
+                    <span class="premium-ticket__mini-label">Sınav</span>
+                    <strong class="premium-ticket__card-value">${exam}</strong>
                   </div>
-                  <div class="lgs-exam-row">
-                    <div class="lgs-exam-head">Tarih</div>
-                    <div class="lgs-exam-body">${examDate}</div>
+                  <div class="premium-ticket__card">
+                    <span class="premium-ticket__mini-label">Tarih</span>
+                    <strong class="premium-ticket__card-value">${examDate}</strong>
                   </div>
-                  <div class="lgs-exam-row">
-                    <div class="lgs-exam-head">Saat</div>
-                    <div class="lgs-exam-body">${examTime}</div>
+                  <div class="premium-ticket__card">
+                    <span class="premium-ticket__mini-label">Saat</span>
+                    <strong class="premium-ticket__card-value">${examTime}</strong>
                   </div>
-                  <div class="lgs-exam-row lgs-exam-row-full">
-                    <div class="lgs-exam-head">Sınav Yeri</div>
-                    <div class="lgs-exam-body">${place}</div>
+                  <div class="premium-ticket__card premium-ticket__card--full">
+                    <span class="premium-ticket__mini-label">Sınav Yeri</span>
+                    <strong class="premium-ticket__card-value">${place}</strong>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section class="lgs-notes">
-              <div class="lgs-notes-title">Önemli Uyarılar</div>
-              <ol>
-                <li>Belgenizi sınav günü yanınızda bulundurunuz ve görevliye ibraz ediniz.</li>
-                <li>Sınav saatinden en az <b>30 dakika önce</b> kurumda hazır bulunmanız önerilir.</li>
-                <li>Bilgilerinizde hata olduğunu düşünüyorsanız sınav öncesinde kurumla iletişime geçiniz.</li>
-              </ol>
-            </section>
-
-            <footer class="lgs-footer-band">
-              <div class="lgs-footer-item">
-                <span class="lgs-footer-label">Kayıtlı sınav zamanı</span>
-                <strong>${noteTime}</strong>
+            <footer class="premium-ticket__footer">
+              <div class="premium-ticket__footer-item">
+                <span class="premium-ticket__footer-label">Not</span>
+                <strong class="premium-ticket__footer-value">Sınav saatinden 30 dakika önce kurumda olunuz.</strong>
               </div>
-              <div class="lgs-footer-item lgs-footer-signature">
-                <span class="lgs-footer-label">Kurum Onayı</span>
-                <div class="lgs-sign-line"></div>
+              <div class="premium-ticket__footer-item premium-ticket__footer-item--right">
+                <span class="premium-ticket__footer-label">Kurum Onayı</span>
+                <div class="premium-ticket__sign"></div>
               </div>
             </footer>
-          </div>
+          </article>
         </div>
       `;
     }
@@ -3191,13 +3171,13 @@ window.generateBizCardHTML = function(data) {
       const extraCss = `
         @page{ size:A4 portrait; margin:0; }
         :root{
-          --lgs-blue:#0f2d63;
-          --lgs-blue-2:#1d4f91;
-          --lgs-gold:#d8a130;
-          --lgs-border:#d7e0ef;
-          --lgs-text:#10213d;
-          --lgs-muted:#5e6c84;
-          --lgs-soft:#f4f7fb;
+          --pt-navy:#0f2d63;
+          --pt-navy-2:#1a4a8d;
+          --pt-gold:#d3a03b;
+          --pt-border:#dde5f2;
+          --pt-soft:#f6f8fc;
+          --pt-text:#0f172a;
+          --pt-muted:#5b6880;
         }
         *{ box-sizing:border-box; }
         body{
@@ -3206,326 +3186,233 @@ window.generateBizCardHTML = function(data) {
           -webkit-print-color-adjust:exact;
           print-color-adjust:exact;
           font-family:'Poppins', Arial, sans-serif;
-          color:var(--lgs-text);
+          color:var(--pt-text);
         }
         .a4.single-root{
           width:210mm;
           min-height:297mm;
-          padding:10mm;
+          padding:12mm 12mm 0;
           background:#eef3f9;
         }
-        .lgs-print-page{
+        .premium-ticket-sheet{
           width:100%;
-          min-height:277mm;
+          min-height:135mm;
           display:flex;
-          align-items:stretch;
+          align-items:flex-start;
           justify-content:center;
         }
-        .lgs-print-shell{
-          width:100%;
-          min-height:277mm;
+        .premium-ticket{
+          width:186mm;
+          min-height:122mm;
           position:relative;
           overflow:hidden;
-          border-radius:20px;
-          background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          border:1px solid var(--lgs-border);
-          box-shadow:0 16px 40px rgba(15,45,99,.10);
+          border-radius:22px;
+          background:linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+          border:1px solid var(--pt-border);
+          box-shadow:0 16px 34px rgba(15,45,99,.12);
         }
-        .lgs-watermark{
+        .premium-ticket__glow{
           position:absolute;
           border-radius:50%;
           pointer-events:none;
-          opacity:.55;
+          opacity:.7;
         }
-        .lgs-watermark-one{
-          width:170mm;
-          height:170mm;
-          background:radial-gradient(circle, rgba(15,45,99,.08) 0%, rgba(15,45,99,0) 66%);
-          right:-45mm;
-          top:-55mm;
+        .premium-ticket__glow--one{
+          width:78mm;
+          height:78mm;
+          top:-30mm;
+          right:-18mm;
+          background:radial-gradient(circle, rgba(26,74,141,.16) 0%, rgba(26,74,141,0) 72%);
         }
-        .lgs-watermark-two{
-          width:120mm;
-          height:120mm;
-          background:radial-gradient(circle, rgba(216,161,48,.10) 0%, rgba(216,161,48,0) 70%);
-          left:-34mm;
-          bottom:-26mm;
+        .premium-ticket__glow--two{
+          width:56mm;
+          height:56mm;
+          left:-12mm;
+          bottom:-14mm;
+          background:radial-gradient(circle, rgba(211,160,59,.18) 0%, rgba(211,160,59,0) 72%);
         }
-        .lgs-topbar{
-          height:7mm;
-          background:linear-gradient(90deg, var(--lgs-blue) 0%, var(--lgs-blue-2) 68%, var(--lgs-gold) 100%);
-        }
-        .lgs-header{
-          padding:11mm 12mm 7mm;
+        .premium-ticket__header{
+          position:relative;
+          z-index:1;
           display:flex;
-          align-items:flex-start;
           justify-content:space-between;
-          gap:12mm;
-          border-bottom:1px solid var(--lgs-border);
+          align-items:center;
+          gap:10mm;
+          padding:8mm 9mm;
+          background:linear-gradient(135deg, var(--pt-navy) 0%, var(--pt-navy-2) 72%, #275da8 100%);
+          color:#fff;
+          border-bottom:3px solid rgba(211,160,59,.85);
         }
-        .lgs-brand-block{
+        .premium-ticket__brand{
           display:flex;
           align-items:center;
           gap:10px;
-          max-width:92mm;
+          min-width:0;
         }
-        .lgs-brand-emblem{
-          width:18mm;
-          height:18mm;
+        .premium-ticket__logo{
+          width:16mm;
+          height:16mm;
           border-radius:50%;
           display:flex;
           align-items:center;
           justify-content:center;
-          color:#fff;
-          background:linear-gradient(135deg, var(--lgs-blue), var(--lgs-blue-2));
-          box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
-          font-size:19px;
+          background:rgba(255,255,255,.12);
+          border:1px solid rgba(255,255,255,.16);
+          box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+          font-size:18px;
           flex:0 0 auto;
         }
-        .lgs-ministry{
+        .premium-ticket__institution{
           font-size:15px;
           font-weight:900;
-          line-height:1.15;
-          letter-spacing:.3px;
-        }
-        .lgs-directorate{
-          margin-top:2px;
-          font-size:10px;
-          color:var(--lgs-muted);
-          font-weight:600;
           letter-spacing:.2px;
+          line-height:1.15;
         }
-        .lgs-title-block{
-          text-align:right;
-          padding:4mm 0 0;
-        }
-        .lgs-doc-title{
-          font-size:18px;
-          font-weight:900;
-          letter-spacing:.6px;
-          color:var(--lgs-blue);
-        }
-        .lgs-doc-sub{
-          margin-top:2mm;
-          font-size:10px;
-          color:var(--lgs-muted);
-          font-weight:600;
-        }
-        .lgs-main-grid{
-          padding:9mm 12mm 6mm;
-          display:grid;
-          grid-template-columns:48mm 1fr;
-          gap:9mm;
-          align-items:start;
-        }
-        .lgs-photo-panel{
-          display:flex;
-          flex-direction:column;
-          gap:6mm;
-        }
-        .lgs-photo-box{
-          background:linear-gradient(180deg, #f6f9fd 0%, #edf3fb 100%);
-          border:1px solid var(--lgs-border);
-          border-radius:18px;
-          padding:7mm 5mm;
-          text-align:center;
-          min-height:83mm;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
-        }
-        .lgs-photo-circle{
-          width:26mm;
-          height:26mm;
-          border-radius:50%;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:linear-gradient(135deg, rgba(15,45,99,.14), rgba(29,79,145,.22));
-          color:var(--lgs-blue);
-          font-size:26px;
-          margin-bottom:4mm;
-        }
-        .lgs-photo-label{
-          font-size:10px;
-          font-weight:800;
-          letter-spacing:.2em;
-          color:var(--lgs-blue);
-        }
-        .lgs-photo-note{
-          margin-top:3mm;
-          font-size:9px;
-          line-height:1.45;
-          color:var(--lgs-muted);
-        }
-        .lgs-no-card{
-          border-radius:16px;
-          border:1px solid rgba(216,161,48,.32);
-          background:linear-gradient(180deg, rgba(216,161,48,.14), rgba(216,161,48,.06));
-          padding:5mm 4mm;
-          text-align:center;
-        }
-        .lgs-no-card span{
-          display:block;
-          font-size:9px;
-          color:var(--lgs-muted);
-          font-weight:700;
-          letter-spacing:.18em;
-        }
-        .lgs-no-card strong{
-          display:block;
+        .premium-ticket__subtitle{
           margin-top:1.5mm;
-          font-size:28px;
-          line-height:1;
-          color:var(--lgs-blue);
+          font-size:9.2px;
+          font-weight:500;
+          color:rgba(255,255,255,.82);
+        }
+        .premium-ticket__doc{
+          text-align:right;
+          min-width:56mm;
+        }
+        .premium-ticket__doc-title{
+          font-size:16px;
           font-weight:900;
+          letter-spacing:.5px;
+          line-height:1.1;
         }
-        .lgs-info-panel{
-          min-width:0;
+        .premium-ticket__doc-meta{
+          margin-top:2mm;
+          font-size:9px;
+          font-weight:600;
+          color:rgba(255,255,255,.82);
         }
-        .lgs-section-title{
+        .premium-ticket__body{
+          position:relative;
+          z-index:1;
+          padding:8mm 9mm 5mm;
+          display:grid;
+          grid-template-columns:1.08fr .92fr;
+          gap:7mm;
+          align-items:stretch;
+        }
+        .premium-ticket__eyebrow,
+        .premium-ticket__section-title{
           display:inline-flex;
           align-items:center;
-          gap:8px;
-          padding:2.4mm 4mm;
-          background:rgba(15,45,99,.05);
-          border:1px solid rgba(15,45,99,.08);
-          color:var(--lgs-blue);
+          min-height:8mm;
+          padding:0 4mm;
           border-radius:999px;
-          font-size:10px;
+          background:rgba(15,45,99,.06);
+          color:var(--pt-navy);
+          font-size:8.6px;
           font-weight:800;
-          letter-spacing:.08em;
+          letter-spacing:.18em;
           text-transform:uppercase;
+          border:1px solid rgba(15,45,99,.08);
         }
-        .mt-space{ margin-top:6mm; }
-        .lgs-info-grid{
+        .premium-ticket__name{
           margin-top:4mm;
+          font-size:17px;
+          line-height:1.2;
+          font-weight:900;
+          color:#0a1c3d;
+          word-break:break-word;
+          overflow-wrap:anywhere;
+        }
+        .premium-ticket__stack{
+          margin-top:5mm;
           display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:4mm;
+          gap:3.2mm;
         }
-        .lgs-field{
-          border:1px solid var(--lgs-border);
-          border-radius:16px;
+        .premium-ticket__line,
+        .premium-ticket__card{
           background:#fff;
-          padding:4mm 4.5mm;
-          min-width:0;
+          border:1px solid var(--pt-border);
+          border-radius:16px;
+          padding:3.5mm 4mm;
         }
-        .lgs-field-full{ grid-column:1 / -1; }
-        .lgs-label{
-          font-size:9px;
+        .premium-ticket__label,
+        .premium-ticket__mini-label,
+        .premium-ticket__footer-label{
+          display:block;
+          font-size:8px;
           font-weight:700;
-          color:var(--lgs-muted);
+          letter-spacing:.14em;
           text-transform:uppercase;
-          letter-spacing:.12em;
+          color:var(--pt-muted);
+          margin-bottom:1.5mm;
         }
-        .lgs-value{
-          margin-top:1.8mm;
-          font-size:13px;
-          font-weight:700;
+        .premium-ticket__value,
+        .premium-ticket__card-value,
+        .premium-ticket__footer-value{
+          display:block;
+          font-size:11.6px;
+          font-weight:800;
+          color:var(--pt-text);
           line-height:1.35;
           word-break:break-word;
           overflow-wrap:anywhere;
         }
-        .lgs-value-strong{
-          font-size:16px;
-          font-weight:900;
-          letter-spacing:.2px;
-          color:#081934;
-        }
-        .lgs-value-mono{
+        .premium-ticket__value--mono{
           font-family:'Courier New', monospace;
-          letter-spacing:.6px;
+          letter-spacing:.5px;
         }
-        .lgs-exam-table{
+        .premium-ticket__no-box{
+          margin-top:5mm;
+          border-radius:18px;
+          border:1px solid rgba(211,160,59,.32);
+          background:linear-gradient(180deg, rgba(211,160,59,.16) 0%, rgba(211,160,59,.08) 100%);
+          padding:4.5mm 5mm;
+          display:flex;
+          align-items:end;
+          justify-content:space-between;
+          gap:10px;
+        }
+        .premium-ticket__no-box span{
+          font-size:8px;
+          font-weight:800;
+          letter-spacing:.18em;
+          text-transform:uppercase;
+          color:#7b632f;
+        }
+        .premium-ticket__no-box strong{
+          font-size:24px;
+          line-height:1;
+          font-weight:900;
+          color:var(--pt-navy);
+        }
+        .premium-ticket__grid{
           margin-top:4mm;
           display:grid;
           grid-template-columns:1fr 1fr;
-          gap:4mm;
+          gap:3.2mm;
         }
-        .lgs-exam-row{
-          border:1px solid var(--lgs-border);
-          border-radius:16px;
-          background:linear-gradient(180deg, #fff 0%, #fbfdff 100%);
-          padding:4mm 4.5mm;
-          min-height:22mm;
+        .premium-ticket__card--full{
+          grid-column:1 / -1;
         }
-        .lgs-exam-row-full{ grid-column:1 / -1; }
-        .lgs-exam-head{
-          font-size:9px;
-          font-weight:700;
-          color:var(--lgs-muted);
-          text-transform:uppercase;
-          letter-spacing:.12em;
-        }
-        .lgs-exam-body{
-          margin-top:1.8mm;
-          font-size:13px;
-          font-weight:800;
-          line-height:1.4;
-          word-break:break-word;
-          overflow-wrap:anywhere;
-        }
-        .lgs-notes{
-          margin:2mm 12mm 0;
-          padding:6mm 6mm 4mm;
-          border-radius:18px;
-          background:linear-gradient(180deg, #fffaf1 0%, #fff 100%);
-          border:1px solid rgba(216,161,48,.28);
-        }
-        .lgs-notes-title{
-          font-size:12px;
-          font-weight:900;
-          color:#9a6a08;
-          letter-spacing:.08em;
-          text-transform:uppercase;
-          margin-bottom:3mm;
-        }
-        .lgs-notes ol{
-          margin:0;
-          padding-left:18px;
-        }
-        .lgs-notes li{
-          margin:0 0 2.4mm;
-          font-size:10px;
-          line-height:1.55;
-          color:#5b4a23;
-        }
-        .lgs-footer-band{
-          margin:6mm 12mm 0;
-          padding:5mm 0 0;
-          border-top:1px solid var(--lgs-border);
+        .premium-ticket__footer{
+          position:relative;
+          z-index:1;
+          margin:0 9mm 8mm;
+          padding-top:4mm;
+          border-top:1px solid var(--pt-border);
           display:grid;
-          grid-template-columns:1fr 1fr;
+          grid-template-columns:1.1fr .9fr;
           gap:8mm;
           align-items:end;
         }
-        .lgs-footer-item{
-          min-width:0;
-        }
-        .lgs-footer-label{
-          display:block;
-          font-size:9px;
-          font-weight:700;
-          color:var(--lgs-muted);
-          text-transform:uppercase;
-          letter-spacing:.12em;
-          margin-bottom:2mm;
-        }
-        .lgs-footer-item strong{
-          font-size:12px;
-          font-weight:800;
-          color:var(--lgs-text);
-        }
-        .lgs-footer-signature{
+        .premium-ticket__footer-item--right{
           text-align:right;
         }
-        .lgs-sign-line{
+        .premium-ticket__sign{
           width:100%;
           height:0;
-          border-top:1.2px solid #6b7c98;
-          margin-top:10mm;
+          border-top:1.2px solid #7c8aa3;
+          margin-top:7mm;
         }
         @media print{
           html, body{
@@ -3536,9 +3423,9 @@ window.generateBizCardHTML = function(data) {
           .a4.single-root{
             width:auto;
             min-height:auto;
-            padding:10mm;
+            padding:12mm 12mm 0;
           }
-          .lgs-print-shell{
+          .premium-ticket{
             box-shadow:none;
           }
         }
