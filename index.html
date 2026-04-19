@@ -3146,25 +3146,25 @@ window.generateBizCardHTML = function(data) {
         .premium-ticket-sheet{
           width:210mm;
           min-height:297mm;
-          padding:16mm 10mm;
+          padding:14mm 10mm;
           display:flex;
           align-items:flex-start;
           justify-content:center;
           background:radial-gradient(circle at top left, rgba(255,255,255,.95), rgba(241,233,233,.98));
         }
         .ticket-print-wrap{
-          width:190mm;
-          min-height:112mm;
-          padding:5mm;
-          border-radius:11mm;
+          width:172mm;
+          min-height:96mm;
+          padding:4mm;
+          border-radius:5.8mm;
           background:linear-gradient(180deg,#f0eaea 0%, #d9d0d0 100%);
           box-shadow:0 8px 30px rgba(136,106,106,.18);
         }
         .ticket-print-card{
           position:relative;
           overflow:hidden;
-          min-height:102mm;
-          border-radius:9mm;
+          min-height:88mm;
+          border-radius:5.8mm;
           background:linear-gradient(180deg, #fdf9f9 0%, #f7efef 100%);
           border:1px solid rgba(255,163,48,.45);
           box-shadow:inset 0 0 0 1px rgba(255,255,255,.75);
@@ -3191,25 +3191,25 @@ window.generateBizCardHTML = function(data) {
         }
         .ticket-top-wave{
           top:0;
-          height:33mm;
+          height:14mm;
           background:
             radial-gradient(95mm 24mm at 82% 12%, rgba(255,216,150,.36), transparent 58%),
             radial-gradient(120mm 18mm at 60% 100%, rgba(255,255,255,.34), transparent 60%),
             linear-gradient(90deg, #f36f08 0%, #ff9d22 55%, #ffc546 100%);
-          border-radius:0 0 13mm 13mm;
+          border-radius:0 0 11mm 11mm;
         }
         .ticket-top-wave::after{
           content:"";
           position:absolute;
           left:-8mm;
           right:-8mm;
-          bottom:-7mm;
-          height:16mm;
+          bottom:-5mm;
+          height:11mm;
           background:radial-gradient(100% 165% at 50% 0%, transparent 55%, rgba(255,255,255,.9) 56%);
         }
         .ticket-bottom-wave{
           bottom:0;
-          height:24mm;
+          height:14mm;
           background:
             radial-gradient(90mm 16mm at 22% -10%, rgba(255,255,255,.42), transparent 58%),
             radial-gradient(120mm 18mm at 68% 0%, rgba(255,206,143,.38), transparent 63%),
@@ -3220,24 +3220,24 @@ window.generateBizCardHTML = function(data) {
           position:absolute;
           left:-8mm;
           right:-8mm;
-          top:-8mm;
-          height:16mm;
+          top:-5mm;
+          height:11mm;
           background:radial-gradient(100% 165% at 50% 100%, transparent 55%, rgba(255,245,240,.98) 56%);
         }
         .ticket-header,
         .ticket-body{ position:relative; z-index:2; }
         .ticket-header{
-          height:28mm;
-          padding:5.5mm 7mm 0 7mm;
+          height:21mm;
+          padding:3.8mm 6.5mm 0 6.5mm;
           display:flex;
           align-items:flex-start;
           justify-content:space-between;
           gap:6mm;
         }
-        .ticket-brand-left{ display:flex; align-items:center; gap:5mm; min-width:0; }
+        .ticket-brand-left{ display:flex; align-items:center; gap:3.5mm; min-width:0; }
         .ticket-logo-circle{
-          width:15mm;
-          height:15mm;
+          width:12.5mm;
+          height:12.5mm;
           border-radius:50%;
           background:linear-gradient(180deg,#ffb54b 0%, #ff8a14 100%);
           border:1px solid rgba(255,255,255,.85);
@@ -3246,12 +3246,12 @@ window.generateBizCardHTML = function(data) {
           align-items:center;
           justify-content:center;
           color:#fff;
-          font-size:7mm;
+          font-size:4.2mm;
           flex:0 0 auto;
         }
         .ticket-brand-text{ min-width:0; }
         .ticket-brand-title{
-          font-size:8.8mm;
+          font-size:6.9mm;
           line-height:1;
           color:#fff;
           font-weight:900;
@@ -3263,8 +3263,8 @@ window.generateBizCardHTML = function(data) {
           display:inline-flex;
           align-items:center;
           justify-content:center;
-          min-height:9mm;
-          padding:1mm 4mm;
+          min-height:6.4mm;
+          padding:.7mm 3.2mm;
           border-radius:999px;
           border:1px solid rgba(255,255,255,.65);
           color:#fff;
@@ -3273,44 +3273,44 @@ window.generateBizCardHTML = function(data) {
           white-space:nowrap;
         }
         .ticket-brand-pill{
-          margin-top:2mm;
+          margin-top:1.2mm;
           background:rgba(255,255,255,.16);
-          font-size:4.7mm;
+          font-size:3.6mm;
         }
         .ticket-header-badge{
-          margin-top:1mm;
+          margin-top:.8mm;
           background:rgba(255,255,255,.17);
-          font-size:5.9mm;
-          padding-inline:6mm;
+          font-size:4.5mm;
+          padding-inline:4.2mm;
         }
-        .ticket-body{ padding:4.5mm 7mm 10mm; }
+        .ticket-body{ padding:7.8mm 6.5mm 7mm; }
         .ticket-section-title{
-          font-size:6.3mm;
+          font-size:4.9mm;
           font-weight:800;
           color:#6f7386;
-          margin-bottom:2mm;
+          margin-bottom:1.4mm;
         }
         .ticket-name-row{
           display:flex;
-          align-items:flex-start;
+          align-items:flex-end;
           justify-content:space-between;
-          gap:8mm;
+          gap:6mm;
           border-bottom:1px dashed rgba(197,187,187,.8);
-          padding-bottom:3mm;
+          padding-bottom:2.2mm;
         }
-        .ticket-mini-col{ min-width:42mm; max-width:52mm; }
+        .ticket-mini-col{ min-width:34mm; max-width:40mm; }
         .ticket-mini-label{
-          font-size:4.6mm;
+          font-size:3.8mm;
           color:#727589;
           font-weight:700;
           display:flex;
           align-items:center;
-          gap:1.6mm;
-          padding-top:1mm;
+          gap:1.2mm;
+          padding-top:.2mm;
         }
         .ticket-school-name{
-          margin-top:3mm;
-          font-size:4.8mm;
+          margin-top:1.8mm;
+          font-size:3.8mm;
           line-height:1.12;
           font-weight:700;
           color:#4d5d84;
@@ -3320,8 +3320,8 @@ window.generateBizCardHTML = function(data) {
         .ticket-student-name{
           flex:1;
           text-align:right;
-          font-size:9.7mm;
-          line-height:1.04;
+          font-size:7.2mm;
+          line-height:1.02;
           color:#21345d;
           font-weight:900;
           letter-spacing:.1px;
@@ -3329,33 +3329,33 @@ window.generateBizCardHTML = function(data) {
         }
         .ticket-line{
           border-bottom:1px dashed rgba(216,206,206,.9);
-          padding:3mm 0;
+          padding:2.2mm 0;
         }
         .ticket-inline-pair{
           display:flex;
           align-items:center;
           justify-content:space-between;
-          gap:8mm;
+          gap:6mm;
         }
         .ticket-inline-key{
-          font-size:4.8mm;
+          font-size:3.8mm;
           font-weight:800;
           color:#6d7287;
         }
         .ticket-inline-val{
-          font-size:5.1mm;
+          font-size:4.1mm;
           font-weight:800;
           color:#4b5b82;
           letter-spacing:.2px;
         }
         .ticket-number-box{
-          margin-top:4.2mm;
+          margin-top:3mm;
           display:flex;
           align-items:center;
           justify-content:space-between;
-          gap:8mm;
-          padding:4.6mm 6mm;
-          border-radius:7.5mm;
+          gap:6mm;
+          padding:3.2mm 4.4mm;
+          border-radius:5.8mm;
           background:linear-gradient(180deg,#fbf3ef 0%, #f8ece8 100%);
           border:1px solid rgba(243,200,168,.92);
           box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);
@@ -3368,28 +3368,30 @@ window.generateBizCardHTML = function(data) {
         .ticket-number-left{
           display:flex;
           align-items:center;
-          gap:2.2mm;
+          min-width:0;
+          gap:1.6mm;
           color:#5b6b92;
-          font-size:5.2mm;
+          font-size:4mm;
           font-weight:800;
         }
         .ticket-number-left i{ color:#ff9622; }
         .ticket-number-value{
-          font-size:13.8mm;
+          font-size:10.7mm;
           line-height:1;
           color:#ff6d00;
+          flex:0 0 auto;
           font-weight:900;
           letter-spacing:.35px;
         }
         .ticket-divider{
-          margin:5.3mm 0 4.2mm;
+          margin:3.2mm 0 2.8mm;
           border-bottom:1px dashed rgba(216,206,206,.9);
         }
         .ticket-exam-card{
-          width:95mm;
-          min-height:28mm;
-          padding:4mm 5mm;
-          border-radius:7.5mm;
+          width:72mm;
+          min-height:20mm;
+          padding:3mm 3.8mm;
+          border-radius:5.8mm;
           background:linear-gradient(180deg,#fcf8f8 0%, #f8f1f1 100%);
           box-shadow:0 4px 12px rgba(164,145,145,.09);
           border:1px solid rgba(234,228,228,.95);
@@ -3399,21 +3401,21 @@ window.generateBizCardHTML = function(data) {
           align-items:center;
           gap:2mm;
           color:#ba5a14;
-          font-size:5.6mm;
+          font-size:4.2mm;
           font-weight:900;
-          margin-bottom:2.3mm;
+          margin-bottom:1.4mm;
         }
         .ticket-exam-title i,
         .ticket-exam-row i{ color:#ff8f1f; }
         .ticket-exam-row{
           display:flex;
           align-items:flex-start;
-          gap:2.2mm;
+          gap:1.6mm;
           color:#425179;
-          font-size:5mm;
+          font-size:3.8mm;
           font-weight:700;
           line-height:1.2;
-          margin-top:1.4mm;
+          margin-top:.9mm;
         }
         .ticket-exam-row span{ word-break:break-word; }
       `;
