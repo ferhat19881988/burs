@@ -701,6 +701,154 @@
     .modal-dialog{ margin:10px; max-width:calc(100% - 20px); }
     .modal-dialog.modal-xl{ max-width:calc(100% - 20px); }
 }
+
+
+  /* Premium card redesign */
+  .premium-card{
+    --premium-bg-1:#fffdfa;
+    --premium-bg-2:#fff6ee;
+    --premium-navy:#0f172a;
+    --premium-navy-soft:#334155;
+    --premium-gold:#d97706;
+    --premium-gold-2:#f59e0b;
+    --premium-line:rgba(15,23,42,.10);
+    --premium-panel:#ffffff;
+    --premium-panel-border:rgba(15,23,42,.08);
+
+    width:min(92vw,560px);
+    height:auto;
+    aspect-ratio:auto;
+    padding:0;
+    overflow:hidden;
+    border-radius:24px;
+    border:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(180deg,var(--premium-bg-1) 0%, var(--premium-bg-2) 100%);
+    box-shadow:0 18px 40px rgba(15,23,42,.10);
+  }
+  .premium-card::before,
+  .premium-card::after{display:none;}
+  .premium-topline{
+    height:8px;
+    background:linear-gradient(90deg,#0f172a 0%, #1e293b 38%, #d97706 70%, #f59e0b 100%);
+  }
+  .premium-card .exam-card-header{
+    padding:18px 20px 14px;
+    border-radius:0;
+    background:linear-gradient(135deg,#0f172a 0%, #182236 56%, #e98a15 100%);
+    align-items:flex-start;
+    gap:14px;
+  }
+  .premium-card .card-brand{gap:12px;align-items:flex-start;}
+  .premium-card .card-mark{
+    width:34px;height:34px;border-radius:50%;
+    background:#fff;color:#d97706;font-size:15px;box-shadow:none;
+  }
+  .premium-card .brand-copy{min-width:0;}
+  .premium-card .card-title{
+    white-space:normal;overflow:visible;text-overflow:clip;
+    color:#fff;font-size:18px;font-weight:900;letter-spacing:.04em;line-height:1.05;
+  }
+  .premium-card .card-subline{
+    margin-top:5px;
+    display:inline-flex;align-items:center;
+    padding:4px 10px;border-radius:999px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18);
+    color:#e2e8f0;font-size:11px;font-weight:700;
+  }
+  .premium-card .exam-card-header > .card-type{
+    margin-left:auto;
+    background:#fff7ed;border:none;color:#9a3412;
+    padding:6px 11px;border-radius:999px;
+    font-size:11px;font-weight:900;letter-spacing:.10em;
+    box-shadow:0 6px 18px rgba(15,23,42,.12);
+  }
+  .premium-card .exam-card-body{padding:18px 20px 20px;margin-top:0;gap:16px;}
+  .premium-main-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 120px;
+    gap:16px;
+    align-items:stretch;
+  }
+  .premium-details{display:flex;flex-direction:column;gap:10px;min-width:0;}
+  .premium-card .kv{
+    grid-template-columns:95px 1fr;
+    gap:12px;
+    align-items:center;
+    padding:0 0 10px;
+    border-bottom:1px solid var(--premium-line);
+  }
+  .premium-card .kv .k{
+    color:#64748b;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+  }
+  .premium-card .kv .v{
+    color:var(--premium-navy);
+    font-size:18px;
+    font-weight:800;
+    text-align:right;
+    line-height:1.14;
+  }
+  .premium-card .kv .v.is-name{font-size:28px;font-weight:900;color:#0b1731;letter-spacing:.01em;}
+  .premium-card .kv.is-tc .v{font-size:13px;color:#334155;}
+  .premium-number-panel{
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    border-radius:18px;
+    background:linear-gradient(180deg,rgba(217,119,6,.10) 0%, rgba(245,158,11,.18) 100%);
+    border:1px solid rgba(217,119,6,.22);
+    padding:16px 12px;
+    text-align:center;
+  }
+  .premium-number-label{
+    font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#7c2d12;
+  }
+  .premium-number-value{
+    margin-top:8px;font-size:44px;line-height:1;font-weight:900;color:#d97706;
+  }
+  .premium-footer-grid{
+    display:grid;
+    grid-template-columns:1.15fr 1fr 1fr;
+    gap:10px;
+    margin-top:0;
+    padding-top:0;
+    border-top:none;
+  }
+  .premium-footer-card{
+    margin-top:0 !important;
+    border-radius:16px;
+    background:var(--premium-panel);
+    border:1px solid var(--premium-panel-border);
+    padding:12px 12px 11px;
+    flex-direction:column;
+    justify-content:flex-start;
+    align-items:flex-start;
+    gap:6px;
+    min-height:74px;
+  }
+  .premium-card .exam-card-footer .fr-k{
+    min-width:0;
+    font-size:10px;
+    font-weight:900;
+    color:#64748b;
+    opacity:1;
+    letter-spacing:.1em;
+  }
+  .premium-card .exam-card-footer .fr-k i{color:#d97706;margin-right:4px;}
+  .premium-card .exam-card-footer .fr-v{
+    width:100%;text-align:left;color:#0f172a;font-size:13px;font-weight:800;line-height:1.25;
+  }
+  .premium-card .exam-card-footer .fr-v.exam-name{font-size:14px;font-weight:900;}
+  @media (max-width: 575.98px){
+    .premium-main-grid{grid-template-columns:1fr;}
+    .premium-number-panel{padding:14px 12px;}
+    .premium-footer-grid{grid-template-columns:1fr;}
+    .premium-card .kv{grid-template-columns:76px 1fr;}
+    .premium-card .kv .v.is-name{font-size:22px;}
+  }
+
 </style>
 
 </head>
@@ -2076,68 +2224,67 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     // --- Card generator ---
     function generateCardHTML(data, opts = {}){
-      // Determine theme (default orange, 'bw' for black-white variant)
       const themeClass = (opts.theme === 'bw') ? 'theme-bw' : 'theme-orange';
       const studentName = toUpperTR(data.studentName);
       const school = normSpaces(data.school);
       const tc = String(data.tc || "");
       const no = data.studentNo;
-      // Resolve exam-related fields with sensible fallbacks. Some records may use
-      // different property names (e.g. exam_name, date, time, venue). Normalise
-      // these so the card always shows exam name, date/time and place.
       const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
       const date = data.examDate || data.date || data.exam_date || "";
       const time = data.examTime || data.time || data.exam_time || "";
       const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
-
       const tcPretty = (tc.length === 11)
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
         : tc;
 
       return `
-        <div class="exam-card ${themeClass}" aria-label="Öğrenci giriş kartı önizleme">
+        <div class="exam-card premium-card ${themeClass}" aria-label="Öğrenci giriş kartı önizleme">
+          <div class="premium-topline"></div>
+
           <div class="exam-card-header">
             <div class="card-brand">
               <div class="card-mark"><i class="fa-solid fa-graduation-cap"></i></div>
-              <div>
+              <div class="brand-copy">
                 <div class="card-title">FENOMEN EĞİTİM KURUMLARI</div>
-                <div class="card-type card-sub">Öğrenci Giriş Belgesi</div>
+                <div class="card-subline">Öğrenci Giriş Belgesi</div>
               </div>
             </div>
-            <div class="card-type">GİRİŞ KARTI</div>
+            <div class="card-type">PREMIUM GİRİŞ KARTI</div>
           </div>
 
           <div class="exam-card-body">
-            <div class="kv kv-name">
-              <div class="k">Öğrenci</div>
-              <div class="v is-name" title="${escapeHtml(studentName)}">${studentName}</div>
-            </div>
-
-            <div class="kv">
-              <div class="k">Okul</div>
-              <div class="v clamp2" title="${escapeHtml(school)}">${school}</div>
-            </div>
-
-            <div class="kv is-tc" style="border-bottom:none;padding-bottom:0;">
-              <div class="k">T.C.</div>
-              <div class="v" title="${escapeHtml(tc)}">${tcPretty}</div>
-            </div>
-
-            <div class="big-no">
-              <span>ÖĞRENCİ NUMARASI</span>
-              <strong>${no}</strong>
-            </div>
-
-            <div class="exam-card-footer">
-              <div class="footer-row">
-                <span class="fr-k"><i class="fa-solid fa-award"></i> Sınav</span>
-                <span class="fr-v exam-name" title="${escapeHtml(exam)}">${exam}</span>
+            <div class="premium-main-grid">
+              <div class="premium-details">
+                <div class="kv kv-name">
+                  <div class="k">Öğrenci</div>
+                  <div class="v is-name" title="${escapeHtml(studentName)}">${studentName}</div>
+                </div>
+                <div class="kv">
+                  <div class="k">Okul</div>
+                  <div class="v clamp2" title="${escapeHtml(school)}">${school}</div>
+                </div>
+                <div class="kv is-tc" style="border-bottom:none;padding-bottom:0;">
+                  <div class="k">T.C.</div>
+                  <div class="v" title="${escapeHtml(tc)}">${tcPretty}</div>
+                </div>
               </div>
-              <div class="footer-row">
-                <span class="fr-k"><i class="fa-regular fa-clock"></i> Saat</span>
+
+              <div class="premium-number-panel">
+                <div class="premium-number-label">ÖĞRENCİ NUMARASI</div>
+                <div class="premium-number-value">${no}</div>
+              </div>
+            </div>
+
+            <div class="exam-card-footer premium-footer-grid">
+              <div class="footer-row premium-footer-card">
+                <span class="fr-k"><i class="fa-solid fa-award"></i> Sınav</span>
+                <span class="fr-v exam-name" title="${escapeHtml(exam)}">${escapeHtml(exam)}</span>
+              </div>
+              <div class="footer-row premium-footer-card">
+                <span class="fr-k"><i class="fa-regular fa-clock"></i> Tarih / Saat</span>
                 <span class="fr-v">${escapeHtml(date)} • ${escapeHtml(time)}</span>
               </div>
-              <div class="footer-row">
+              <div class="footer-row premium-footer-card">
                 <span class="fr-k"><i class="fa-solid fa-location-dot"></i> Yer</span>
                 <span class="fr-v">${escapeHtml(place)}</span>
               </div>
