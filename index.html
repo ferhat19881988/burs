@@ -3064,106 +3064,129 @@ window.generateBizCardHTML = function(data) {
       const tcPretty = tc.length === 11
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
         : escapeHtml(tc || "-");
+      const docNo = escapeHtml(`FEN-${String(data.studentNo || '').padStart(4,'0')}`);
 
       return `
-        <div class="admission-sheet compact-sheet">
-          <div class="compact-doc">
-            <div class="compact-topbar"></div>
+        <div class="admission-sheet elite-sheet">
+          <div class="elite-doc">
+            <div class="elite-header-band"></div>
 
-            <header class="compact-header">
-              <div class="compact-brand">
-                <div class="compact-logo" aria-hidden="true">
-                  <svg viewBox="0 0 64 64" role="img">
+            <header class="elite-header">
+              <div class="elite-brand-block">
+                <div class="elite-logo" aria-hidden="true">
+                  <svg viewBox="0 0 72 72" role="img">
                     <defs>
-                      <linearGradient id="compactGrad" x1="0" x2="1" y1="0" y2="1">
+                      <linearGradient id="eliteGrad" x1="0" x2="1" y1="0" y2="1">
                         <stop offset="0%" stop-color="#1d4ed8"/>
                         <stop offset="100%" stop-color="#7c3aed"/>
                       </linearGradient>
                     </defs>
-                    <rect x="7" y="7" width="50" height="50" rx="16" fill="url(#compactGrad)"/>
-                    <path d="M18 25 32 18l14 7-14 7-14-7Z" fill="#fff"/>
-                    <path d="M23 31v5c0 1.6 4.3 4.4 9 4.4s9-2.8 9-4.4v-5l-9 4.6-9-4.6Z" fill="#dbeafe"/>
-                    <circle cx="46" cy="23" r="2.2" fill="#fff" opacity="0.95"/>
+                    <rect x="8" y="8" width="56" height="56" rx="18" fill="url(#eliteGrad)"/>
+                    <path d="M18 28.5 36 19l18 9.5-18 9.5-18-9.5Z" fill="#fff"/>
+                    <path d="M24 36v6.5c0 2.2 5.8 5.8 12 5.8s12-3.6 12-5.8V36l-12 6-12-6Z" fill="#dbeafe"/>
+                    <path d="M54 29v9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                    <circle cx="54" cy="40.8" r="2.4" fill="#fff"/>
                   </svg>
                 </div>
-                <div class="compact-brand-text">
-                  <div class="compact-kicker">FENOMEN EĞİTİM KURUMLARI</div>
+                <div class="elite-brand-copy">
+                  <div class="elite-kicker">FENOMEN EĞİTİM KURUMLARI</div>
                   <h1>Öğrenci Sınav Giriş Belgesi</h1>
-                  <div class="compact-header-icons">
-                    <span><i class="fa-solid fa-id-card"></i> Resmî Giriş Belgesi</span>
+                  <div class="elite-meta-row">
+                    <span><i class="fa-solid fa-id-card"></i> Resmî Belge</span>
                     <span><i class="fa-regular fa-calendar-check"></i> Onaylı Kayıt</span>
+                    <span><i class="fa-solid fa-shield-check"></i> Baskı Hazır</span>
                   </div>
                 </div>
               </div>
-              <div class="compact-status">
-                <div class="compact-badge"><i class="fa-solid fa-circle-check"></i> ONAYLI BELGE</div>
+
+              <div class="elite-header-side">
+                <div class="elite-approval-pill"><i class="fa-solid fa-circle-check"></i> ONAYLI BELGE</div>
+                <div class="elite-doc-no">Belge No: ${docNo}</div>
               </div>
             </header>
 
-            <section class="compact-main-grid">
-              <div class="compact-left">
-                <div class="compact-card compact-card-featured">
-                  <div class="compact-card-title"><i class="fa-solid fa-user-graduate"></i> Öğrenci Bilgileri</div>
-                  <div class="compact-info-grid">
-                    <div class="compact-info compact-wide">
+            <section class="elite-body-grid">
+              <div class="elite-left-col">
+                <article class="elite-panel elite-panel-primary">
+                  <div class="elite-panel-title"><i class="fa-solid fa-user-graduate"></i> Öğrenci Bilgileri</div>
+                  <div class="elite-info-grid">
+                    <div class="elite-info elite-info-wide">
                       <span><i class="fa-regular fa-user"></i> Öğrenci Adı</span>
                       <strong>${studentName}</strong>
                     </div>
-                    <div class="compact-info compact-info-no">
+                    <div class="elite-info elite-info-no">
                       <span><i class="fa-solid fa-hashtag"></i> Öğrenci No</span>
-                      <strong class="compact-no">${studentNo}</strong>
+                      <strong class="elite-no">${studentNo}</strong>
                     </div>
-                    <div class="compact-info compact-wide">
+                    <div class="elite-info elite-info-wide">
                       <span><i class="fa-solid fa-school"></i> Okul</span>
                       <strong>${school}</strong>
                     </div>
-                    <div class="compact-info">
+                    <div class="elite-info">
                       <span><i class="fa-regular fa-address-card"></i> T.C. Kimlik No</span>
                       <strong>${tcPretty}</strong>
                     </div>
                   </div>
-                </div>
+                </article>
 
-                <div class="compact-card compact-card-table">
-                  <div class="compact-card-title"><i class="fa-solid fa-pen-ruler"></i> Sınav Bilgileri</div>
-                  <table class="compact-table" role="presentation">
-                    <tr><th><i class="fa-solid fa-book-open"></i> Sınav</th><td>${examName}</td></tr>
-                    <tr><th><i class="fa-regular fa-calendar"></i> Tarih</th><td>${examDate}</td></tr>
-                    <tr><th><i class="fa-regular fa-clock"></i> Saat</th><td>${examTime}</td></tr>
-                    <tr><th><i class="fa-solid fa-location-dot"></i> Merkez</th><td>${place}</td></tr>
+                <article class="elite-panel">
+                  <div class="elite-panel-title"><i class="fa-solid fa-clipboard-list"></i> Sınav Bilgileri</div>
+                  <table class="elite-table" role="presentation">
+                    <tr>
+                      <th><i class="fa-solid fa-book-open"></i> Sınav</th>
+                      <td>${examName}</td>
+                    </tr>
+                    <tr>
+                      <th><i class="fa-regular fa-calendar"></i> Tarih</th>
+                      <td>${examDate}</td>
+                    </tr>
+                    <tr>
+                      <th><i class="fa-regular fa-clock"></i> Saat</th>
+                      <td>${examTime}</td>
+                    </tr>
+                    <tr>
+                      <th><i class="fa-solid fa-location-dot"></i> Merkez</th>
+                      <td>${place}</td>
+                    </tr>
                   </table>
-                </div>
+                </article>
               </div>
 
-              <aside class="compact-right">
-                <div class="compact-ticket-box">
-                  <div class="compact-ticket-label"><i class="fa-solid fa-ticket"></i> Giriş No</div>
-                  <div class="compact-ticket-no">${studentNo}</div>
-                  <div class="compact-ticket-sub">Sınav salonu kontrolünde esas alınır.</div>
-                </div>
+              <aside class="elite-right-col">
+                <article class="elite-ticket-panel">
+                  <div class="elite-ticket-top">
+                    <div class="elite-ticket-title"><i class="fa-solid fa-ticket"></i> Giriş Numarası</div>
+                    <div class="elite-ticket-icon"><i class="fa-solid fa-star"></i></div>
+                  </div>
+                  <div class="elite-ticket-number">${studentNo}</div>
+                  <div class="elite-ticket-caption">Sınav salonu kontrolünde esas alınır.</div>
+                  <div class="elite-ticket-strip">
+                    <span></span><span class="wide"></span><span></span><span></span><span class="wide"></span><span></span><span class="wide"></span><span></span><span></span><span class="wide"></span><span></span><span></span>
+                  </div>
+                </article>
 
-                <div class="compact-note-box">
-                  <div class="compact-note-title"><i class="fa-solid fa-triangle-exclamation"></i> Önemli Uyarı</div>
-                  <div class="compact-warning-main">Sınava en geç <strong>15 dk kala</strong> sınav merkezinde bulunmalısınız.</div>
-                  <ul>
-                    <li><i class="fa-solid fa-check"></i> Belge görevliye gösterilmelidir.</li>
-                    <li><i class="fa-solid fa-check"></i> Öğrenci numarası ve saat bilgisi kontrol edilmelidir.</li>
-                    <li><i class="fa-solid fa-check"></i> Okunaklı çıktı ile geliniz.</li>
+                <article class="elite-alert-panel">
+                  <div class="elite-panel-title elite-alert-title"><i class="fa-solid fa-triangle-exclamation"></i> Önemli Uyarı</div>
+                  <div class="elite-alert-main">Sınava en geç <strong>15 dk kala</strong> sınav merkezinde bulunmalısınız.</div>
+                  <ul class="elite-alert-list">
+                    <li><i class="fa-solid fa-check"></i><span>Belge görevliye ibraz edilmelidir.</span></li>
+                    <li><i class="fa-solid fa-check"></i><span>Öğrenci numarası ve seans bilgisi kontrol edilmelidir.</span></li>
+                    <li><i class="fa-solid fa-check"></i><span>Temiz ve okunaklı çıktı ile geliniz.</span></li>
                   </ul>
-                </div>
+                </article>
               </aside>
             </section>
 
-            <footer class="compact-footer">
-              <div class="compact-footer-note"><i class="fa-regular fa-circle-check"></i> Bu belge başvuru sistemi üzerinden otomatik oluşturulmuştur.</div>
-              <div class="compact-signature">
-                <div class="compact-sign-line"></div>
-                <div class="compact-sign-text">Fenomen Eğitim Kurumları</div>
+            <footer class="elite-footer">
+              <div class="elite-footer-note"><i class="fa-regular fa-circle-check"></i> Bu belge başvuru sistemi üzerinden otomatik oluşturulmuştur.</div>
+              <div class="elite-footer-sign">
+                <div class="elite-sign-line"></div>
+                <div class="elite-sign-text">Fenomen Eğitim Kurumları</div>
               </div>
             </footer>
 
-            <div class="compact-final-stamp-wrap">
-              <div class="compact-final-stamp">
+            <div class="elite-stamp-wrap">
+              <div class="elite-stamp">
                 <span>ONAYLI</span>
                 <small>FENOMEN EĞİTİM KURUMLARI</small>
               </div>
@@ -3185,322 +3208,379 @@ window.generateBizCardHTML = function(data) {
         @page{ size:A4 portrait; margin:0; }
         body{ background:#eef2f7; }
         .a4.single-root{ padding:0; width:210mm; min-height:297mm; background:#ffffff; }
-        .compact-sheet{
+        .elite-sheet{
           width:210mm;
           min-height:297mm;
           padding:10mm;
           background:#ffffff;
         }
-        .compact-doc{
+        .elite-doc{
           min-height:277mm;
           border:1px solid rgba(15,23,42,.10);
           border-radius:6mm;
-          background:#ffffff;
+          background:
+            radial-gradient(circle at top right, rgba(37,99,235,.06), transparent 30%),
+            radial-gradient(circle at left bottom, rgba(124,58,237,.05), transparent 26%),
+            #ffffff;
           overflow:hidden;
+          position:relative;
         }
-        .compact-topbar{
+        .elite-header-band{
           height:5mm;
-          background:linear-gradient(90deg,#1d4ed8 0%, #7c3aed 50%, #f59e0b 100%);
+          background:linear-gradient(90deg,#1d4ed8 0%, #7c3aed 52%, #f59e0b 100%);
         }
-        .compact-header{
-          display:flex;
-          justify-content:space-between;
+        .elite-header{
+          display:grid;
+          grid-template-columns:1.5fr .72fr;
+          gap:7mm;
           align-items:center;
-          gap:8mm;
-          padding:7mm 7mm 5mm;
+          padding:7mm 7mm 5.5mm;
         }
-        .compact-brand{
+        .elite-brand-block{
           display:flex;
+          align-items:center;
           gap:4.5mm;
-          align-items:center;
           min-width:0;
-          flex:1;
         }
-        .compact-logo{
-          width:19mm;
-          height:19mm;
-          border-radius:5mm;
-          background:#f3f6ff;
+        .elite-logo{
+          width:20mm;
+          height:20mm;
+          border-radius:5.2mm;
+          background:#f4f7ff;
           border:1px solid rgba(37,99,235,.14);
           display:flex;
           align-items:center;
           justify-content:center;
           flex:0 0 auto;
+          box-shadow:0 1.2mm 3mm rgba(37,99,235,.06);
         }
-        .compact-logo svg{ width:14.5mm; height:14.5mm; display:block; }
-        .compact-kicker{
+        .elite-logo svg{ width:15.2mm; height:15.2mm; display:block; }
+        .elite-brand-copy{ min-width:0; }
+        .elite-kicker{
           font-size:9px;
-          font-weight:800;
+          font-weight:900;
           color:#475569;
-          letter-spacing:.16em;
-          margin-bottom:1mm;
+          letter-spacing:.18em;
+          margin-bottom:1.2mm;
         }
-        .compact-brand-text{
-          min-width:0;
-          padding-top:.5mm;
-        }
-        .compact-brand-text h1{
+        .elite-brand-copy h1{
           margin:0;
           font-size:24px;
           line-height:1.08;
           color:#0f172a;
           font-weight:900;
+          letter-spacing:-.02em;
         }
-        .compact-header-icons{
+        .elite-meta-row{
           display:flex;
-          gap:4mm;
+          gap:3mm;
           flex-wrap:wrap;
           margin-top:2.2mm;
         }
-        .compact-header-icons span{
+        .elite-meta-row span{
           display:inline-flex;
           align-items:center;
-          gap:1.5mm;
-          padding:1.6mm 2.6mm;
+          gap:1.4mm;
+          padding:1.5mm 2.5mm;
           border-radius:999px;
           background:#f8fafc;
           border:1px solid rgba(148,163,184,.18);
-          font-size:9px;
           color:#475569;
+          font-size:8.8px;
           font-weight:800;
+          white-space:nowrap;
         }
-        .compact-badge{
+        .elite-header-side{
+          display:flex;
+          flex-direction:column;
+          align-items:flex-end;
+          gap:2.6mm;
+        }
+        .elite-approval-pill{
           display:inline-flex;
           align-items:center;
           gap:1.8mm;
-          border:1px solid rgba(22,163,74,.30);
-          color:#15803d;
-          background:#f0fdf4;
           padding:2.5mm 4mm;
           border-radius:999px;
+          background:#f0fdf4;
+          border:1px solid rgba(22,163,74,.28);
+          color:#15803d;
           font-size:10px;
           font-weight:900;
           letter-spacing:.08em;
-          white-space:nowrap;
         }
-        .compact-main-grid{
+        .elite-doc-no{
+          color:#64748b;
+          font-size:10px;
+          font-weight:800;
+          letter-spacing:.08em;
+        }
+        .elite-body-grid{
           display:grid;
-          grid-template-columns:1.38fr .82fr;
+          grid-template-columns:1.42fr .82fr;
           gap:6mm;
           padding:0 7mm 6mm;
           align-items:start;
         }
-        .compact-left,
-        .compact-right{
+        .elite-left-col,
+        .elite-right-col{
           display:flex;
           flex-direction:column;
           gap:5mm;
         }
-        .compact-card,
-        .compact-ticket-box,
-        .compact-note-box{
+        .elite-panel,
+        .elite-ticket-panel,
+        .elite-alert-panel{
           border:1px solid rgba(15,23,42,.08);
-          border-radius:4.2mm;
+          border-radius:4.3mm;
           background:#ffffff;
+          box-shadow:0 1mm 3mm rgba(15,23,42,.03);
         }
-        .compact-card{
-          padding:4mm;
-          box-shadow:0 1.2mm 3.2mm rgba(15,23,42,.03);
-        }
-        .compact-card-featured{
+        .elite-panel{ padding:4.2mm; }
+        .elite-panel-primary{
           background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
         }
-        .compact-card-title,
-        .compact-note-title,
-        .compact-ticket-label{
+        .elite-panel-title{
           display:flex;
           align-items:center;
           gap:1.8mm;
+          margin-bottom:3mm;
+          color:#64748b;
           font-size:10px;
           font-weight:900;
-          color:#64748b;
-          letter-spacing:.08em;
           text-transform:uppercase;
-          margin-bottom:3mm;
+          letter-spacing:.08em;
         }
-        .compact-info-grid{
+        .elite-info-grid{
           display:grid;
           grid-template-columns:1fr 1fr;
           gap:3mm;
         }
-        .compact-info{
+        .elite-info{
+          background:#fcfdff;
           border:1px solid rgba(148,163,184,.20);
           border-radius:3.2mm;
-          padding:3.2mm;
           min-height:18mm;
-          background:#fcfdff;
+          padding:3.2mm;
         }
-        .compact-info-no{
+        .elite-info-wide{ grid-column:span 2; }
+        .elite-info-no{
           background:linear-gradient(135deg,#eff6ff 0%, #f5f3ff 100%);
           border-color:rgba(37,99,235,.18);
         }
-        .compact-wide{ grid-column:span 2; }
-        .compact-info span{
+        .elite-info span{
           display:flex;
           align-items:center;
           gap:1.4mm;
-          font-size:8.5px;
-          font-weight:800;
+          margin-bottom:1.2mm;
           color:#64748b;
+          font-size:8.4px;
+          font-weight:900;
           letter-spacing:.06em;
           text-transform:uppercase;
-          margin-bottom:1.2mm;
         }
-        .compact-info strong{
+        .elite-info strong{
           display:block;
+          color:#0f172a;
           font-size:13px;
           line-height:1.25;
-          color:#0f172a;
           font-weight:800;
           word-break:break-word;
         }
-        .compact-no{
-          font-size:26px !important;
+        .elite-no{
           color:#1d4ed8 !important;
+          font-size:27px !important;
           line-height:1 !important;
           letter-spacing:.02em;
         }
-        .compact-table{
+        .elite-table{
           width:100%;
           border-collapse:collapse;
         }
-        .compact-table th,
-        .compact-table td{
-          padding:2.6mm 0;
+        .elite-table th,
+        .elite-table td{
+          padding:2.7mm 0;
           border-bottom:1px dashed rgba(148,163,184,.36);
           vertical-align:top;
         }
-        .compact-table tr:last-child th,
-        .compact-table tr:last-child td{ border-bottom:none; }
-        .compact-table th{
-          width:31mm;
+        .elite-table tr:last-child th,
+        .elite-table tr:last-child td{ border-bottom:none; }
+        .elite-table th{
+          width:32mm;
           text-align:left;
-          font-size:10px;
           color:#64748b;
+          font-size:10px;
           font-weight:900;
           text-transform:uppercase;
           letter-spacing:.05em;
         }
-        .compact-table th i{ margin-right:1.6mm; }
-        .compact-table td{
-          font-size:12.5px;
+        .elite-table th i{ margin-right:1.6mm; }
+        .elite-table td{
           color:#0f172a;
+          font-size:12.6px;
           font-weight:800;
           line-height:1.35;
         }
-        .compact-ticket-box{
-          padding:5mm 4mm;
-          text-align:center;
+        .elite-ticket-panel{
+          padding:4.4mm;
           background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
           border-color:rgba(37,99,235,.16);
-          box-shadow:0 1.2mm 3.2mm rgba(37,99,235,.05);
         }
-        .compact-ticket-no{
-          font-size:42px;
-          line-height:1;
+        .elite-ticket-top{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:3mm;
+        }
+        .elite-ticket-title{
+          display:flex;
+          align-items:center;
+          gap:1.8mm;
+          color:#64748b;
+          font-size:10px;
           font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+        }
+        .elite-ticket-icon{
+          width:9mm;
+          height:9mm;
+          border-radius:50%;
+          background:#eff6ff;
+          color:#1d4ed8;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:10px;
+        }
+        .elite-ticket-number{
+          margin:4mm 0 2mm;
           color:#0f172a;
-          margin:2.4mm 0 1.8mm;
+          font-size:44px;
+          font-weight:900;
+          line-height:1;
+          text-align:center;
           letter-spacing:.03em;
         }
-        .compact-ticket-sub{
-          font-size:10px;
+        .elite-ticket-caption{
+          text-align:center;
           color:#64748b;
+          font-size:10px;
           font-weight:700;
         }
-        .compact-note-box{
-          padding:4mm;
+        .elite-ticket-strip{
+          margin-top:4mm;
+          display:flex;
+          justify-content:center;
+          align-items:flex-end;
+          gap:1.1mm;
+          height:14mm;
+        }
+        .elite-ticket-strip span{
+          display:block;
+          width:1.2mm;
+          height:10mm;
+          background:#0f172a;
+          border-radius:1mm;
+        }
+        .elite-ticket-strip span.wide{
+          width:2.5mm;
+          height:12.6mm;
+        }
+        .elite-alert-panel{
+          padding:4.2mm;
           background:#fffaf5;
           border-color:rgba(249,115,22,.18);
         }
-        .compact-warning-main{
-          font-size:12px;
-          line-height:1.45;
+        .elite-alert-title{ color:#9a3412; }
+        .elite-alert-main{
           color:#9a3412;
+          font-size:12.2px;
+          line-height:1.45;
           font-weight:800;
-          margin-bottom:2.4mm;
+          margin-bottom:2.6mm;
         }
-        .compact-note-box ul{
-          margin:0;
-          padding-left:0;
+        .elite-alert-list{
           list-style:none;
+          padding:0;
+          margin:0;
         }
-        .compact-note-box li{
+        .elite-alert-list li{
           display:flex;
           align-items:flex-start;
-          gap:1.8mm;
+          gap:1.9mm;
+          margin:0 0 1.8mm;
+          color:#7c2d12;
           font-size:10.6px;
           line-height:1.45;
-          color:#7c2d12;
-          margin:0 0 1.7mm;
         }
-        .compact-note-box li:last-child{ margin-bottom:0; }
-        .compact-footer{
+        .elite-alert-list li:last-child{ margin-bottom:0; }
+        .elite-footer{
           display:flex;
           justify-content:space-between;
           align-items:flex-end;
           gap:8mm;
           padding:0 7mm 4mm;
         }
-        .compact-footer-note{
+        .elite-footer-note{
           display:flex;
           align-items:center;
-          gap:1.6mm;
-          font-size:9.5px;
+          gap:1.7mm;
           color:#64748b;
+          font-size:9.5px;
           line-height:1.4;
         }
-        .compact-signature{
-          min-width:55mm;
+        .elite-footer-sign{
+          min-width:56mm;
           text-align:center;
         }
-        .compact-sign-line{
+        .elite-sign-line{
           border-top:1px solid #334155;
           margin-bottom:2mm;
         }
-        .compact-sign-text{
-          font-size:9.5px;
+        .elite-sign-text{
           color:#334155;
+          font-size:9.5px;
           font-weight:800;
         }
-        .compact-final-stamp-wrap{
+        .elite-stamp-wrap{
           display:flex;
           justify-content:flex-end;
           padding:0 7mm 7mm;
         }
-        .compact-final-stamp{
-          width:37mm;
-          height:37mm;
+        .elite-stamp{
+          width:38mm;
+          height:38mm;
           border-radius:50%;
           border:1.2mm solid rgba(22,163,74,.88);
-          color:#15803d;
           background:rgba(240,253,244,.78);
+          color:#15803d;
           display:flex;
           flex-direction:column;
           align-items:center;
           justify-content:center;
           text-align:center;
-          transform:rotate(-10deg);
+          transform:rotate(-9deg);
           box-shadow:inset 0 0 0 .65mm rgba(22,163,74,.14);
         }
-        .compact-final-stamp span{
+        .elite-stamp span{
           font-size:11px;
           font-weight:900;
-          letter-spacing:.14em;
+          letter-spacing:.16em;
         }
-        .compact-final-stamp small{
-          margin-top:1.4mm;
-          font-size:6.7px;
+        .elite-stamp small{
+          margin-top:1.5mm;
+          max-width:76%;
+          font-size:6.8px;
           font-weight:800;
           letter-spacing:.08em;
-          line-height:1.25;
-          max-width:75%;
+          line-height:1.28;
         }
         @media print{
           body{ background:#ffffff !important; }
           .a4.single-root,
-          .compact-sheet,
-          .compact-doc{ box-shadow:none !important; }
+          .elite-sheet,
+          .elite-doc{ box-shadow:none !important; }
         }
       `;
 
