@@ -2297,7 +2297,12 @@ window.generateBizCardHTML = function(data) {
               Fenomen eğitim kurumları online sınav merkezi tarafından çıkarılmıştır.<br/>
               ${safe(printStamp)}
             </div>
-            <div class="stamp"><span>ONAYLANDI</span></div>
+            <div class="stamp" aria-label="Onaylandı mührü">
+              <svg viewBox="0 0 100 100" class="stamp-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="#dc2626" stroke-width="6"/>
+                <text x="50" y="50" text-anchor="middle" dominant-baseline="middle">ONAYLANDI</text>
+              </svg>
+            </div>
           </div>
         </div>
       `;
@@ -3166,8 +3171,9 @@ window.generateBizCardHTML = function(data) {
         .warn-item span { font-size: 9pt; font-weight: 600; color: #dc2626; }
         .exam-doc-footer { margin-top: auto; position: relative; min-height: 40mm; border-top: 1.2px solid #cbd5e1; padding-top: 7mm; padding-right: 34mm; display: flex; align-items: flex-start; justify-content: center; }
         .footer-text { width: 100%; font-size: 8pt; color: #475569; line-height: 1.6; text-align: center; padding: 0 8mm; }
-        .stamp { width: 26mm; height: 26mm; border: 1.4mm solid #dc2626; border-radius: 50%; position: absolute; right: 4mm; bottom: 3mm; background: transparent; overflow: hidden; }
-        .stamp span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block; width: 100%; padding: 0 2mm; font-size: 6.2pt; font-weight: 800; color: #dc2626; text-transform: uppercase; line-height: 1; text-align: center; letter-spacing: 0; white-space: nowrap; }
+        .stamp { width: 26mm; height: 26mm; position: absolute; right: 4mm; bottom: 3mm; background: transparent; overflow: hidden; }
+        .stamp-svg { display: block; width: 100%; height: 100%; }
+        .stamp-svg text { fill: #dc2626; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800; letter-spacing: 0; }
       `;
       const area = el("printArea");
       area.innerHTML = `<style>${extraCss}</style>${docHtml}`;
