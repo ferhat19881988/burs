@@ -2252,31 +2252,37 @@ window.generateBizCardHTML = function(data) {
       const examTime = escapeHtml(String(data?.examTime || "-"));
       const place = escapeHtml(normSpaces(data?.place || "Fenomen Eğitim Kurumları"));
       const phone1 = escapeHtml(String(data?.phone1 || "-"));
-      const phone2 = escapeHtml(String(data?.phone2 || "-"));
       const regDate = escapeHtml(String(data?.regDate || new Date().toLocaleString("tr-TR")));
       const docNo = escapeHtml(`${slugifyTR(String(data?.examKey || data?.examName || "fenomen")).toUpperCase()}-${String(data?.studentNo || "").padStart(4, "0")}`);
       const issueDate = escapeHtml(new Date().toLocaleDateString("tr-TR"));
-      const qrPayload = encodeURIComponent([
-        "Fenomen Eğitim Kurumları",
-        `Öğrenci: ${studentName}`,
-        `No: ${studentNo}`,
-        `Sınav: ${normSpaces(data?.examName || "")}`,
-        `Tarih: ${data?.examDate || ""}`,
-        `Saat: ${data?.examTime || ""}`,
-        `Yer: ${normSpaces(data?.place || "Fenomen Eğitim Kurumları")}`
-      ].join(" | "));
-      const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrPayload}`;
+
+      const approvedSeal = `
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="sealGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#ea580c"/>
+            </linearGradient>
+          </defs>
+          <circle cx="110" cy="110" r="100" fill="none" stroke="url(#sealGrad)" stroke-width="10" stroke-dasharray="4 8"/>
+          <circle cx="110" cy="110" r="80" fill="rgba(245,158,11,.08)" stroke="#fb923c" stroke-width="4"/>
+          <path d="M72 114l22 22 54-58" fill="none" stroke="#0f172a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="110" y="78" text-anchor="middle" font-size="18" font-weight="900" fill="#c2410c" letter-spacing="3">ONAYLI</text>
+          <text x="110" y="164" text-anchor="middle" font-size="16" font-weight="800" fill="#334155" letter-spacing="2">FENOMEN</text>
+        </svg>
+      `;
 
       const css = `
         <style>
           :root{
             --fe-navy:#0f172a;
             --fe-indigo:#1d4ed8;
+            --fe-indigo-soft:#dbeafe;
             --fe-orange:#ea580c;
             --fe-gold:#f59e0b;
             --fe-slate:#475569;
-            --fe-line:#cbd5e1;
-            --fe-soft:#e2e8f0;
+            --fe-line:#dbe5f0;
+            --fe-soft:#eef4fb;
           }
           *{ box-sizing:border-box; }
           .fe-admit-wrap{
@@ -2289,165 +2295,206 @@ window.generateBizCardHTML = function(data) {
           .fe-admit-sheet{
             position:relative;
             width:100%;
-            min-height:${preview ? "auto" : "267mm"};
+            min-height:${preview ? "auto" : "277mm"};
             background:
-              linear-gradient(135deg, rgba(29,78,216,.035), rgba(245,158,11,.04)),
+              radial-gradient(circle at top right, rgba(245,158,11,.10), transparent 22%),
+              radial-gradient(circle at left bottom, rgba(29,78,216,.08), transparent 26%),
               #ffffff;
-            border:1px solid #dbe5f0;
+            border:1px solid var(--fe-line);
             box-shadow:${preview ? "0 18px 48px rgba(15,23,42,.12)" : "none"};
             overflow:hidden;
           }
-          .fe-admit-sheet::before{
-            content:"";
-            position:absolute;
-            inset:0;
-            background:
-              radial-gradient(circle at top right, rgba(245,158,11,.08), transparent 28%),
-              radial-gradient(circle at left bottom, rgba(29,78,216,.08), transparent 32%);
-            pointer-events:none;
+          .fe-admit-inner{
+            position:relative;
+            z-index:1;
+            padding:${preview ? "18px" : "8mm"};
           }
-          .fe-admit-inner{ position:relative; z-index:1; padding:${preview ? "18px" : "10mm"} ${preview ? "18px" : "10mm"} ${preview ? "16px" : "8mm"}; }
-          .fe-topband{
+          .fe-hero{
             display:grid;
             grid-template-columns:1.45fr .75fr;
-            gap:${preview ? "14px" : "6mm"};
+            gap:${preview ? "14px" : "5mm"};
+            margin-bottom:${preview ? "14px" : "5mm"};
             align-items:stretch;
-            margin-bottom:${preview ? "14px" : "6mm"};
           }
           .fe-brand{
-            background:linear-gradient(135deg, var(--fe-navy), var(--fe-indigo));
-            color:#fff;
-            border-radius:18px;
-            padding:${preview ? "16px 18px" : "7mm 8mm"};
             position:relative;
             overflow:hidden;
-            min-height:${preview ? "112px" : "34mm"};
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
+            border-radius:20px;
+            color:#fff;
+            background:linear-gradient(135deg, var(--fe-navy) 0%, var(--fe-indigo) 72%, #2563eb 100%);
+            padding:${preview ? "18px" : "7mm"};
+            min-height:${preview ? "138px" : "39mm"};
           }
           .fe-brand::after{
             content:"";
             position:absolute;
-            right:-30px;
-            top:-30px;
-            width:120px;
-            height:120px;
+            right:-28px; top:-18px;
+            width:${preview ? "130px" : "34mm"};
+            height:${preview ? "130px" : "34mm"};
             border-radius:50%;
-            background:radial-gradient(circle, rgba(255,255,255,.18), transparent 60%);
+            background:radial-gradient(circle, rgba(255,255,255,.20), rgba(255,255,255,0) 66%);
           }
-          .fe-brand-top{
+          .fe-brand-row{
             display:flex;
             justify-content:space-between;
             gap:10px;
             align-items:flex-start;
           }
           .fe-brand-mark{
-            width:${preview ? "48px" : "15mm"};
-            height:${preview ? "48px" : "15mm"};
+            width:${preview ? "50px" : "14mm"};
+            height:${preview ? "50px" : "14mm"};
             border-radius:16px;
-            background:linear-gradient(135deg, var(--fe-gold), var(--fe-orange));
+            background:linear-gradient(135deg, #fde68a, #fb923c);
             display:flex;
             align-items:center;
             justify-content:center;
-            font-size:${preview ? "22px" : "18px"};
-            box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
             flex:0 0 auto;
+            font-size:${preview ? "24px" : "18px"};
           }
           .fe-brand-title{
-            font-size:${preview ? "26px" : "18pt"};
+            font-size:${preview ? "25px" : "17pt"};
+            line-height:1.06;
             font-weight:900;
-            letter-spacing:.03em;
-            line-height:1.1;
+            letter-spacing:.04em;
           }
           .fe-brand-sub{
-            font-size:${preview ? "13px" : "9pt"};
-            opacity:.92;
             margin-top:4px;
+            font-size:${preview ? "13px" : "8.6pt"};
+            opacity:.92;
+            font-weight:500;
           }
-          .fe-brand-note{
-            margin-top:${preview ? "12px" : "4mm"};
+          .fe-chip-row{
+            margin-top:${preview ? "14px" : "4mm"};
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+          }
+          .fe-chip{
             display:inline-flex;
             align-items:center;
-            gap:8px;
-            padding:${preview ? "8px 12px" : "3mm 4mm"};
+            gap:7px;
             border-radius:999px;
+            padding:${preview ? "7px 11px" : "2.8mm 4mm"};
+            background:rgba(255,255,255,.10);
             border:1px solid rgba(255,255,255,.16);
-            background:rgba(255,255,255,.08);
-            font-size:${preview ? "12px" : "8.6pt"};
-            font-weight:600;
-            max-width:max-content;
+            font-size:${preview ? "11px" : "7.6pt"};
+            font-weight:700;
           }
-          .fe-badgecol{
+          .fe-sidecol{
             display:grid;
-            gap:${preview ? "12px" : "4.5mm"};
+            gap:${preview ? "12px" : "4mm"};
           }
-          .fe-badge, .fe-studentno{
+          .fe-mini-card,
+          .fe-seat-card,
+          .fe-panel,
+          .fe-approval,
+          .fe-footer-card{
             border-radius:18px;
-            border:1px solid var(--fe-soft);
+            border:1px solid var(--fe-line);
             background:#fff;
-            padding:${preview ? "14px 16px" : "6mm"};
           }
-          .fe-badge{
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
-            min-height:${preview ? "52px" : "18mm"};
+          .fe-mini-card{
+            padding:${preview ? "14px 16px" : "5mm"};
             background:linear-gradient(180deg, #fffdf8, #fff);
           }
-          .fe-badge-label{
-            font-size:${preview ? "11px" : "7.8pt"};
+          .fe-mini-label{
+            font-size:${preview ? "11px" : "7.6pt"};
             font-weight:800;
             letter-spacing:.14em;
+            text-transform:uppercase;
             color:var(--fe-orange);
-            text-transform:uppercase;
           }
-          .fe-badge-value{
-            margin-top:4px;
-            font-size:${preview ? "18px" : "12pt"};
+          .fe-mini-value{
+            margin-top:5px;
+            font-size:${preview ? "18px" : "11pt"};
             font-weight:900;
-            color:var(--fe-navy);
           }
-          .fe-studentno{
-            text-align:center;
+          .fe-seat-card{
+            padding:${preview ? "14px 16px" : "5mm"};
             background:linear-gradient(180deg, #f8fbff, #eef4ff);
-            border-color:#bfd3ff;
+            border-color:#c7dafd;
           }
-          .fe-studentno-label{
-            font-size:${preview ? "11px" : "7.8pt"};
+          .fe-seat-label{
+            font-size:${preview ? "10px" : "7.4pt"};
+            letter-spacing:.16em;
             font-weight:800;
-            letter-spacing:.14em;
-            color:var(--fe-indigo);
             text-transform:uppercase;
+            color:var(--fe-indigo);
           }
-          .fe-studentno-value{
-            margin-top:${preview ? "6px" : "2.5mm"};
-            font-size:${preview ? "34px" : "24pt"};
+          .fe-seat-value{
+            margin-top:6px;
+            font-size:${preview ? "34px" : "23pt"};
             line-height:1;
             font-weight:900;
             color:var(--fe-indigo);
             letter-spacing:.04em;
           }
-          .fe-grid{
+          .fe-exam-strip{
             display:grid;
-            grid-template-columns:1.2fr .78fr;
-            gap:${preview ? "14px" : "6mm"};
-            margin-bottom:${preview ? "14px" : "6mm"};
+            grid-template-columns:repeat(3,1fr);
+            gap:${preview ? "12px" : "4mm"};
+            margin-bottom:${preview ? "14px" : "4.5mm"};
+          }
+          .fe-strip-card{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:${preview ? "12px 14px" : "4.3mm 4.8mm"};
+            border-radius:16px;
+            border:1px solid var(--fe-line);
+            background:linear-gradient(180deg, #ffffff, #fafcff);
+            min-height:${preview ? "62px" : "18mm"};
+          }
+          .fe-strip-icon{
+            width:${preview ? "38px" : "11mm"};
+            height:${preview ? "38px" : "11mm"};
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex:0 0 auto;
+            color:#fff;
+            font-size:${preview ? "15px" : "11px"};
+            background:linear-gradient(135deg, var(--fe-indigo), #60a5fa);
+          }
+          .fe-strip-card:nth-child(2) .fe-strip-icon{ background:linear-gradient(135deg, var(--fe-orange), #fb923c); }
+          .fe-strip-card:nth-child(3) .fe-strip-icon{ background:linear-gradient(135deg, #0891b2, #22c55e); }
+          .fe-strip-label{
+            font-size:${preview ? "10px" : "7.1pt"};
+            font-weight:800;
+            letter-spacing:.14em;
+            text-transform:uppercase;
+            color:var(--fe-slate);
+          }
+          .fe-strip-value{
+            margin-top:3px;
+            font-size:${preview ? "13px" : "8.8pt"};
+            font-weight:800;
+            color:var(--fe-navy);
+            line-height:1.28;
+            word-break:break-word;
+          }
+          .fe-main{
+            display:grid;
+            grid-template-columns:1.08fr .92fr;
+            gap:${preview ? "14px" : "5mm"};
+            margin-bottom:${preview ? "14px" : "5mm"};
           }
           .fe-panel{
-            background:#fff;
-            border:1px solid var(--fe-soft);
-            border-radius:18px;
             overflow:hidden;
           }
           .fe-panel-head{
-            background:linear-gradient(90deg, rgba(15,23,42,.03), rgba(29,78,216,.06));
-            border-bottom:1px solid var(--fe-soft);
+            display:flex;
+            align-items:center;
+            gap:8px;
             padding:${preview ? "11px 14px" : "4mm 5mm"};
-            font-size:${preview ? "12px" : "8.2pt"};
+            border-bottom:1px solid var(--fe-line);
+            background:linear-gradient(90deg, rgba(15,23,42,.03), rgba(29,78,216,.05));
+            font-size:${preview ? "11px" : "7.8pt"};
             font-weight:800;
-            letter-spacing:.12em;
             text-transform:uppercase;
+            letter-spacing:.14em;
             color:var(--fe-slate);
           }
           .fe-table{
@@ -2456,165 +2503,163 @@ window.generateBizCardHTML = function(data) {
             table-layout:fixed;
           }
           .fe-table th, .fe-table td{
+            padding:${preview ? "10px 12px" : "3.4mm 4mm"};
             border-bottom:1px solid #edf2f7;
-            padding:${preview ? "10px 12px" : "3.8mm 4mm"};
             vertical-align:top;
           }
-          .fe-table tr:last-child th, .fe-table tr:last-child td{ border-bottom:none; }
+          .fe-table tr:last-child th,
+          .fe-table tr:last-child td{ border-bottom:none; }
           .fe-table th{
             width:34%;
             text-align:left;
-            font-size:${preview ? "12px" : "8.2pt"};
-            font-weight:700;
-            color:var(--fe-slate);
             background:#fbfdff;
+            color:var(--fe-slate);
+            font-size:${preview ? "11px" : "7.6pt"};
+            font-weight:700;
           }
           .fe-table td{
-            font-size:${preview ? "13px" : "9.5pt"};
-            font-weight:700;
             color:var(--fe-navy);
+            font-size:${preview ? "13px" : "8.8pt"};
+            font-weight:800;
             word-break:break-word;
           }
-          .fe-table td.fe-strong{
-            font-size:${preview ? "16px" : "11pt"};
+          .fe-table .fe-strong{
+            font-size:${preview ? "15px" : "10.2pt"};
             font-weight:900;
-            letter-spacing:.01em;
           }
-          .fe-side{
-            display:grid;
-            gap:${preview ? "14px" : "5mm"};
-          }
-          .fe-qr{
-            display:grid;
-            grid-template-columns:${preview ? "88px 1fr" : "25mm 1fr"};
-            gap:${preview ? "12px" : "4mm"};
-            align-items:center;
-            padding:${preview ? "12px 14px" : "5mm"};
-          }
-          .fe-qr-box{
-            width:${preview ? "88px" : "25mm"};
-            height:${preview ? "88px" : "25mm"};
-            border:1px solid var(--fe-soft);
-            border-radius:14px;
-            background:linear-gradient(180deg,#fff,#f8fafc);
-            display:flex;
-            align-items:center;
-            justify-content:center;
+          .fe-approval{
+            position:relative;
             overflow:hidden;
+            padding:${preview ? "14px" : "5mm"};
+            min-height:${preview ? "230px" : "64mm"};
+            background:linear-gradient(180deg, #fffdf9, #ffffff);
           }
-          .fe-qr-box img{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-            display:block;
+          .fe-approval::before{
+            content:"";
+            position:absolute;
+            right:-24px;
+            bottom:-24px;
+            width:${preview ? "120px" : "34mm"};
+            height:${preview ? "120px" : "34mm"};
+            border-radius:50%;
+            background:radial-gradient(circle, rgba(29,78,216,.08), rgba(29,78,216,0) 68%);
           }
-          .fe-qr-title{
-            font-size:${preview ? "12px" : "8pt"};
-            font-weight:800;
-            color:var(--fe-slate);
-            letter-spacing:.08em;
+          .fe-seal{
+            width:${preview ? "120px" : "31mm"};
+            height:${preview ? "120px" : "31mm"};
+            margin:0 auto 10px;
+            opacity:.98;
+          }
+          .fe-approval-title{
+            text-align:center;
+            font-size:${preview ? "16px" : "10.2pt"};
+            font-weight:900;
+            letter-spacing:.14em;
+            color:var(--fe-orange);
             text-transform:uppercase;
           }
-          .fe-qr-text{
-            margin-top:6px;
-            font-size:${preview ? "12px" : "8.6pt"};
+          .fe-approval-text{
+            margin-top:7px;
+            text-align:center;
+            font-size:${preview ? "12px" : "8.2pt"};
+            line-height:1.55;
+            color:#334155;
+          }
+          .fe-rule-box{
+            margin-top:${preview ? "12px" : "3.6mm"};
+            border-top:1px dashed #d8e0ea;
+            padding-top:${preview ? "10px" : "3.2mm"};
+            display:grid;
+            gap:${preview ? "7px" : "2.3mm"};
+          }
+          .fe-rule-item{
+            display:flex;
+            gap:8px;
+            align-items:flex-start;
+            font-size:${preview ? "11px" : "7.6pt"};
             line-height:1.45;
             color:#334155;
           }
-          .fe-rulelist{
-            padding:${preview ? "12px 14px 14px" : "5mm 5mm 5.5mm"};
-          }
-          .fe-rulelist ol{
-            margin:0;
-            padding-left:${preview ? "18px" : "5mm"};
-          }
-          .fe-rulelist li{
-            margin-bottom:${preview ? "8px" : "2.8mm"};
-            font-size:${preview ? "12px" : "8.5pt"};
-            line-height:1.5;
-            color:#334155;
+          .fe-rule-item i{
+            color:var(--fe-indigo);
+            margin-top:2px;
+            flex:0 0 auto;
           }
           .fe-footer{
             display:grid;
-            grid-template-columns:1.2fr .8fr;
-            gap:${preview ? "14px" : "6mm"};
+            grid-template-columns:1fr .8fr;
+            gap:${preview ? "14px" : "5mm"};
           }
-          .fe-sign{
-            border:1px solid var(--fe-soft);
-            border-radius:18px;
-            background:#fff;
-            padding:${preview ? "14px 16px" : "6mm"};
-            min-height:${preview ? "112px" : "34mm"};
+          .fe-footer-card{
+            padding:${preview ? "12px 14px" : "4.6mm 5mm"};
+          }
+          .fe-sign-grid{
             display:grid;
             grid-template-columns:1fr 1fr;
-            gap:${preview ? "18px" : "8mm"};
-            align-items:end;
+            gap:${preview ? "16px" : "6mm"};
           }
-          .fe-signbox{
+          .fe-sign-box{
             border-top:1px solid #94a3b8;
-            padding-top:${preview ? "8px" : "3mm"};
+            padding-top:${preview ? "8px" : "2.8mm"};
+            min-height:${preview ? "48px" : "15mm"};
           }
           .fe-sign-title{
-            font-size:${preview ? "11px" : "7.8pt"};
+            font-size:${preview ? "10px" : "7.2pt"};
+            text-transform:uppercase;
+            letter-spacing:.14em;
             font-weight:800;
             color:var(--fe-slate);
-            text-transform:uppercase;
-            letter-spacing:.1em;
           }
-          .fe-sign-name{
-            margin-top:6px;
-            font-size:${preview ? "12px" : "8.7pt"};
-            font-weight:700;
+          .fe-sign-note{
+            margin-top:5px;
+            font-size:${preview ? "11px" : "7.6pt"};
             color:var(--fe-navy);
+            font-weight:700;
           }
-          .fe-meta{
-            border:1px solid var(--fe-soft);
-            border-radius:18px;
-            background:linear-gradient(180deg,#fff,#f8fafc);
-            padding:${preview ? "14px 16px" : "6mm"};
+          .fe-meta-grid{
             display:grid;
-            gap:${preview ? "10px" : "3.5mm"};
+            gap:${preview ? "8px" : "2.6mm"};
           }
           .fe-meta-row{
             display:flex;
+            align-items:flex-start;
             justify-content:space-between;
             gap:12px;
-            align-items:flex-start;
-            border-bottom:1px dashed #d7dee7;
-            padding-bottom:${preview ? "8px" : "2.5mm"};
+            padding-bottom:${preview ? "6px" : "2mm"};
+            border-bottom:1px dashed #dbe5f0;
           }
-          .fe-meta-row:last-child{ border-bottom:none; padding-bottom:0; }
+          .fe-meta-row:last-child{
+            border-bottom:none;
+            padding-bottom:0;
+          }
           .fe-meta-label{
-            font-size:${preview ? "11px" : "7.8pt"};
+            font-size:${preview ? "10px" : "7.2pt"};
             font-weight:800;
-            text-transform:uppercase;
-            letter-spacing:.12em;
             color:var(--fe-slate);
+            letter-spacing:.12em;
+            text-transform:uppercase;
           }
           .fe-meta-value{
-            font-size:${preview ? "12px" : "8.8pt"};
+            font-size:${preview ? "11px" : "7.8pt"};
             font-weight:800;
             color:var(--fe-navy);
             text-align:right;
           }
           .fe-watermark{
             position:absolute;
-            right:${preview ? "22px" : "10mm"};
-            bottom:${preview ? "12px" : "7mm"};
-            font-size:${preview ? "10px" : "7pt"};
-            font-weight:800;
+            right:${preview ? "24px" : "8mm"};
+            bottom:${preview ? "16px" : "6mm"};
+            font-size:${preview ? "9px" : "6.6pt"};
             letter-spacing:.18em;
-            color:rgba(15,23,42,.10);
-            transform:rotate(-90deg) translateY(100%);
-            transform-origin:right bottom;
+            font-weight:900;
             text-transform:uppercase;
-            white-space:nowrap;
+            color:rgba(15,23,42,.09);
           }
           .fe-preview-scale{
             transform:${preview ? "scale(.48)" : "none"};
             transform-origin:top center;
             width:${preview ? "206%" : "100%"};
-            margin:${preview ? "0 auto -280px" : "0"};
+            margin:${preview ? "0 auto -282px" : "0"};
           }
           @media print{
             body{
@@ -2629,7 +2674,7 @@ window.generateBizCardHTML = function(data) {
               width:190mm;
             }
             .fe-admit-sheet{
-              min-height:267mm;
+              min-height:277mm;
               box-shadow:none !important;
             }
             .fe-preview-scale{
@@ -2646,9 +2691,9 @@ window.generateBizCardHTML = function(data) {
           <div class="${preview ? "fe-preview-scale" : ""}">
             <section class="fe-admit-sheet" aria-label="Fenomen Eğitim Kurumları giriş belgesi">
               <div class="fe-admit-inner">
-                <div class="fe-topband">
+                <div class="fe-hero">
                   <div class="fe-brand">
-                    <div class="fe-brand-top">
+                    <div class="fe-brand-row">
                       <div style="display:flex; gap:12px; align-items:flex-start;">
                         <div class="fe-brand-mark"><i class="fa-solid fa-graduation-cap"></i></div>
                         <div>
@@ -2657,107 +2702,102 @@ window.generateBizCardHTML = function(data) {
                         </div>
                       </div>
                     </div>
-                    <div class="fe-brand-note">
-                      <i class="fa-solid fa-shield-halved"></i>
-                      <span>Kayıt doğrulanmış öğrenciler için resmi giriş belgesidir.</span>
+                    <div class="fe-chip-row">
+                      <div class="fe-chip"><i class="fa-solid fa-shield-halved"></i><span>Kayıt Doğrulandı</span></div>
+                      <div class="fe-chip"><i class="fa-solid fa-file-lines"></i><span>Tek A4 Baskı Düzeni</span></div>
                     </div>
                   </div>
 
-                  <div class="fe-badgecol">
-                    <div class="fe-badge">
-                      <div class="fe-badge-label">Belge Türü</div>
-                      <div class="fe-badge-value">SINAV GİRİŞ BELGESİ</div>
+                  <div class="fe-sidecol">
+                    <div class="fe-mini-card">
+                      <div class="fe-mini-label">Belge Türü</div>
+                      <div class="fe-mini-value">SINAV GİRİŞ BELGESİ</div>
                     </div>
-                    <div class="fe-studentno">
-                      <div class="fe-studentno-label">Öğrenci Numarası</div>
-                      <div class="fe-studentno-value">${studentNo}</div>
+                    <div class="fe-seat-card">
+                      <div class="fe-seat-label">Öğrenci Numarası</div>
+                      <div class="fe-seat-value">${studentNo}</div>
                     </div>
                   </div>
                 </div>
 
-                <div class="fe-grid">
+                <div class="fe-exam-strip">
+                  <div class="fe-strip-card">
+                    <div class="fe-strip-icon"><i class="fa-regular fa-calendar"></i></div>
+                    <div>
+                      <div class="fe-strip-label">Sınav Tarihi</div>
+                      <div class="fe-strip-value">${examDate}</div>
+                    </div>
+                  </div>
+                  <div class="fe-strip-card">
+                    <div class="fe-strip-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div>
+                      <div class="fe-strip-label">Seans Saati</div>
+                      <div class="fe-strip-value">${examTime}</div>
+                    </div>
+                  </div>
+                  <div class="fe-strip-card">
+                    <div class="fe-strip-icon"><i class="fa-solid fa-location-dot"></i></div>
+                    <div>
+                      <div class="fe-strip-label">Sınav Yeri</div>
+                      <div class="fe-strip-value">${place}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="fe-main">
                   <div class="fe-panel">
-                    <div class="fe-panel-head">Öğrenci Bilgileri</div>
+                    <div class="fe-panel-head"><i class="fa-solid fa-id-card"></i> Öğrenci Bilgileri</div>
                     <table class="fe-table" role="presentation">
                       <tr><th>Öğrenci Adı</th><td class="fe-strong">${escapeHtml(studentName)}</td></tr>
                       <tr><th>T.C. Kimlik No</th><td>${tcPretty}</td></tr>
                       <tr><th>Okulu</th><td>${escapeHtml(school)}</td></tr>
                       <tr><th>Veli Adı</th><td>${escapeHtml(parentName || "-")}</td></tr>
-                      <tr><th>Telefon 1</th><td>${phone1}</td></tr>
-                      <tr><th>Telefon 2</th><td>${phone2}</td></tr>
+                      <tr><th>Telefon</th><td>${phone1}</td></tr>
+                      <tr><th>Sınav Adı</th><td>${examName}</td></tr>
                     </table>
                   </div>
 
-                  <div class="fe-side">
-                    <div class="fe-panel">
-                      <div class="fe-panel-head">Belge Doğrulama</div>
-                      <div class="fe-qr">
-                        <div class="fe-qr-box"><img src="${qrSrc}" alt="Belge doğrulama kodu"></div>
-                        <div>
-                          <div class="fe-qr-title">Kayıt Özeti</div>
-                          <div class="fe-qr-text">
-                            Öğrenci numarası, sınav adı, tarih ve saat bilgileri bu belgeye işlenmiştir.
-                            Kurum görevlisi gerektiğinde belge üzerindeki kayıt özetini kontrol edebilir.
-                          </div>
-                        </div>
-                      </div>
+                  <div class="fe-approval">
+                    <div class="fe-seal">${approvedSeal}</div>
+                    <div class="fe-approval-title">Onaylandı</div>
+                    <div class="fe-approval-text">
+                      Bu belge Fenomen Eğitim Kurumları kayıt sistemi üzerinden oluşturulmuş,
+                      öğrenci bilgileri ve oturum eşleştirmesi tamamlanmış resmi giriş çıktısıdır.
                     </div>
-
-                    <div class="fe-panel">
-                      <div class="fe-panel-head">Sınav Kuralları</div>
-                      <div class="fe-rulelist">
-                        <ol>
-                          <li>Öğrenci, sınav saatinden en az <strong>30 dakika önce</strong> kurumda hazır bulunmalıdır.</li>
-                          <li>Bu belge, görevliye teslim edilmeden salona giriş yapılamaz.</li>
-                          <li>Kimlik doğrulaması gerektiğinde öğrenci veya veli bilgi teyidi istenebilir.</li>
-                          <li>Belge üzerindeki tarih, saat ve öğrenci numarası esas alınır.</li>
-                        </ol>
-                      </div>
+                    <div class="fe-rule-box">
+                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Öğrenci sınav saatinden en az 30 dakika önce kurumda olmalıdır.</span></div>
+                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Belge çıktısı görevli kontrolünde giriş sırasında ibraz edilir.</span></div>
+                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Belge üzerindeki öğrenci numarası salon yerleşiminde esas alınır.</span></div>
                     </div>
-                  </div>
-                </div>
-
-                <div class="fe-grid" style="margin-top:0;">
-                  <div class="fe-panel">
-                    <div class="fe-panel-head">Sınav / Oturum Bilgileri</div>
-                    <table class="fe-table" role="presentation">
-                      <tr><th>Sınav Adı</th><td class="fe-strong">${examName}</td></tr>
-                      <tr><th>Sınav Tarihi</th><td>${examDate}</td></tr>
-                      <tr><th>Seans Saati</th><td>${examTime}</td></tr>
-                      <tr><th>Sınav Yeri</th><td>${place}</td></tr>
-                    </table>
-                  </div>
-
-                  <div class="fe-panel">
-                    <div class="fe-panel-head">Kurum Notu</div>
-                    <table class="fe-table" role="presentation">
-                      <tr><th>Bilgilendirme</th><td>Belge çıktısı temiz ve tam sayfa A4 olacak şekilde hazırlanmıştır.</td></tr>
-                      <tr><th>Salon Girişi</th><td>Belgeyi ve öğrenci numarasını görünür biçimde hazır bulundurunuz.</td></tr>
-                      <tr><th>İrtibat</th><td>Detaylı bilgi için kurum yönetimi ile iletişime geçebilirsiniz.</td></tr>
-                    </table>
                   </div>
                 </div>
 
                 <div class="fe-footer">
-                  <div class="fe-sign">
-                    <div class="fe-signbox">
-                      <div class="fe-sign-title">Veli İmza Alanı</div>
-                      <div class="fe-sign-name">Belge tesliminde veli onayı için ayrılmıştır.</div>
-                    </div>
-                    <div class="fe-signbox">
-                      <div class="fe-sign-title">Kurum Onayı</div>
-                      <div class="fe-sign-name">Fenomen Eğitim Kurumları Yetkili Birimi</div>
+                  <div class="fe-footer-card">
+                    <div class="fe-panel-head" style="padding:0 0 10px; border:none; background:none;"><i class="fa-solid fa-pen-nib"></i> Onay Alanları</div>
+                    <div class="fe-sign-grid">
+                      <div class="fe-sign-box">
+                        <div class="fe-sign-title">Veli İmza Alanı</div>
+                        <div class="fe-sign-note">Belge tesliminde veli kontrolü için ayrılmıştır.</div>
+                      </div>
+                      <div class="fe-sign-box">
+                        <div class="fe-sign-title">Kurum Yetkilisi</div>
+                        <div class="fe-sign-note">Fenomen Eğitim Kurumları onay birimi</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="fe-meta">
-                    <div class="fe-meta-row"><div class="fe-meta-label">Belge No</div><div class="fe-meta-value">${docNo}</div></div>
-                    <div class="fe-meta-row"><div class="fe-meta-label">Kayıt Tarihi</div><div class="fe-meta-value">${regDate}</div></div>
-                    <div class="fe-meta-row"><div class="fe-meta-label">Belge Tarihi</div><div class="fe-meta-value">${issueDate}</div></div>
+                  <div class="fe-footer-card">
+                    <div class="fe-panel-head" style="padding:0 0 10px; border:none; background:none;"><i class="fa-solid fa-barcode"></i> Belge Kayıt Bilgisi</div>
+                    <div class="fe-meta-grid">
+                      <div class="fe-meta-row"><div class="fe-meta-label">Belge No</div><div class="fe-meta-value">${docNo}</div></div>
+                      <div class="fe-meta-row"><div class="fe-meta-label">Kayıt Tarihi</div><div class="fe-meta-value">${regDate}</div></div>
+                      <div class="fe-meta-row"><div class="fe-meta-label">Belge Tarihi</div><div class="fe-meta-value">${issueDate}</div></div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="fe-watermark">Fenomen Eğitim Kurumları • Öğrenci Giriş Belgesi</div>
+              <div class="fe-watermark">Fenomen Eğitim Kurumları • Onaylı Belge</div>
             </section>
           </div>
         </div>
@@ -2766,7 +2806,7 @@ window.generateBizCardHTML = function(data) {
       return { css, html };
     }
 
-    function generatePremiumAdmitPreviewHTML(data){
+    function generatePremiumAdmitPreviewHTML(data){    function generatePremiumAdmitPreviewHTML(data){
       const doc = buildPremiumAdmitDoc(data, { preview:true });
       return `${doc.css}${doc.html}`;
     }
