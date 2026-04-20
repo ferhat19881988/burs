@@ -2248,9 +2248,7 @@ window.generateBizCardHTML = function(data) {
      * @returns {string} - Stil sınıflarına sahip HTML çıktısı
      */
     window.generateEntryCardHTML = function(data){
-      // Güvenli metin dönüşümü
       const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      // Türkçe karakterlere uygun büyük harf dönüşümü
       const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
 
       const name = upper(data.studentName);
@@ -2260,13 +2258,89 @@ window.generateBizCardHTML = function(data) {
         ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
         : tc;
       const no = data.studentNo || "";
-      // Sınav adı olduğu gibi kullanılır (büyük harf zorlamıyoruz)
-      const exam = safe(data.examName);
+      const exam = safe(data.examName || "");
       const date = safe(data.examDate || "");
       const time = safe(data.examTime || "");
       const place = safe(data.place || "Fenomen Eğitim Kurumları");
 
-      return `\n      <div class="entry-card">\n        <div class="entry-header">\n          <div class="entry-logo"><i class="fa-solid fa-graduation-cap"></i></div>\n          <div class="entry-headings">\n            <div class="entry-title">FENOMEN EĞİTİM KURUMLARI</div>\n            <div class="entry-subtitle">Sınav Giriş Belgesi</div>\n          </div>\n        </div>\n        <div class="entry-body">\n          <table class="entry-table">\n            <tr>\n              <td class="lbl">Adı Soyadı</td>\n              <td class="val name" title="${safe(name)}">${safe(name)}</td>\n              <td class="lbl">Sınav Adı</td>\n              <td class="val exam" title="${exam}">${exam}</td>\n            </tr>\n            <tr>\n              <td class="lbl">T.C. No</td>\n              <td class="val">${safe(tcFmt)}</td>\n              <td class="lbl">Tarih</td>\n              <td class="val">${date}</td>\n            </tr>\n            <tr>\n              <td class="lbl">Öğrenci No</td>\n              <td class="val">${safe(no)}</td>\n              <td class="lbl">Saat</td>\n              <td class="val">${time}</td>\n            </tr>\n            <tr>\n              <td class="lbl">Okul</td>\n              <td class="val school" colspan="3">${safe(school)}</td>\n            </tr>\n            <tr>\n              <td class="lbl">Yer</td>\n              <td class="val place" colspan="3">${place}</td>\n            </tr>\n          </table>\n          <div class="entry-icons">\n            <div class="icon-item">\n              <i class="fa-solid fa-id-card"></i>\n              <span>Kimlik Belgesi Zorunludur</span>\n            </div>\n            <div class="icon-item">\n              <i class="fa-solid fa-circle-info"></i>\n              <span>Sınav Kurallarına Uyunuz</span>\n            </div>\n            <div class="icon-item">\n              <i class="fa-solid fa-mobile-screen-button"></i>\n              <span>Cep Telefonu Yasaktır</span>\n            </div>\n          </div>\n          <div class="entry-note">Sınava en geç 15 dakika kala sınav merkezinde bulunmalısınız.</div>\n          <div class="entry-stamp">ONAYLANDI</div>\n        </div>\n      </div>\n      `;
+      return `
+      <div class="entry-card">
+        <div class="entry-watermark">FENOMEN</div>
+        <div class="entry-header">
+          <div class="entry-brand">
+            <div class="entry-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="entry-headings">
+              <div class="entry-title">FENOMEN EĞİTİM KURUMLARI</div>
+              <div class="entry-subtitle">Sınav Giriş Belgesi</div>
+            </div>
+          </div>
+          <div class="entry-badge">LGS GERÇEK SINAV PROVASI</div>
+        </div>
+
+        <div class="entry-body">
+          <div class="entry-panel">
+            <table class="entry-table">
+              <tr>
+                <td class="lbl">Adı Soyadı</td>
+                <td class="val name" title="${safe(name)}">${safe(name)}</td>
+                <td class="lbl">Sınav Adı</td>
+                <td class="val exam" title="${exam}">${exam}</td>
+              </tr>
+              <tr>
+                <td class="lbl">T.C. No</td>
+                <td class="val">${safe(tcFmt)}</td>
+                <td class="lbl">Tarih</td>
+                <td class="val">${date}</td>
+              </tr>
+              <tr>
+                <td class="lbl student-no-label">Öğrenci No</td>
+                <td class="val student-no">${safe(no)}</td>
+                <td class="lbl">Saat</td>
+                <td class="val">${time}</td>
+              </tr>
+              <tr>
+                <td class="lbl">Okul</td>
+                <td class="val school" colspan="3">${safe(school)}</td>
+              </tr>
+              <tr>
+                <td class="lbl">Yer</td>
+                <td class="val place" colspan="3">${place}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="entry-rules-row">
+            <div class="rule-chip">
+              <i class="fa-solid fa-id-card"></i>
+              <span>Kimlik Belgesi Zorunludur</span>
+            </div>
+            <div class="rule-chip">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Sınav Kurallarına Uyunuz</span>
+            </div>
+            <div class="rule-chip">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+              <span>Cep Telefonu Yasaktır</span>
+            </div>
+          </div>
+
+          <div class="entry-warning-box">
+            <div class="entry-note">Sınava en geç <strong>15 dakika kala</strong> sınav merkezinde bulunmalısınız.</div>
+            <div class="entry-note strong">LGS Gerçek Sınav Provası olduğu için <strong>LGS kuralları geçerlidir.</strong></div>
+          </div>
+
+          <div class="entry-footer">
+            <div class="entry-official-note">Bu belge giriş kartı yerine geçen resmi bir belgedir ve Fenomen Eğitim Kurumları Online Merkezi tarafından verilmiştir.</div>
+            <div class="entry-sign-area">
+              <div class="entry-sign-line"></div>
+              <div class="entry-sign-text">Yetkili Onayı</div>
+            </div>
+          </div>
+
+          <div class="entry-stamp"><span>ONAYLANDI</span></div>
+        </div>
+      </div>
+      `;
     };
 
     // --- Student Info ---
@@ -3111,26 +3185,267 @@ window.generateBizCardHTML = function(data) {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
         @page { size:A4 portrait; margin:0; }
         *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        body{ margin:0; font-family:'Inter', sans-serif; color:#0f172a; }
-        .entry-sheet{ width:210mm; min-height:297mm; padding:12mm; display:flex; justify-content:center; align-items:flex-start; background:white; }
-        .entry-card{ position:relative; width:186mm; min-height:250mm; border:1px solid #0f172a; border-radius:8px; padding:10mm; display:flex; flex-direction:column; gap:8mm; background:white; }
-        .entry-header{ display:flex; align-items:center; gap:8mm; border-bottom:1px solid #0f172a; padding-bottom:6mm; }
-        .entry-logo i{ font-size:28px; color:#dc2626; }
-        .entry-headings{ display:flex; flex-direction:column; }
-        .entry-title{ font-size:20px; font-weight:800; letter-spacing:-0.2px; }
-        .entry-subtitle{ font-size:12px; font-weight:600; color:#374151; margin-top:2mm; }
-        .entry-body{ flex:1; display:flex; flex-direction:column; gap:8mm; }
-        .entry-table{ width:100%; border-collapse:collapse; font-size:12px; }
-        .entry-table .lbl{ width:30mm; font-weight:700; color:#374151; padding:2mm 1mm; vertical-align:top; }
-        .entry-table .val{ font-weight:600; color:#0f172a; padding:2mm 1mm; }
-        .entry-table .name{ font-size:16px; font-weight:700; }
-        .entry-table .exam{ font-size:14px; font-weight:700; }
-        .entry-icons{ display:flex; justify-content:space-between; gap:8mm; font-size:10px; margin-top:4mm; }
-        .entry-icons .icon-item{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2mm; flex:1; text-align:center; }
-        .entry-icons .icon-item i{ font-size:20px; color:#dc2626; }
-        .entry-icons .icon-item span{ font-weight:500; color:#374151; }
-        .entry-note{ font-size:12px; font-style:italic; color:#dc2626; text-align:center; margin-top:4mm; }
-        .entry-stamp{ position:absolute; bottom:20mm; right:20mm; width:40mm; height:40mm; border:2px solid #dc2626; border-radius:50%; color:#dc2626; font-weight:800; font-size:10px; display:flex; align-items:center; justify-content:center; transform:rotate(-15deg); opacity:0.8; text-transform:uppercase; }
+        body{ margin:0; font-family:'Inter', sans-serif; color:#0f172a; background:#ffffff; }
+        .entry-sheet{
+          width:210mm;
+          min-height:297mm;
+          padding:10mm;
+          display:flex;
+          justify-content:center;
+          align-items:flex-start;
+          background:#ffffff;
+        }
+        .entry-card{
+          position:relative;
+          width:190mm;
+          min-height:274mm;
+          border:1.2px solid #1e293b;
+          border-radius:6mm;
+          padding:9mm 9mm 10mm;
+          overflow:hidden;
+          background:
+            linear-gradient(135deg, rgba(220,38,38,.035), transparent 26%),
+            linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+        }
+        .entry-watermark{
+          position:absolute;
+          right:-7mm;
+          top:38mm;
+          font-size:28mm;
+          font-weight:900;
+          letter-spacing:1mm;
+          color:rgba(220,38,38,.045);
+          transform:rotate(-90deg);
+          pointer-events:none;
+          user-select:none;
+        }
+        .entry-header{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:8mm;
+          border-bottom:1px solid #cbd5e1;
+          padding-bottom:5mm;
+          margin-bottom:5mm;
+        }
+        .entry-brand{
+          display:flex;
+          align-items:center;
+          gap:4mm;
+          min-width:0;
+        }
+        .entry-logo{
+          width:14mm;
+          height:14mm;
+          border-radius:4mm;
+          background:rgba(220,38,38,.08);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex:0 0 auto;
+        }
+        .entry-logo i{
+          font-size:7.2mm;
+          color:#dc2626;
+        }
+        .entry-headings{ min-width:0; }
+        .entry-title{
+          font-size:7mm;
+          line-height:1.05;
+          font-weight:900;
+          letter-spacing:.15mm;
+          color:#0f172a;
+        }
+        .entry-subtitle{
+          font-size:3.6mm;
+          font-weight:700;
+          color:#475569;
+          margin-top:1.5mm;
+        }
+        .entry-badge{
+          flex:0 0 auto;
+          border:1px solid #dc2626;
+          color:#dc2626;
+          border-radius:999px;
+          padding:2.1mm 4.2mm;
+          font-size:3.1mm;
+          font-weight:800;
+          letter-spacing:.08mm;
+          text-align:center;
+          white-space:nowrap;
+        }
+        .entry-body{
+          display:flex;
+          flex-direction:column;
+          gap:4.5mm;
+        }
+        .entry-panel{
+          border:1px solid #e2e8f0;
+          border-radius:4mm;
+          background:#ffffff;
+          padding:4mm 4.5mm;
+        }
+        .entry-table{
+          width:100%;
+          border-collapse:separate;
+          border-spacing:0 1.5mm;
+          table-layout:fixed;
+          font-size:3.45mm;
+        }
+        .entry-table .lbl{
+          width:18%;
+          font-weight:800;
+          color:#475569;
+          padding:.8mm 1mm;
+          vertical-align:middle;
+        }
+        .entry-table .val{
+          font-weight:700;
+          color:#0f172a;
+          padding:.8mm 1mm;
+          vertical-align:middle;
+          word-break:break-word;
+        }
+        .entry-table .name{
+          font-size:4.6mm;
+          font-weight:900;
+        }
+        .entry-table .exam{
+          font-size:4mm;
+          font-weight:800;
+        }
+        .entry-table .student-no-label{
+          color:#b45309;
+        }
+        .entry-table .student-no{
+          display:inline-block;
+          min-width:22mm;
+          text-align:center;
+          font-size:5.2mm;
+          font-weight:900;
+          color:#b91c1c;
+          background:linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
+          border:1px solid #fdba74;
+          border-radius:3mm;
+          padding:1.4mm 2mm;
+          box-shadow:0 1mm 2.4mm rgba(185,28,28,.08);
+        }
+        .entry-rules-row{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:2.4mm;
+          flex-wrap:nowrap;
+        }
+        .rule-chip{
+          flex:1 1 0;
+          min-width:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:1.6mm;
+          text-align:center;
+          border:1px solid #fecaca;
+          background:#fff5f5;
+          border-radius:999px;
+          padding:2.4mm 2.2mm;
+          color:#b91c1c;
+          font-size:2.95mm;
+          font-weight:700;
+          line-height:1.15;
+          white-space:nowrap;
+        }
+        .rule-chip i{
+          font-size:3.3mm;
+          flex:0 0 auto;
+        }
+        .rule-chip span{
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        .entry-warning-box{
+          border:1px solid #fed7aa;
+          background:linear-gradient(180deg, #fff7ed 0%, #fff1f2 100%);
+          border-radius:4mm;
+          padding:3.5mm 4mm;
+          display:flex;
+          flex-direction:column;
+          gap:1.8mm;
+        }
+        .entry-note{
+          font-size:3.35mm;
+          text-align:center;
+          color:#b91c1c;
+          font-style:italic;
+          font-weight:700;
+          line-height:1.32;
+        }
+        .entry-note.strong{
+          font-style:normal;
+          color:#991b1b;
+        }
+        .entry-footer{
+          margin-top:auto;
+          border-top:1px solid #e2e8f0;
+          padding-top:4mm;
+          display:flex;
+          align-items:flex-end;
+          justify-content:space-between;
+          gap:8mm;
+        }
+        .entry-official-note{
+          flex:1 1 auto;
+          font-size:3.05mm;
+          line-height:1.4;
+          color:#334155;
+          font-weight:600;
+          padding-right:8mm;
+        }
+        .entry-sign-area{
+          width:46mm;
+          flex:0 0 auto;
+          text-align:center;
+        }
+        .entry-sign-line{
+          border-top:1px solid #94a3b8;
+          margin-bottom:2mm;
+          width:100%;
+        }
+        .entry-sign-text{
+          font-size:2.9mm;
+          color:#64748b;
+          font-weight:700;
+        }
+        .entry-stamp{
+          position:absolute;
+          right:16mm;
+          bottom:24mm;
+          width:27mm;
+          height:27mm;
+          border:1.6px solid rgba(220,38,38,.9);
+          border-radius:50%;
+          color:#dc2626;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          opacity:.9;
+          transform:rotate(-11deg);
+          background:rgba(255,255,255,.22);
+        }
+        .entry-stamp span{
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          width:100%;
+          height:100%;
+          font-size:3.2mm;
+          font-weight:900;
+          letter-spacing:.15mm;
+          text-transform:uppercase;
+          text-align:center;
+          line-height:1;
+        }
+      `;
       `;
 
       const area = el("printArea");
