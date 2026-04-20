@@ -2233,6 +2233,72 @@ window.generateBizCardHTML = function(data) {
     `;
 };
 
+    /*
+     * Gelişmiş Sınav Giriş Belgesi Oluşturucu
+     * Bu fonksiyon öğrencinin bilgileri ve sınav detayları kullanılarak
+     * tam A4 boyutunda profesyonel bir giriş belgesi üretir. Belge
+     * içerisinde öğrenci bilgileri tablo halinde sunulur, uyarı mesajları
+     * yatay olarak emojiler ile desteklenir ve alt bölümde resmi bir
+     * onay mührü ve açıklama bulunur. Tasarım sade ve şık renkler
+     * kullanılarak hazırlanmıştır.
+     */
+    window.generateExamDocumentHTML = function(data) {
+      const safe = (s) => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const studentName = toUpperTR(data.studentName);
+      const school = normSpaces(data.school);
+      const tc = String(data.tc || "");
+      const tcPretty = (tc.length === 11)
+        ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
+        : tc;
+      const no = data.studentNo;
+      const exam = normSpaces(data.examName || data.exam || data.exam_title || data.title || "");
+      const date = data.examDate || data.date || data.exam_date || "";
+      const time = data.examTime || data.time || data.exam_time || "";
+      const place = normSpaces(data.place || data.examPlace || data.location || "Fenomen Eğitim Kurumları");
+      // Tarih ve saat bilgisi bugün-yarın formatında, ancak belge altında baskı
+      // tarihi için mevcut sistem tarih-saatini kullanacağız.
+      const now = new Date();
+      const printStamp = now.toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day:'2-digit' }) + ' ' + now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="exam-doc">
+          <div class="exam-doc-header">
+            <div class="doc-left">
+              <div class="doc-title">FENOMEN EĞİTİM KURUMLARI</div>
+              <div class="doc-subtitle">Sınav Giriş Belgesi</div>
+            </div>
+            <div class="exam-doc-no">
+              <div class="no-label">Öğrenci No</div>
+              <strong>${safe(no)}</strong>
+            </div>
+          </div>
+          <div class="exam-doc-body">
+            <table class="info-table">
+              <tr><td class="lbl">Öğrenci Adı</td><td class="val">${safe(studentName)}</td></tr>
+              <tr><td class="lbl">Okul</td><td class="val">${safe(school)}</td></tr>
+              <tr><td class="lbl">T.C. Kimlik No</td><td class="val">${safe(tcPretty)}</td></tr>
+              <tr><td class="lbl">Sınav</td><td class="val">${safe(exam)}</td></tr>
+              <tr><td class="lbl">Sınav Yeri</td><td class="val">${safe(place)}</td></tr>
+              <tr><td class="lbl">Sınav Tarihi</td><td class="val">${safe(date)}</td></tr>
+              <tr><td class="lbl">Sınav Saati</td><td class="val">${safe(time)}</td></tr>
+            </table>
+            <div class="warnings">
+              <div class="warn-item"><span class="icon">⏰</span><span>Sınava 15 dakika kala sınav yerinde olun</span></div>
+              <div class="warn-item"><span class="icon">📵</span><span>Cep telefonu ve akıllı saatle gelmek yasaktır</span></div>
+              <div class="warn-item"><span class="icon">📚</span><span>LGS kuralları geçerlidir</span></div>
+            </div>
+          </div>
+          <div class="exam-doc-footer">
+            <div class="footer-text">
+              Bu belge giriş kartı yerine kullanılabilecek resmi bir belgedir.<br/>
+              Fenomen eğitim kurumları online sınav merkezi tarafından çıkarılmıştır.<br/>
+              ${safe(printStamp)}
+            </div>
+            <div class="stamp"><span>Onaylandı</span></div>
+          </div>
+        </div>
+      `;
+    };
+
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -2260,8 +2326,18 @@ window.generateBizCardHTML = function(data) {
       try{
         const snap = await get(child(ref(db), "bursluluk/students"));
         const list = snap.exists() ? Object.values(snap.val()) : [];
+        // Geçmişe dönük başvurular yerine sadece bugün veya daha ileri tarihli başvuruları listele.
+        // Önce TC eşleşmesi yapılır, ardından sınav tarihi bugünden küçük olan kayıtlar elenir.
         const found = list
           .filter(s => String(s.tc || "") === keyDigits)
+          .filter(s => {
+            // Eğer sınav tarihi tanımsız veya yanlış formatta ise varsayılan olarak gösterilmez.
+            try {
+              return isFutureOrTodayDate(s.examDate);
+            } catch (e) {
+              return false;
+            }
+          })
           .sort((a,b) => (a.regTs||0) - (b.regTs||0));
 
         if(found.length === 0){
@@ -3059,61 +3135,33 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      const bodyHtml = `
-        <div class="single-card-sheet">
-          <div class="single-card-slot">
-            ${window.generateBizCardHTML(data)}
-          </div>
-        </div>
-      `;
-
+      // Eski kart tasarımının yerine yeni gelişmiş sınav giriş belgesini basar.
+      // Belge A4 boyutunda oluşturulur ve gerekli stiller ek CSS ile tanımlanır.
+      const docHtml = window.generateExamDocumentHTML(data);
       const extraCss = `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap&subset=latin-ext');
         @page { size:A4 portrait; margin:0; }
-        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
-        .single-card-sheet{
-          width:210mm;
-          min-height:297mm;
-          padding:12mm;
-          display:flex;
-          align-items:flex-start;
-          justify-content:center;
-        }
-        .single-card-slot{
-          width:186mm;
-          height:92mm;
-          display:flex;
-          align-items:stretch;
-          justify-content:center;
-        }
-        .single-card-slot .biz-wrapper{
-          width:100%;
-          height:100%;
-          border:1px dashed #bbb;
-          padding:2mm;
-        }
-        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
-        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
-        .single-card-slot .biz-title{ font-size:18px; }
-        .single-card-slot .biz-subtitle{ font-size:10px; }
-        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
-        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
-        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
-        .single-card-slot .biz-lbl{ font-size:10px; }
-        .single-card-slot .biz-val{ font-size:14px; }
-        .single-card-slot .biz-val.name{ font-size:16px; }
-        .single-card-slot .biz-val.school{ font-size:12px; }
-        .single-card-slot .biz-val.tc{ font-size:13px; }
-        .single-card-slot .biz-num-box{ width:44mm; }
-        .single-card-slot .biz-num-lbl{ font-size:8px; }
-        .single-card-slot .biz-num-val{ font-size:34px; }
-        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
-        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
-        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
-        .single-card-slot .biz-f-val{ font-size:12px; }
+        * { box-sizing:border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body{ margin:0; background:white; }
+        .exam-doc{ width:210mm; min-height:297mm; margin:0 auto; padding:15mm; display:flex; flex-direction:column; border:2px solid #e5e7eb; border-radius:8mm; font-family:'Inter', sans-serif; background:#fff; color:#0f172a; }
+        .exam-doc-header{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cbd5e1; padding-bottom:10mm; }
+        .doc-title{ font-size:24pt; font-weight:800; color:#2563eb; margin:0; }
+        .doc-subtitle{ font-size:14pt; font-weight:600; color:#64748b; margin-top:3mm; }
+        .exam-doc-no{ text-align:right; font-size:10pt; font-weight:600; color:#0f172a; }
+        .exam-doc-no .no-label{ font-size:10pt; font-weight:600; color:#475569; }
+        .exam-doc-no strong{ display:block; font-size:32pt; font-weight:900; color:#7c3aed; line-height:1; }
+        .info-table{ width:100%; border-collapse:collapse; margin-top:12mm; }
+        .info-table .lbl{ width:35%; font-size:12pt; font-weight:600; padding:3mm 0; color:#0f172a; vertical-align:top; }
+        .info-table .val{ width:65%; font-size:12pt; font-weight:700; padding:3mm 0; color:#0f172a; vertical-align:top; }
+        .warnings{ margin-top:15mm; display:flex; flex-wrap:wrap; gap:8mm; }
+        .warn-item{ display:flex; align-items:center; gap:4mm; background:#fef2f2; border:1px solid #fecaca; border-radius:4mm; padding:4mm 6mm; font-size:10pt; font-weight:600; color:#b91c1c; }
+        .warn-item .icon{ font-size:14pt; }
+        .exam-doc-footer{ margin-top:auto; display:flex; justify-content:space-between; align-items:center; border-top:2px solid #cbd5e1; padding-top:10mm; }
+        .footer-text{ font-size:9pt; color:#475569; line-height:1.4; max-width:70%; }
+        .stamp{ width:32mm; height:32mm; border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10pt; font-weight:700; color:#ef4444; }
       `;
-
       const area = el("printArea");
-      area.innerHTML = `<style>${extraCss}</style><div class="a4 single-root">${bodyHtml}</div>`;
+      area.innerHTML = `<style>${extraCss}</style>${docHtml}`;
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
