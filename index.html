@@ -3083,80 +3083,91 @@ window.generateBizCardHTML = function(data) {
                     <rect x="7" y="7" width="50" height="50" rx="16" fill="url(#compactGrad)"/>
                     <path d="M18 25 32 18l14 7-14 7-14-7Z" fill="#fff"/>
                     <path d="M23 31v5c0 1.6 4.3 4.4 9 4.4s9-2.8 9-4.4v-5l-9 4.6-9-4.6Z" fill="#dbeafe"/>
+                    <circle cx="46" cy="23" r="2.2" fill="#fff" opacity="0.95"/>
                   </svg>
                 </div>
                 <div class="compact-brand-text">
                   <div class="compact-kicker">FENOMEN EĞİTİM KURUMLARI</div>
                   <h1>Öğrenci Sınav Giriş Belgesi</h1>
-                  <p>Sınava girişte görevliye ibraz edilmelidir.</p>
+                  <div class="compact-header-icons">
+                    <span><i class="fa-solid fa-id-card"></i> Resmî Giriş Belgesi</span>
+                    <span><i class="fa-regular fa-calendar-check"></i> Onaylı Kayıt</span>
+                  </div>
                 </div>
               </div>
               <div class="compact-status">
-                <div class="compact-badge">ONAYLI BELGE</div>
+                <div class="compact-badge"><i class="fa-solid fa-circle-check"></i> ONAYLI BELGE</div>
               </div>
             </header>
 
             <section class="compact-main-grid">
               <div class="compact-left">
-                <div class="compact-card">
-                  <div class="compact-card-title">Öğrenci Bilgileri</div>
+                <div class="compact-card compact-card-featured">
+                  <div class="compact-card-title"><i class="fa-solid fa-user-graduate"></i> Öğrenci Bilgileri</div>
                   <div class="compact-info-grid">
                     <div class="compact-info compact-wide">
-                      <span>Öğrenci Adı</span>
+                      <span><i class="fa-regular fa-user"></i> Öğrenci Adı</span>
                       <strong>${studentName}</strong>
                     </div>
-                    <div class="compact-info">
-                      <span>Öğrenci No</span>
+                    <div class="compact-info compact-info-no">
+                      <span><i class="fa-solid fa-hashtag"></i> Öğrenci No</span>
                       <strong class="compact-no">${studentNo}</strong>
                     </div>
                     <div class="compact-info compact-wide">
-                      <span>Okul</span>
+                      <span><i class="fa-solid fa-school"></i> Okul</span>
                       <strong>${school}</strong>
                     </div>
                     <div class="compact-info">
-                      <span>T.C. Kimlik No</span>
+                      <span><i class="fa-regular fa-address-card"></i> T.C. Kimlik No</span>
                       <strong>${tcPretty}</strong>
                     </div>
                   </div>
                 </div>
 
                 <div class="compact-card compact-card-table">
-                  <div class="compact-card-title">Sınav Bilgileri</div>
+                  <div class="compact-card-title"><i class="fa-solid fa-pen-ruler"></i> Sınav Bilgileri</div>
                   <table class="compact-table" role="presentation">
-                    <tr><th>Sınav</th><td>${examName}</td></tr>
-                    <tr><th>Tarih</th><td>${examDate}</td></tr>
-                    <tr><th>Saat</th><td>${examTime}</td></tr>
-                    <tr><th>Merkez</th><td>${place}</td></tr>
+                    <tr><th><i class="fa-solid fa-book-open"></i> Sınav</th><td>${examName}</td></tr>
+                    <tr><th><i class="fa-regular fa-calendar"></i> Tarih</th><td>${examDate}</td></tr>
+                    <tr><th><i class="fa-regular fa-clock"></i> Saat</th><td>${examTime}</td></tr>
+                    <tr><th><i class="fa-solid fa-location-dot"></i> Merkez</th><td>${place}</td></tr>
                   </table>
                 </div>
               </div>
 
               <aside class="compact-right">
                 <div class="compact-ticket-box">
-                  <div class="compact-ticket-label">Giriş No</div>
+                  <div class="compact-ticket-label"><i class="fa-solid fa-ticket"></i> Giriş No</div>
                   <div class="compact-ticket-no">${studentNo}</div>
-                  <div class="compact-ticket-sub">Bu belge kişiye özeldir.</div>
+                  <div class="compact-ticket-sub">Sınav salonu kontrolünde esas alınır.</div>
                 </div>
 
                 <div class="compact-note-box">
-                  <div class="compact-note-title">Önemli Uyarı</div>
+                  <div class="compact-note-title"><i class="fa-solid fa-triangle-exclamation"></i> Önemli Uyarı</div>
                   <div class="compact-warning-main">Sınava en geç <strong>15 dk kala</strong> sınav merkezinde bulunmalısınız.</div>
                   <ul>
-                    <li>Belge görevliye gösterilmelidir.</li>
-                    <li>Öğrenci numarası ve saat bilgisi kontrol edilmelidir.</li>
-                    <li>Okunaklı çıktı ile geliniz.</li>
+                    <li><i class="fa-solid fa-check"></i> Belge görevliye gösterilmelidir.</li>
+                    <li><i class="fa-solid fa-check"></i> Öğrenci numarası ve saat bilgisi kontrol edilmelidir.</li>
+                    <li><i class="fa-solid fa-check"></i> Okunaklı çıktı ile geliniz.</li>
                   </ul>
                 </div>
               </aside>
             </section>
 
             <footer class="compact-footer">
-              <div class="compact-footer-note">Bu belge başvuru sistemi üzerinden otomatik oluşturulmuştur.</div>
+              <div class="compact-footer-note"><i class="fa-regular fa-circle-check"></i> Bu belge başvuru sistemi üzerinden otomatik oluşturulmuştur.</div>
               <div class="compact-signature">
                 <div class="compact-sign-line"></div>
                 <div class="compact-sign-text">Fenomen Eğitim Kurumları</div>
               </div>
             </footer>
+
+            <div class="compact-final-stamp-wrap">
+              <div class="compact-final-stamp">
+                <span>ONAYLI</span>
+                <small>FENOMEN EĞİTİM KURUMLARI</small>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -3194,20 +3205,20 @@ window.generateBizCardHTML = function(data) {
         .compact-header{
           display:flex;
           justify-content:space-between;
-          align-items:flex-start;
+          align-items:center;
           gap:8mm;
           padding:7mm 7mm 5mm;
         }
         .compact-brand{
           display:flex;
-          gap:4mm;
-          align-items:flex-start;
+          gap:4.5mm;
+          align-items:center;
           min-width:0;
           flex:1;
         }
         .compact-logo{
-          width:18mm;
-          height:18mm;
+          width:19mm;
+          height:19mm;
           border-radius:5mm;
           background:#f3f6ff;
           border:1px solid rgba(37,99,235,.14);
@@ -3216,7 +3227,7 @@ window.generateBizCardHTML = function(data) {
           justify-content:center;
           flex:0 0 auto;
         }
-        .compact-logo svg{ width:14mm; height:14mm; display:block; }
+        .compact-logo svg{ width:14.5mm; height:14.5mm; display:block; }
         .compact-kicker{
           font-size:9px;
           font-weight:800;
@@ -3224,24 +3235,43 @@ window.generateBizCardHTML = function(data) {
           letter-spacing:.16em;
           margin-bottom:1mm;
         }
+        .compact-brand-text{
+          min-width:0;
+          padding-top:.5mm;
+        }
         .compact-brand-text h1{
           margin:0;
-          font-size:22px;
-          line-height:1.1;
+          font-size:24px;
+          line-height:1.08;
           color:#0f172a;
           font-weight:900;
         }
-        .compact-brand-text p{
-          margin:1.6mm 0 0;
-          font-size:11px;
-          color:#64748b;
-          line-height:1.35;
+        .compact-header-icons{
+          display:flex;
+          gap:4mm;
+          flex-wrap:wrap;
+          margin-top:2.2mm;
+        }
+        .compact-header-icons span{
+          display:inline-flex;
+          align-items:center;
+          gap:1.5mm;
+          padding:1.6mm 2.6mm;
+          border-radius:999px;
+          background:#f8fafc;
+          border:1px solid rgba(148,163,184,.18);
+          font-size:9px;
+          color:#475569;
+          font-weight:800;
         }
         .compact-badge{
+          display:inline-flex;
+          align-items:center;
+          gap:1.8mm;
           border:1px solid rgba(22,163,74,.30);
           color:#15803d;
           background:#f0fdf4;
-          padding:2.3mm 4mm;
+          padding:2.5mm 4mm;
           border-radius:999px;
           font-size:10px;
           font-weight:900;
@@ -3250,7 +3280,7 @@ window.generateBizCardHTML = function(data) {
         }
         .compact-main-grid{
           display:grid;
-          grid-template-columns:1.45fr .78fr;
+          grid-template-columns:1.38fr .82fr;
           gap:6mm;
           padding:0 7mm 6mm;
           align-items:start;
@@ -3265,13 +3295,22 @@ window.generateBizCardHTML = function(data) {
         .compact-ticket-box,
         .compact-note-box{
           border:1px solid rgba(15,23,42,.08);
-          border-radius:4mm;
+          border-radius:4.2mm;
           background:#ffffff;
         }
-        .compact-card{ padding:4mm; }
+        .compact-card{
+          padding:4mm;
+          box-shadow:0 1.2mm 3.2mm rgba(15,23,42,.03);
+        }
+        .compact-card-featured{
+          background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+        }
         .compact-card-title,
         .compact-note-title,
         .compact-ticket-label{
+          display:flex;
+          align-items:center;
+          gap:1.8mm;
           font-size:10px;
           font-weight:900;
           color:#64748b;
@@ -3286,14 +3325,20 @@ window.generateBizCardHTML = function(data) {
         }
         .compact-info{
           border:1px solid rgba(148,163,184,.20);
-          border-radius:3mm;
-          padding:3mm;
+          border-radius:3.2mm;
+          padding:3.2mm;
           min-height:18mm;
           background:#fcfdff;
         }
+        .compact-info-no{
+          background:linear-gradient(135deg,#eff6ff 0%, #f5f3ff 100%);
+          border-color:rgba(37,99,235,.18);
+        }
         .compact-wide{ grid-column:span 2; }
         .compact-info span{
-          display:block;
+          display:flex;
+          align-items:center;
+          gap:1.4mm;
           font-size:8.5px;
           font-weight:800;
           color:#64748b;
@@ -3309,21 +3354,26 @@ window.generateBizCardHTML = function(data) {
           font-weight:800;
           word-break:break-word;
         }
-        .compact-no{ font-size:22px !important; color:#1d4ed8 !important; }
+        .compact-no{
+          font-size:26px !important;
+          color:#1d4ed8 !important;
+          line-height:1 !important;
+          letter-spacing:.02em;
+        }
         .compact-table{
           width:100%;
           border-collapse:collapse;
         }
         .compact-table th,
         .compact-table td{
-          padding:2.5mm 0;
+          padding:2.6mm 0;
           border-bottom:1px dashed rgba(148,163,184,.36);
           vertical-align:top;
         }
         .compact-table tr:last-child th,
         .compact-table tr:last-child td{ border-bottom:none; }
         .compact-table th{
-          width:26mm;
+          width:31mm;
           text-align:left;
           font-size:10px;
           color:#64748b;
@@ -3331,6 +3381,7 @@ window.generateBizCardHTML = function(data) {
           text-transform:uppercase;
           letter-spacing:.05em;
         }
+        .compact-table th i{ margin-right:1.6mm; }
         .compact-table td{
           font-size:12.5px;
           color:#0f172a;
@@ -3341,13 +3392,16 @@ window.generateBizCardHTML = function(data) {
           padding:5mm 4mm;
           text-align:center;
           background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
+          border-color:rgba(37,99,235,.16);
+          box-shadow:0 1.2mm 3.2mm rgba(37,99,235,.05);
         }
         .compact-ticket-no{
-          font-size:34px;
+          font-size:42px;
           line-height:1;
           font-weight:900;
           color:#0f172a;
-          margin:2mm 0 1.5mm;
+          margin:2.4mm 0 1.8mm;
+          letter-spacing:.03em;
         }
         .compact-ticket-sub{
           font-size:10px;
@@ -3364,17 +3418,21 @@ window.generateBizCardHTML = function(data) {
           line-height:1.45;
           color:#9a3412;
           font-weight:800;
-          margin-bottom:2.2mm;
+          margin-bottom:2.4mm;
         }
         .compact-note-box ul{
           margin:0;
-          padding-left:4.5mm;
+          padding-left:0;
+          list-style:none;
         }
         .compact-note-box li{
+          display:flex;
+          align-items:flex-start;
+          gap:1.8mm;
           font-size:10.6px;
           line-height:1.45;
           color:#7c2d12;
-          margin:0 0 1.6mm;
+          margin:0 0 1.7mm;
         }
         .compact-note-box li:last-child{ margin-bottom:0; }
         .compact-footer{
@@ -3382,9 +3440,12 @@ window.generateBizCardHTML = function(data) {
           justify-content:space-between;
           align-items:flex-end;
           gap:8mm;
-          padding:0 7mm 7mm;
+          padding:0 7mm 4mm;
         }
         .compact-footer-note{
+          display:flex;
+          align-items:center;
+          gap:1.6mm;
           font-size:9.5px;
           color:#64748b;
           line-height:1.4;
@@ -3401,6 +3462,39 @@ window.generateBizCardHTML = function(data) {
           font-size:9.5px;
           color:#334155;
           font-weight:800;
+        }
+        .compact-final-stamp-wrap{
+          display:flex;
+          justify-content:flex-end;
+          padding:0 7mm 7mm;
+        }
+        .compact-final-stamp{
+          width:37mm;
+          height:37mm;
+          border-radius:50%;
+          border:1.2mm solid rgba(22,163,74,.88);
+          color:#15803d;
+          background:rgba(240,253,244,.78);
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+          transform:rotate(-10deg);
+          box-shadow:inset 0 0 0 .65mm rgba(22,163,74,.14);
+        }
+        .compact-final-stamp span{
+          font-size:11px;
+          font-weight:900;
+          letter-spacing:.14em;
+        }
+        .compact-final-stamp small{
+          margin-top:1.4mm;
+          font-size:6.7px;
+          font-weight:800;
+          letter-spacing:.08em;
+          line-height:1.25;
+          max-width:75%;
         }
         @media print{
           body{ background:#ffffff !important; }
