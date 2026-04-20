@@ -2233,116 +2233,6 @@ window.generateBizCardHTML = function(data) {
     `;
 };
 
-    /**
-     * Yeni Sınav Giriş Belgesi Oluşturucu
-     * Bu fonksiyon, yazdırılacak olan tekli giriş kartı için A4 sayfasına
-     * sığacak temiz ve dengeli bir yerleşim oluşturur. Öğrenci ve sınav
-     * bilgilerini tablo formatında sunar, alt kısımda uyarı ikonları ve
-     * 15 dakika önceden merkezde bulunma mesajını gösterir ve sağ alt
-     * köşede onaylanmış mühürünü barındırır. Tasarımda herhangi bir veli
-     * bilgisi bulunmamaktadır. Fonksiyon, HTML içinde kullanılan özel
-     * karakterleri güvenle dönüştürür ve Türkçe metinler için büyük harf
-     * uyarlaması yapar.
-     *
-     * @param {object} data - Yazdırılacak başvuru verisi
-     * @returns {string} - Stil sınıflarına sahip HTML çıktısı
-     */
-    window.generateEntryCardHTML = function(data){
-      const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const upper = (s) => String(s || "").toLocaleUpperCase("tr-TR");
-
-      const name = upper(data.studentName);
-      const school = upper(data.school);
-      const tc = data.tc || "";
-      const tcFmt = tc.length === 11
-        ? `${tc.slice(0,3)} ${tc.slice(3,6)} ${tc.slice(6,9)} ${tc.slice(9)}`
-        : tc;
-      const no = data.studentNo || "";
-      const exam = safe(data.examName || "");
-      const date = safe(data.examDate || "");
-      const time = safe(data.examTime || "");
-      const place = safe(data.place || "Fenomen Eğitim Kurumları");
-
-      return `
-      <div class="entry-card">
-        <div class="entry-watermark">FENOMEN</div>
-        <div class="entry-header">
-          <div class="entry-brand">
-            <div class="entry-logo"><i class="fa-solid fa-graduation-cap"></i></div>
-            <div class="entry-headings">
-              <div class="entry-title">FENOMEN EĞİTİM KURUMLARI</div>
-              <div class="entry-subtitle">Sınav Giriş Belgesi</div>
-            </div>
-          </div>
-          <div class="entry-badge">LGS GERÇEK SINAV PROVASI</div>
-        </div>
-
-        <div class="entry-body">
-          <div class="entry-panel">
-            <table class="entry-table">
-              <tr>
-                <td class="lbl">Adı Soyadı</td>
-                <td class="val name" title="${safe(name)}">${safe(name)}</td>
-                <td class="lbl">Sınav Adı</td>
-                <td class="val exam" title="${exam}">${exam}</td>
-              </tr>
-              <tr>
-                <td class="lbl">T.C. No</td>
-                <td class="val">${safe(tcFmt)}</td>
-                <td class="lbl">Tarih</td>
-                <td class="val">${date}</td>
-              </tr>
-              <tr>
-                <td class="lbl student-no-label">Öğrenci No</td>
-                <td class="val student-no">${safe(no)}</td>
-                <td class="lbl">Saat</td>
-                <td class="val">${time}</td>
-              </tr>
-              <tr>
-                <td class="lbl">Okul</td>
-                <td class="val school" colspan="3">${safe(school)}</td>
-              </tr>
-              <tr>
-                <td class="lbl">Yer</td>
-                <td class="val place" colspan="3">${place}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="entry-rules-row">
-            <div class="rule-chip">
-              <i class="fa-solid fa-id-card"></i>
-              <span>Kimlik Belgesi Zorunludur</span>
-            </div>
-            <div class="rule-chip">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>Sınav Kurallarına Uyunuz</span>
-            </div>
-            <div class="rule-chip">
-              <i class="fa-solid fa-mobile-screen-button"></i>
-              <span>Cep Telefonu Yasaktır</span>
-            </div>
-          </div>
-
-          <div class="entry-warning-box">
-            <div class="entry-note">Sınava en geç <strong>15 dakika kala</strong> sınav merkezinde bulunmalısınız.</div>
-            <div class="entry-note strong">LGS Gerçek Sınav Provası olduğu için <strong>LGS kuralları geçerlidir.</strong></div>
-          </div>
-
-          <div class="entry-footer">
-            <div class="entry-official-note">Bu belge giriş kartı yerine geçen resmi bir belgedir ve Fenomen Eğitim Kurumları Online Merkezi tarafından verilmiştir.</div>
-            <div class="entry-sign-area">
-              <div class="entry-sign-line"></div>
-              <div class="entry-sign-text">Yetkili Onayı</div>
-            </div>
-          </div>
-
-          <div class="entry-stamp"><span>ONAYLANDI</span></div>
-        </div>
-      </div>
-      `;
-    };
-
     // --- Student Info ---
     window.openStudentInfo = () => {
       const modalEl = document.getElementById("infoModal");
@@ -3169,282 +3059,57 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      // Tekli giriş kartının HTML içeriği: yeni tasarım fonksiyonuyla oluşturulur
       const bodyHtml = `
-        <div class="entry-sheet">
-          ${window.generateEntryCardHTML(data)}
+        <div class="single-card-sheet">
+          <div class="single-card-slot">
+            ${window.generateBizCardHTML(data)}
+          </div>
         </div>
       `;
 
-      // Yazdırma için özel CSS: A4 üzerine yerleştirilmiş modern ve okunabilir
-      // giriş belgesi tasarımını tanımlar. Font ve ikon kütüphaneleri
-      // dışarıdan yüklenir ve kart içerisindeki tüm öğelerin hizalanması,
-      // boyutlandırılması ve renkleri burada tanımlanır.
       const extraCss = `
-        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=latin-ext');
         @page { size:A4 portrait; margin:0; }
-        *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        body{ margin:0; font-family:'Inter', sans-serif; color:#0f172a; background:#ffffff; }
-        .entry-sheet{
+        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
+        .single-card-sheet{
           width:210mm;
           min-height:297mm;
-          padding:10mm;
-          display:flex;
-          justify-content:center;
-          align-items:flex-start;
-          background:#ffffff;
-        }
-        .entry-card{
-          position:relative;
-          width:190mm;
-          min-height:274mm;
-          border:1.2px solid #1e293b;
-          border-radius:6mm;
-          padding:9mm 9mm 10mm;
-          overflow:hidden;
-          background:
-            linear-gradient(135deg, rgba(220,38,38,.035), transparent 26%),
-            linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-        }
-        .entry-watermark{
-          position:absolute;
-          right:-7mm;
-          top:38mm;
-          font-size:28mm;
-          font-weight:900;
-          letter-spacing:1mm;
-          color:rgba(220,38,38,.045);
-          transform:rotate(-90deg);
-          pointer-events:none;
-          user-select:none;
-        }
-        .entry-header{
+          padding:12mm;
           display:flex;
           align-items:flex-start;
-          justify-content:space-between;
-          gap:8mm;
-          border-bottom:1px solid #cbd5e1;
-          padding-bottom:5mm;
-          margin-bottom:5mm;
-        }
-        .entry-brand{
-          display:flex;
-          align-items:center;
-          gap:4mm;
-          min-width:0;
-        }
-        .entry-logo{
-          width:14mm;
-          height:14mm;
-          border-radius:4mm;
-          background:rgba(220,38,38,.08);
-          display:flex;
-          align-items:center;
           justify-content:center;
-          flex:0 0 auto;
         }
-        .entry-logo i{
-          font-size:7.2mm;
-          color:#dc2626;
-        }
-        .entry-headings{ min-width:0; }
-        .entry-title{
-          font-size:7mm;
-          line-height:1.05;
-          font-weight:900;
-          letter-spacing:.15mm;
-          color:#0f172a;
-        }
-        .entry-subtitle{
-          font-size:3.6mm;
-          font-weight:700;
-          color:#475569;
-          margin-top:1.5mm;
-        }
-        .entry-badge{
-          flex:0 0 auto;
-          border:1px solid #dc2626;
-          color:#dc2626;
-          border-radius:999px;
-          padding:2.1mm 4.2mm;
-          font-size:3.1mm;
-          font-weight:800;
-          letter-spacing:.08mm;
-          text-align:center;
-          white-space:nowrap;
-        }
-        .entry-body{
+        .single-card-slot{
+          width:186mm;
+          height:92mm;
           display:flex;
-          flex-direction:column;
-          gap:4.5mm;
-        }
-        .entry-panel{
-          border:1px solid #e2e8f0;
-          border-radius:4mm;
-          background:#ffffff;
-          padding:4mm 4.5mm;
-        }
-        .entry-table{
-          width:100%;
-          border-collapse:separate;
-          border-spacing:0 1.5mm;
-          table-layout:fixed;
-          font-size:3.45mm;
-        }
-        .entry-table .lbl{
-          width:18%;
-          font-weight:800;
-          color:#475569;
-          padding:.8mm 1mm;
-          vertical-align:middle;
-        }
-        .entry-table .val{
-          font-weight:700;
-          color:#0f172a;
-          padding:.8mm 1mm;
-          vertical-align:middle;
-          word-break:break-word;
-        }
-        .entry-table .name{
-          font-size:4.6mm;
-          font-weight:900;
-        }
-        .entry-table .exam{
-          font-size:4mm;
-          font-weight:800;
-        }
-        .entry-table .student-no-label{
-          color:#b45309;
-        }
-        .entry-table .student-no{
-          display:inline-block;
-          min-width:22mm;
-          text-align:center;
-          font-size:5.2mm;
-          font-weight:900;
-          color:#b91c1c;
-          background:linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
-          border:1px solid #fdba74;
-          border-radius:3mm;
-          padding:1.4mm 2mm;
-          box-shadow:0 1mm 2.4mm rgba(185,28,28,.08);
-        }
-        .entry-rules-row{
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:2.4mm;
-          flex-wrap:nowrap;
-        }
-        .rule-chip{
-          flex:1 1 0;
-          min-width:0;
-          display:flex;
-          align-items:center;
+          align-items:stretch;
           justify-content:center;
-          gap:1.6mm;
-          text-align:center;
-          border:1px solid #fecaca;
-          background:#fff5f5;
-          border-radius:999px;
-          padding:2.4mm 2.2mm;
-          color:#b91c1c;
-          font-size:2.95mm;
-          font-weight:700;
-          line-height:1.15;
-          white-space:nowrap;
         }
-        .rule-chip i{
-          font-size:3.3mm;
-          flex:0 0 auto;
-        }
-        .rule-chip span{
-          overflow:hidden;
-          text-overflow:ellipsis;
-        }
-        .entry-warning-box{
-          border:1px solid #fed7aa;
-          background:linear-gradient(180deg, #fff7ed 0%, #fff1f2 100%);
-          border-radius:4mm;
-          padding:3.5mm 4mm;
-          display:flex;
-          flex-direction:column;
-          gap:1.8mm;
-        }
-        .entry-note{
-          font-size:3.35mm;
-          text-align:center;
-          color:#b91c1c;
-          font-style:italic;
-          font-weight:700;
-          line-height:1.32;
-        }
-        .entry-note.strong{
-          font-style:normal;
-          color:#991b1b;
-        }
-        .entry-footer{
-          margin-top:auto;
-          border-top:1px solid #e2e8f0;
-          padding-top:4mm;
-          display:flex;
-          align-items:flex-end;
-          justify-content:space-between;
-          gap:8mm;
-        }
-        .entry-official-note{
-          flex:1 1 auto;
-          font-size:3.05mm;
-          line-height:1.4;
-          color:#334155;
-          font-weight:600;
-          padding-right:8mm;
-        }
-        .entry-sign-area{
-          width:46mm;
-          flex:0 0 auto;
-          text-align:center;
-        }
-        .entry-sign-line{
-          border-top:1px solid #94a3b8;
-          margin-bottom:2mm;
-          width:100%;
-        }
-        .entry-sign-text{
-          font-size:2.9mm;
-          color:#64748b;
-          font-weight:700;
-        }
-        .entry-stamp{
-          position:absolute;
-          right:16mm;
-          bottom:24mm;
-          width:27mm;
-          height:27mm;
-          border:1.6px solid rgba(220,38,38,.9);
-          border-radius:50%;
-          color:#dc2626;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          opacity:.9;
-          transform:rotate(-11deg);
-          background:rgba(255,255,255,.22);
-        }
-        .entry-stamp span{
-          display:flex;
-          align-items:center;
-          justify-content:center;
+        .single-card-slot .biz-wrapper{
           width:100%;
           height:100%;
-          font-size:3.2mm;
-          font-weight:900;
-          letter-spacing:.15mm;
-          text-transform:uppercase;
-          text-align:center;
-          line-height:1;
+          border:1px dashed #bbb;
+          padding:2mm;
         }
+        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
+        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
+        .single-card-slot .biz-title{ font-size:18px; }
+        .single-card-slot .biz-subtitle{ font-size:10px; }
+        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
+        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
+        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
+        .single-card-slot .biz-lbl{ font-size:10px; }
+        .single-card-slot .biz-val{ font-size:14px; }
+        .single-card-slot .biz-val.name{ font-size:16px; }
+        .single-card-slot .biz-val.school{ font-size:12px; }
+        .single-card-slot .biz-val.tc{ font-size:13px; }
+        .single-card-slot .biz-num-box{ width:44mm; }
+        .single-card-slot .biz-num-lbl{ font-size:8px; }
+        .single-card-slot .biz-num-val{ font-size:34px; }
+        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
+        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
+        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
+        .single-card-slot .biz-f-val{ font-size:12px; }
       `;
 
       const area = el("printArea");
