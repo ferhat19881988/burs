@@ -3059,156 +3059,78 @@ window.generateBizCardHTML = function(data) {
         return;
       }
 
-      const previewEl = el("finalCardPreview");
-      const previewHtml = (previewEl?.innerHTML || "").trim() || generateCardHTML(data);
+      const previewHtml = (el("finalCardPreview")?.innerHTML || "").trim() || generateCardHTML(data);
+      const area = el("printArea");
 
-      const iframe = document.createElement("iframe");
-      iframe.setAttribute("aria-hidden", "true");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
-      iframe.style.opacity = "0";
-      document.body.appendChild(iframe);
-
-      const doc = iframe.contentWindow?.document;
-      if(!doc){
-        iframe.remove();
-        Swal.fire("Hata","Yazdırma alanı oluşturulamadı.","error");
-        return;
-      }
-
-      const printCss = `
-        <style>
-          html, body{
-            margin:0 !important;
-            padding:0 !important;
-            background:#ffffff !important;
-            -webkit-print-color-adjust:exact !important;
-            print-color-adjust:exact !important;
-          }
-          body{
-            display:flex;
-            align-items:flex-start;
-            justify-content:center;
-            font-family:'Poppins',sans-serif;
-          }
-          .single-preview-print{
-            width:210mm;
-            min-height:297mm;
-            padding:12mm;
-            display:flex;
-            align-items:flex-start;
-            justify-content:center;
-            background:#ffffff;
-          }
-          .single-preview-print .print-card-frame{
-            width:min(92vw, 520px);
-            max-width:100%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:#ffffff;
-          }
-          .single-preview-print .card-preview-wrap{
-            display:flex !important;
-            justify-content:center !important;
-            width:100% !important;
-            max-width:none !important;
-          }
-          @page{
-            size:A4 portrait;
-            margin:0;
-          }
-          @media print{
-            html, body{
-              width:auto !important;
-              height:auto !important;
-              overflow:visible !important;
-            }
-            .single-preview-print{
-              width:210mm !important;
-              min-height:297mm !important;
-              padding:12mm !important;
-            }
-            .single-preview-print .print-card-frame{
-              width:100% !important;
-              max-width:186mm !important;
-            }
-            .single-preview-print .exam-card{
-              width:min(92vw, 520px) !important;
-              max-width:186mm !important;
-              height:auto !important;
-              aspect-ratio:90 / 55 !important;
-              min-height:unset !important;
-              padding:12px !important;
-              border-radius:18px !important;
-              box-shadow:0 14px 34px rgba(2,6,23,.12) !important;
-              margin:0 auto !important;
-            }
-            .single-preview-print .exam-card-header{ padding:10px 12px !important; }
-            .single-preview-print .card-mark{ width:22px !important; height:22px !important; border-radius:9px !important; }
-            .single-preview-print .card-title{ font-size:12px !important; }
-            .single-preview-print .kv{ grid-template-columns:84px 1fr !important; }
-            .single-preview-print .kv .k{ font-size:11px !important; }
-            .single-preview-print .kv .v{ font-size:12px !important; }
-            .single-preview-print .big-no strong{ font-size:22px !important; }
-            .single-preview-print .exam-card-footer{ font-size:10.5px !important; }
-            .single-preview-print .exam-card-footer .exam-name{ font-size:12.5px !important; }
-          }
-        </style>
-      `;
-
-      const html = `
-        <!DOCTYPE html>
-        <html lang="tr">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          ${document.head.innerHTML}
-          ${printCss}
-        </head>
-        <body>
-          <div class="single-preview-print">
-            <div class="print-card-frame">
-              <div class="card-preview-wrap">${previewHtml}</div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      const triggerPrint = () => {
-        const win = iframe.contentWindow;
-        if(!win){
-          iframe.remove();
-          Swal.fire("Hata","Yazdırma penceresine erişilemedi.","error");
-          return;
+      const extraCss = `
+        @page{ size:A4 portrait; margin:0; }
+        #printArea{
+          width:210mm;
+          min-height:297mm;
+          margin:0 auto;
+          background:#ffffff;
         }
-        win.focus();
-        win.print();
-      };
+        #printArea .single-preview-print{
+          width:210mm;
+          min-height:297mm;
+          padding:12mm;
+          display:flex;
+          align-items:flex-start;
+          justify-content:center;
+          background:#ffffff;
+        }
+        #printArea .print-card-frame{
+          width:100%;
+          max-width:186mm;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#ffffff;
+        }
+        #printArea .card-preview-wrap{
+          display:flex !important;
+          justify-content:center !important;
+          width:100% !important;
+          max-width:none !important;
+        }
+        #printArea .exam-card{
+          width:min(92vw, 520px) !important;
+          max-width:186mm !important;
+          height:auto !important;
+          aspect-ratio:90 / 55 !important;
+          min-height:unset !important;
+          padding:12px !important;
+          border-radius:18px !important;
+          box-shadow:0 14px 34px rgba(2,6,23,.12) !important;
+          margin:0 auto !important;
+        }
+        #printArea .exam-card-header{ padding:10px 12px !important; }
+        #printArea .card-mark{ width:22px !important; height:22px !important; border-radius:9px !important; }
+        #printArea .card-title{ font-size:12px !important; }
+        #printArea .kv{ grid-template-columns:84px 1fr !important; }
+        #printArea .kv .k{ font-size:11px !important; }
+        #printArea .kv .v{ font-size:12px !important; }
+        #printArea .big-no strong{ font-size:22px !important; }
+        #printArea .exam-card-footer{ font-size:10.5px !important; }
+        #printArea .exam-card-footer .fr-v.exam-name{ font-size:12.5px !important; }
+      `;
 
-      iframe.onload = () => {
-        setTimeout(triggerPrint, 250);
-      };
+      area.innerHTML = `
+        <style>${extraCss}</style>
+        <div class="single-preview-print">
+          <div class="print-card-frame">
+            <div class="card-preview-wrap">${previewHtml}</div>
+          </div>
+        </div>
+      `;
+
+      window.print();
 
       const cleanup = () => {
-        setTimeout(() => iframe.remove(), 400);
+        area.innerHTML = "";
         window.removeEventListener('afterprint', cleanup);
       };
       window.addEventListener('afterprint', cleanup);
-      setTimeout(() => {
-        if(document.body.contains(iframe)){
-          try{ triggerPrint(); }catch(_){}
-        }
-      }, 900);
     };
 
     function openPrintWindow(title, bodyHtml, extraCss=""){
