@@ -2055,7 +2055,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
         // 4) Show card preview
         window.lastCompletedRegistration = studentData;
-        el("finalCardPreview").innerHTML = generatePremiumAdmitPreviewHTML(studentData);
+        el("finalCardPreview").innerHTML = generateCardHTML(studentData);
         changeStep(5);
 
       } catch(e){
@@ -2232,590 +2232,6 @@ window.generateBizCardHTML = function(data) {
     </div>
     `;
 };
-
-    function formatTCPretty(tc){
-      const digits = String(tc || "").replace(/\D/g, "");
-      return digits.length === 11
-        ? `${digits.slice(0,3)} ${digits.slice(3,6)} ${digits.slice(6,9)} ${digits.slice(9)}`
-        : escapeHtml(tc);
-    }
-
-    function buildPremiumAdmitDoc(data, opts = {}){
-      const preview = !!opts.preview;
-      const studentName = toUpperTR(normSpaces(data?.studentName || ""));
-      const school = normSpaces(data?.school || "-");
-      const parentName = toUpperTR(normSpaces(data?.parentName || ""));
-      const tcPretty = formatTCPretty(data?.tc || "");
-      const studentNo = escapeHtml(String(data?.studentNo ?? "-"));
-      const examName = escapeHtml(normSpaces(data?.examName || "Sınav"));
-      const examDate = escapeHtml(String(data?.examDate || "-"));
-      const examTime = escapeHtml(String(data?.examTime || "-"));
-      const place = escapeHtml(normSpaces(data?.place || "Fenomen Eğitim Kurumları"));
-      const phone1 = escapeHtml(String(data?.phone1 || "-"));
-      const regDate = escapeHtml(String(data?.regDate || new Date().toLocaleString("tr-TR")));
-      const docNo = escapeHtml(`${slugifyTR(String(data?.examKey || data?.examName || "fenomen")).toUpperCase()}-${String(data?.studentNo || "").padStart(4, "0")}`);
-      const issueDate = escapeHtml(new Date().toLocaleDateString("tr-TR"));
-
-      const approvedSeal = `
-        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <defs>
-            <linearGradient id="sealGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#f59e0b"/>
-              <stop offset="100%" stop-color="#ea580c"/>
-            </linearGradient>
-          </defs>
-          <circle cx="110" cy="110" r="100" fill="none" stroke="url(#sealGrad)" stroke-width="10" stroke-dasharray="4 8"/>
-          <circle cx="110" cy="110" r="80" fill="rgba(245,158,11,.08)" stroke="#fb923c" stroke-width="4"/>
-          <path d="M72 114l22 22 54-58" fill="none" stroke="#0f172a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-          <text x="110" y="78" text-anchor="middle" font-size="18" font-weight="900" fill="#c2410c" letter-spacing="3">ONAYLI</text>
-          <text x="110" y="164" text-anchor="middle" font-size="16" font-weight="800" fill="#334155" letter-spacing="2">FENOMEN</text>
-        </svg>
-      `;
-
-      const css = `
-        <style>
-          :root{
-            --fe-navy:#0f172a;
-            --fe-indigo:#1d4ed8;
-            --fe-indigo-soft:#dbeafe;
-            --fe-orange:#ea580c;
-            --fe-gold:#f59e0b;
-            --fe-slate:#475569;
-            --fe-line:#dbe5f0;
-            --fe-soft:#eef4fb;
-          }
-          *{ box-sizing:border-box; }
-          .fe-admit-wrap{
-            width:100%;
-            max-width:${preview ? "980px" : "190mm"};
-            margin:0 auto;
-            font-family:'Poppins',sans-serif;
-            color:var(--fe-navy);
-          }
-          .fe-admit-sheet{
-            position:relative;
-            width:100%;
-            min-height:${preview ? "auto" : "277mm"};
-            background:
-              radial-gradient(circle at top right, rgba(245,158,11,.10), transparent 22%),
-              radial-gradient(circle at left bottom, rgba(29,78,216,.08), transparent 26%),
-              #ffffff;
-            border:1px solid var(--fe-line);
-            box-shadow:${preview ? "0 18px 48px rgba(15,23,42,.12)" : "none"};
-            overflow:hidden;
-          }
-          .fe-admit-inner{
-            position:relative;
-            z-index:1;
-            padding:${preview ? "18px" : "8mm"};
-          }
-          .fe-hero{
-            display:grid;
-            grid-template-columns:1.45fr .75fr;
-            gap:${preview ? "14px" : "5mm"};
-            margin-bottom:${preview ? "14px" : "5mm"};
-            align-items:stretch;
-          }
-          .fe-brand{
-            position:relative;
-            overflow:hidden;
-            border-radius:20px;
-            color:#fff;
-            background:linear-gradient(135deg, var(--fe-navy) 0%, var(--fe-indigo) 72%, #2563eb 100%);
-            padding:${preview ? "18px" : "7mm"};
-            min-height:${preview ? "138px" : "39mm"};
-          }
-          .fe-brand::after{
-            content:"";
-            position:absolute;
-            right:-28px; top:-18px;
-            width:${preview ? "130px" : "34mm"};
-            height:${preview ? "130px" : "34mm"};
-            border-radius:50%;
-            background:radial-gradient(circle, rgba(255,255,255,.20), rgba(255,255,255,0) 66%);
-          }
-          .fe-brand-row{
-            display:flex;
-            justify-content:space-between;
-            gap:10px;
-            align-items:flex-start;
-          }
-          .fe-brand-mark{
-            width:${preview ? "50px" : "14mm"};
-            height:${preview ? "50px" : "14mm"};
-            border-radius:16px;
-            background:linear-gradient(135deg, #fde68a, #fb923c);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
-            flex:0 0 auto;
-            font-size:${preview ? "24px" : "18px"};
-          }
-          .fe-brand-title{
-            font-size:${preview ? "25px" : "17pt"};
-            line-height:1.06;
-            font-weight:900;
-            letter-spacing:.04em;
-          }
-          .fe-brand-sub{
-            margin-top:4px;
-            font-size:${preview ? "13px" : "8.6pt"};
-            opacity:.92;
-            font-weight:500;
-          }
-          .fe-chip-row{
-            margin-top:${preview ? "14px" : "4mm"};
-            display:flex;
-            flex-wrap:wrap;
-            gap:8px;
-          }
-          .fe-chip{
-            display:inline-flex;
-            align-items:center;
-            gap:7px;
-            border-radius:999px;
-            padding:${preview ? "7px 11px" : "2.8mm 4mm"};
-            background:rgba(255,255,255,.10);
-            border:1px solid rgba(255,255,255,.16);
-            font-size:${preview ? "11px" : "7.6pt"};
-            font-weight:700;
-          }
-          .fe-sidecol{
-            display:grid;
-            gap:${preview ? "12px" : "4mm"};
-          }
-          .fe-mini-card,
-          .fe-seat-card,
-          .fe-panel,
-          .fe-approval,
-          .fe-footer-card{
-            border-radius:18px;
-            border:1px solid var(--fe-line);
-            background:#fff;
-          }
-          .fe-mini-card{
-            padding:${preview ? "14px 16px" : "5mm"};
-            background:linear-gradient(180deg, #fffdf8, #fff);
-          }
-          .fe-mini-label{
-            font-size:${preview ? "11px" : "7.6pt"};
-            font-weight:800;
-            letter-spacing:.14em;
-            text-transform:uppercase;
-            color:var(--fe-orange);
-          }
-          .fe-mini-value{
-            margin-top:5px;
-            font-size:${preview ? "18px" : "11pt"};
-            font-weight:900;
-          }
-          .fe-seat-card{
-            padding:${preview ? "14px 16px" : "5mm"};
-            background:linear-gradient(180deg, #f8fbff, #eef4ff);
-            border-color:#c7dafd;
-          }
-          .fe-seat-label{
-            font-size:${preview ? "10px" : "7.4pt"};
-            letter-spacing:.16em;
-            font-weight:800;
-            text-transform:uppercase;
-            color:var(--fe-indigo);
-          }
-          .fe-seat-value{
-            margin-top:6px;
-            font-size:${preview ? "34px" : "23pt"};
-            line-height:1;
-            font-weight:900;
-            color:var(--fe-indigo);
-            letter-spacing:.04em;
-          }
-          .fe-exam-strip{
-            display:grid;
-            grid-template-columns:repeat(3,1fr);
-            gap:${preview ? "12px" : "4mm"};
-            margin-bottom:${preview ? "14px" : "4.5mm"};
-          }
-          .fe-strip-card{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            padding:${preview ? "12px 14px" : "4.3mm 4.8mm"};
-            border-radius:16px;
-            border:1px solid var(--fe-line);
-            background:linear-gradient(180deg, #ffffff, #fafcff);
-            min-height:${preview ? "62px" : "18mm"};
-          }
-          .fe-strip-icon{
-            width:${preview ? "38px" : "11mm"};
-            height:${preview ? "38px" : "11mm"};
-            border-radius:12px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            flex:0 0 auto;
-            color:#fff;
-            font-size:${preview ? "15px" : "11px"};
-            background:linear-gradient(135deg, var(--fe-indigo), #60a5fa);
-          }
-          .fe-strip-card:nth-child(2) .fe-strip-icon{ background:linear-gradient(135deg, var(--fe-orange), #fb923c); }
-          .fe-strip-card:nth-child(3) .fe-strip-icon{ background:linear-gradient(135deg, #0891b2, #22c55e); }
-          .fe-strip-label{
-            font-size:${preview ? "10px" : "7.1pt"};
-            font-weight:800;
-            letter-spacing:.14em;
-            text-transform:uppercase;
-            color:var(--fe-slate);
-          }
-          .fe-strip-value{
-            margin-top:3px;
-            font-size:${preview ? "13px" : "8.8pt"};
-            font-weight:800;
-            color:var(--fe-navy);
-            line-height:1.28;
-            word-break:break-word;
-          }
-          .fe-main{
-            display:grid;
-            grid-template-columns:1.08fr .92fr;
-            gap:${preview ? "14px" : "5mm"};
-            margin-bottom:${preview ? "14px" : "5mm"};
-          }
-          .fe-panel{
-            overflow:hidden;
-          }
-          .fe-panel-head{
-            display:flex;
-            align-items:center;
-            gap:8px;
-            padding:${preview ? "11px 14px" : "4mm 5mm"};
-            border-bottom:1px solid var(--fe-line);
-            background:linear-gradient(90deg, rgba(15,23,42,.03), rgba(29,78,216,.05));
-            font-size:${preview ? "11px" : "7.8pt"};
-            font-weight:800;
-            text-transform:uppercase;
-            letter-spacing:.14em;
-            color:var(--fe-slate);
-          }
-          .fe-table{
-            width:100%;
-            border-collapse:collapse;
-            table-layout:fixed;
-          }
-          .fe-table th, .fe-table td{
-            padding:${preview ? "10px 12px" : "3.4mm 4mm"};
-            border-bottom:1px solid #edf2f7;
-            vertical-align:top;
-          }
-          .fe-table tr:last-child th,
-          .fe-table tr:last-child td{ border-bottom:none; }
-          .fe-table th{
-            width:34%;
-            text-align:left;
-            background:#fbfdff;
-            color:var(--fe-slate);
-            font-size:${preview ? "11px" : "7.6pt"};
-            font-weight:700;
-          }
-          .fe-table td{
-            color:var(--fe-navy);
-            font-size:${preview ? "13px" : "8.8pt"};
-            font-weight:800;
-            word-break:break-word;
-          }
-          .fe-table .fe-strong{
-            font-size:${preview ? "15px" : "10.2pt"};
-            font-weight:900;
-          }
-          .fe-approval{
-            position:relative;
-            overflow:hidden;
-            padding:${preview ? "14px" : "5mm"};
-            min-height:${preview ? "230px" : "64mm"};
-            background:linear-gradient(180deg, #fffdf9, #ffffff);
-          }
-          .fe-approval::before{
-            content:"";
-            position:absolute;
-            right:-24px;
-            bottom:-24px;
-            width:${preview ? "120px" : "34mm"};
-            height:${preview ? "120px" : "34mm"};
-            border-radius:50%;
-            background:radial-gradient(circle, rgba(29,78,216,.08), rgba(29,78,216,0) 68%);
-          }
-          .fe-seal{
-            width:${preview ? "120px" : "31mm"};
-            height:${preview ? "120px" : "31mm"};
-            margin:0 auto 10px;
-            opacity:.98;
-          }
-          .fe-approval-title{
-            text-align:center;
-            font-size:${preview ? "16px" : "10.2pt"};
-            font-weight:900;
-            letter-spacing:.14em;
-            color:var(--fe-orange);
-            text-transform:uppercase;
-          }
-          .fe-approval-text{
-            margin-top:7px;
-            text-align:center;
-            font-size:${preview ? "12px" : "8.2pt"};
-            line-height:1.55;
-            color:#334155;
-          }
-          .fe-rule-box{
-            margin-top:${preview ? "12px" : "3.6mm"};
-            border-top:1px dashed #d8e0ea;
-            padding-top:${preview ? "10px" : "3.2mm"};
-            display:grid;
-            gap:${preview ? "7px" : "2.3mm"};
-          }
-          .fe-rule-item{
-            display:flex;
-            gap:8px;
-            align-items:flex-start;
-            font-size:${preview ? "11px" : "7.6pt"};
-            line-height:1.45;
-            color:#334155;
-          }
-          .fe-rule-item i{
-            color:var(--fe-indigo);
-            margin-top:2px;
-            flex:0 0 auto;
-          }
-          .fe-footer{
-            display:grid;
-            grid-template-columns:1fr .8fr;
-            gap:${preview ? "14px" : "5mm"};
-          }
-          .fe-footer-card{
-            padding:${preview ? "12px 14px" : "4.6mm 5mm"};
-          }
-          .fe-sign-grid{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:${preview ? "16px" : "6mm"};
-          }
-          .fe-sign-box{
-            border-top:1px solid #94a3b8;
-            padding-top:${preview ? "8px" : "2.8mm"};
-            min-height:${preview ? "48px" : "15mm"};
-          }
-          .fe-sign-title{
-            font-size:${preview ? "10px" : "7.2pt"};
-            text-transform:uppercase;
-            letter-spacing:.14em;
-            font-weight:800;
-            color:var(--fe-slate);
-          }
-          .fe-sign-note{
-            margin-top:5px;
-            font-size:${preview ? "11px" : "7.6pt"};
-            color:var(--fe-navy);
-            font-weight:700;
-          }
-          .fe-meta-grid{
-            display:grid;
-            gap:${preview ? "8px" : "2.6mm"};
-          }
-          .fe-meta-row{
-            display:flex;
-            align-items:flex-start;
-            justify-content:space-between;
-            gap:12px;
-            padding-bottom:${preview ? "6px" : "2mm"};
-            border-bottom:1px dashed #dbe5f0;
-          }
-          .fe-meta-row:last-child{
-            border-bottom:none;
-            padding-bottom:0;
-          }
-          .fe-meta-label{
-            font-size:${preview ? "10px" : "7.2pt"};
-            font-weight:800;
-            color:var(--fe-slate);
-            letter-spacing:.12em;
-            text-transform:uppercase;
-          }
-          .fe-meta-value{
-            font-size:${preview ? "11px" : "7.8pt"};
-            font-weight:800;
-            color:var(--fe-navy);
-            text-align:right;
-          }
-          .fe-watermark{
-            position:absolute;
-            right:${preview ? "24px" : "8mm"};
-            bottom:${preview ? "16px" : "6mm"};
-            font-size:${preview ? "9px" : "6.6pt"};
-            letter-spacing:.18em;
-            font-weight:900;
-            text-transform:uppercase;
-            color:rgba(15,23,42,.09);
-          }
-          .fe-preview-scale{
-            transform:${preview ? "scale(.48)" : "none"};
-            transform-origin:top center;
-            width:${preview ? "206%" : "100%"};
-            margin:${preview ? "0 auto -282px" : "0"};
-          }
-          @media print{
-            body{
-              margin:0 !important;
-              padding:0 !important;
-              background:#fff !important;
-              -webkit-print-color-adjust:exact;
-              print-color-adjust:exact;
-            }
-            .fe-admit-wrap{
-              max-width:190mm;
-              width:190mm;
-            }
-            .fe-admit-sheet{
-              min-height:277mm;
-              box-shadow:none !important;
-            }
-            .fe-preview-scale{
-              transform:none !important;
-              width:100% !important;
-              margin:0 !important;
-            }
-          }
-        </style>
-      `;
-
-      const html = `
-        <div class="fe-admit-wrap">
-          <div class="${preview ? "fe-preview-scale" : ""}">
-            <section class="fe-admit-sheet" aria-label="Fenomen Eğitim Kurumları giriş belgesi">
-              <div class="fe-admit-inner">
-                <div class="fe-hero">
-                  <div class="fe-brand">
-                    <div class="fe-brand-row">
-                      <div style="display:flex; gap:12px; align-items:flex-start;">
-                        <div class="fe-brand-mark"><i class="fa-solid fa-graduation-cap"></i></div>
-                        <div>
-                          <div class="fe-brand-title">FENOMEN EĞİTİM KURUMLARI</div>
-                          <div class="fe-brand-sub">Premium Öğrenci Sınav Giriş Belgesi</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="fe-chip-row">
-                      <div class="fe-chip"><i class="fa-solid fa-shield-halved"></i><span>Kayıt Doğrulandı</span></div>
-                      <div class="fe-chip"><i class="fa-solid fa-file-lines"></i><span>Tek A4 Baskı Düzeni</span></div>
-                    </div>
-                  </div>
-
-                  <div class="fe-sidecol">
-                    <div class="fe-mini-card">
-                      <div class="fe-mini-label">Belge Türü</div>
-                      <div class="fe-mini-value">SINAV GİRİŞ BELGESİ</div>
-                    </div>
-                    <div class="fe-seat-card">
-                      <div class="fe-seat-label">Öğrenci Numarası</div>
-                      <div class="fe-seat-value">${studentNo}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="fe-exam-strip">
-                  <div class="fe-strip-card">
-                    <div class="fe-strip-icon"><i class="fa-regular fa-calendar"></i></div>
-                    <div>
-                      <div class="fe-strip-label">Sınav Tarihi</div>
-                      <div class="fe-strip-value">${examDate}</div>
-                    </div>
-                  </div>
-                  <div class="fe-strip-card">
-                    <div class="fe-strip-icon"><i class="fa-regular fa-clock"></i></div>
-                    <div>
-                      <div class="fe-strip-label">Seans Saati</div>
-                      <div class="fe-strip-value">${examTime}</div>
-                    </div>
-                  </div>
-                  <div class="fe-strip-card">
-                    <div class="fe-strip-icon"><i class="fa-solid fa-location-dot"></i></div>
-                    <div>
-                      <div class="fe-strip-label">Sınav Yeri</div>
-                      <div class="fe-strip-value">${place}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="fe-main">
-                  <div class="fe-panel">
-                    <div class="fe-panel-head"><i class="fa-solid fa-id-card"></i> Öğrenci Bilgileri</div>
-                    <table class="fe-table" role="presentation">
-                      <tr><th>Öğrenci Adı</th><td class="fe-strong">${escapeHtml(studentName)}</td></tr>
-                      <tr><th>T.C. Kimlik No</th><td>${tcPretty}</td></tr>
-                      <tr><th>Okulu</th><td>${escapeHtml(school)}</td></tr>
-                      <tr><th>Veli Adı</th><td>${escapeHtml(parentName || "-")}</td></tr>
-                      <tr><th>Telefon</th><td>${phone1}</td></tr>
-                      <tr><th>Sınav Adı</th><td>${examName}</td></tr>
-                    </table>
-                  </div>
-
-                  <div class="fe-approval">
-                    <div class="fe-seal">${approvedSeal}</div>
-                    <div class="fe-approval-title">Onaylandı</div>
-                    <div class="fe-approval-text">
-                      Bu belge Fenomen Eğitim Kurumları kayıt sistemi üzerinden oluşturulmuş,
-                      öğrenci bilgileri ve oturum eşleştirmesi tamamlanmış resmi giriş çıktısıdır.
-                    </div>
-                    <div class="fe-rule-box">
-                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Öğrenci sınav saatinden en az 30 dakika önce kurumda olmalıdır.</span></div>
-                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Belge çıktısı görevli kontrolünde giriş sırasında ibraz edilir.</span></div>
-                      <div class="fe-rule-item"><i class="fa-solid fa-check"></i><span>Belge üzerindeki öğrenci numarası salon yerleşiminde esas alınır.</span></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="fe-footer">
-                  <div class="fe-footer-card">
-                    <div class="fe-panel-head" style="padding:0 0 10px; border:none; background:none;"><i class="fa-solid fa-pen-nib"></i> Onay Alanları</div>
-                    <div class="fe-sign-grid">
-                      <div class="fe-sign-box">
-                        <div class="fe-sign-title">Veli İmza Alanı</div>
-                        <div class="fe-sign-note">Belge tesliminde veli kontrolü için ayrılmıştır.</div>
-                      </div>
-                      <div class="fe-sign-box">
-                        <div class="fe-sign-title">Kurum Yetkilisi</div>
-                        <div class="fe-sign-note">Fenomen Eğitim Kurumları onay birimi</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="fe-footer-card">
-                    <div class="fe-panel-head" style="padding:0 0 10px; border:none; background:none;"><i class="fa-solid fa-barcode"></i> Belge Kayıt Bilgisi</div>
-                    <div class="fe-meta-grid">
-                      <div class="fe-meta-row"><div class="fe-meta-label">Belge No</div><div class="fe-meta-value">${docNo}</div></div>
-                      <div class="fe-meta-row"><div class="fe-meta-label">Kayıt Tarihi</div><div class="fe-meta-value">${regDate}</div></div>
-                      <div class="fe-meta-row"><div class="fe-meta-label">Belge Tarihi</div><div class="fe-meta-value">${issueDate}</div></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="fe-watermark">Fenomen Eğitim Kurumları • Onaylı Belge</div>
-            </section>
-          </div>
-        </div>
-      `;
-
-      return { css, html };
-    }
-
-    function generatePremiumAdmitPreviewHTML(data){
-      const doc = buildPremiumAdmitDoc(data, { preview:true });
-      return `${doc.css}${doc.html}`;
-    }
-
-    function generatePremiumAdmitPrintHTML(data){
-      const doc = buildPremiumAdmitDoc(data, { preview:false });
-      return `${doc.css}${doc.html}`;
-    }
-
 
     // --- Student Info ---
     window.openStudentInfo = () => {
@@ -3639,39 +3055,65 @@ window.generateBizCardHTML = function(data) {
     window.printSingleExamCard = () => {
       const data = window.lastCompletedRegistration;
       if(!data){
-        Swal.fire("Uyarı","Yazdırılacak giriş belgesi bulunamadı.","warning");
+        Swal.fire("Uyarı","Yazdırılacak giriş kartı bulunamadı.","warning");
         return;
       }
 
-      const area = el("printArea");
-      area.innerHTML = `
-        <style>
-          @page{ size:A4 portrait; margin:10mm; }
-          html, body{
-            margin:0 !important;
-            padding:0 !important;
-            background:#fff !important;
-            overflow:visible !important;
-            -webkit-print-color-adjust:exact;
-            print-color-adjust:exact;
-          }
-          #printArea{
-            position:static !important;
-            width:auto !important;
-          }
-          #printArea .print-single-admit{
-            width:190mm;
-            margin:0 auto;
-          }
-          #printArea img{
-            max-width:100%;
-            height:auto;
-          }
-        </style>
-        <div class="print-single-admit">
-          ${generatePremiumAdmitPrintHTML(data)}
+      const bodyHtml = `
+        <div class="single-card-sheet">
+          <div class="single-card-slot">
+            ${window.generateBizCardHTML(data)}
+          </div>
         </div>
       `;
+
+      const extraCss = `
+        @page { size:A4 portrait; margin:0; }
+        .a4.single-root{ padding:0; width:210mm; min-height:297mm; }
+        .single-card-sheet{
+          width:210mm;
+          min-height:297mm;
+          padding:12mm;
+          display:flex;
+          align-items:flex-start;
+          justify-content:center;
+        }
+        .single-card-slot{
+          width:186mm;
+          height:92mm;
+          display:flex;
+          align-items:stretch;
+          justify-content:center;
+        }
+        .single-card-slot .biz-wrapper{
+          width:100%;
+          height:100%;
+          border:1px dashed #bbb;
+          padding:2mm;
+        }
+        .single-card-slot .biz-card{ width:100%; height:100%; border-radius:8px; }
+        .single-card-slot .biz-header{ height:22mm; padding:8px 12px; }
+        .single-card-slot .biz-title{ font-size:18px; }
+        .single-card-slot .biz-subtitle{ font-size:10px; }
+        .single-card-slot .biz-badge{ font-size:12px; padding:4px 8px; }
+        .single-card-slot .biz-body{ padding:10px 12px 8px; gap:12px; }
+        .single-card-slot .biz-row{ grid-template-columns:70px 1fr; column-gap:8px; }
+        .single-card-slot .biz-lbl{ font-size:10px; }
+        .single-card-slot .biz-val{ font-size:14px; }
+        .single-card-slot .biz-val.name{ font-size:16px; }
+        .single-card-slot .biz-val.school{ font-size:12px; }
+        .single-card-slot .biz-val.tc{ font-size:13px; }
+        .single-card-slot .biz-num-box{ width:44mm; }
+        .single-card-slot .biz-num-lbl{ font-size:8px; }
+        .single-card-slot .biz-num-val{ font-size:34px; }
+        .single-card-slot .biz-footer{ padding:7px 12px; gap:4px; }
+        .single-card-slot .biz-icon{ width:18px; font-size:11px; }
+        .single-card-slot .biz-f-lbl{ width:54px; font-size:9px; }
+        .single-card-slot .biz-f-val{ font-size:12px; }
+      `;
+
+      const area = el("printArea");
+      area.innerHTML = `<style>${extraCss}</style><div class="a4 single-root">${bodyHtml}</div>`;
       window.print();
       const cleanup = () => {
         area.innerHTML = "";
