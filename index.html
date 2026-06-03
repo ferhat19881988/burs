@@ -2604,7 +2604,32 @@ window.generateBizCardHTML = function(data) {
       }
 
       // Step 1: exam + session + TC
-      const examOptions = window.examData.map((e, idx) => `<option value="${idx}">${escapeHtml(e.name)}</option>`).join("");
+      // Yönetici hızlı kayıt ekranında yalnızca bugün veya ileri tarihli sınavlar gösterilir.
+      // Bir sınavın eski tarihli seansları varsa, sınav seçilse bile bu seanslar listelenmez.
+      const activeQuickExams = window.examData
+        .map((exam, idx) => ({ exam, idx }))
+        .filter(({ exam }) => {
+          const sessions = Array.isArray(exam?.sessions) ? exam.sessions : [];
+          if(sessions.length){
+            return sessions.some(session => isFutureOrTodayDate(session?.date));
+          }
+
+          const total = parseInt(exam?.seansCount || 0, 10) || 0;
+          for(let i = 0; i < total; i++){
+            const date = exam?.dates?.[i] || exam?.dates?.[0] || "";
+            if(isFutureOrTodayDate(date)) return true;
+          }
+          return false;
+        });
+
+      if(activeQuickExams.length === 0){
+        Swal.fire("Sınav Bulunamadı","Bugün veya ileri tarihli aktif sınav bulunamadı.","warning");
+        return;
+      }
+
+      const examOptions = activeQuickExams
+        .map(({ exam, idx }) => `<option value="${idx}">${escapeHtml(exam.name)}</option>`)
+        .join("");
       const { value: step1 } = await Swal.fire({
         title: "Hızlı Kayıt (1/2)",
         html: `
@@ -2628,12 +2653,16 @@ window.generateBizCardHTML = function(data) {
 
           const fillSessions = () => {
             const e = window.examData[parseInt(ex.value,10)];
-            const opts = (e?.sessions || []).map((s, i) => {
+            const futureSessions = (e?.sessions || [])
+              .map((s, i) => ({ ...s, originalIndex: i }))
+              .filter(s => isFutureOrTodayDate(s?.date));
+
+            const opts = futureSessions.map((s) => {
               const disabled = (s.remaining <= 0) ? 'disabled' : '';
               const label = `${escapeHtml(s.date)} • ${escapeHtml(s.time)} (Kalan: ${s.remaining}/${s.maxQuota})`;
-              return `<option value="${i}" ${disabled}>${label}</option>`;
+              return `<option value="${s.originalIndex}" ${disabled}>${label}</option>`;
             }).join("");
-            se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
+            se.innerHTML = opts || `<option value="">Güncel tarihli seans bulunamadı</option>`;
           };
           ex.addEventListener("change", fillSessions);
           fillSessions();
@@ -2646,7 +2675,10 @@ window.generateBizCardHTML = function(data) {
           const sessionIdx = parseInt(document.getElementById("qr_session").value,10);
           const tc = String(document.getElementById("qr_tc").value || "").replace(/\\D/g,'');
           if(!window.examData[examIdx]){ Swal.showValidationMessage("Sınav seçiniz."); return false; }
-          if(Number.isNaN(sessionIdx)){ Swal.showValidationMessage("Seans seçiniz."); return false; }
+          const selectedSession = window.examData[examIdx]?.sessions?.[sessionIdx];
+          if(Number.isNaN(sessionIdx) || !selectedSession){ Swal.showValidationMessage("Seans seçiniz."); return false; }
+          if(!isFutureOrTodayDate(selectedSession.date)){ Swal.showValidationMessage("Geçmiş tarihli seans için hızlı kayıt yapılamaz."); return false; }
+          if(selectedSession.remaining <= 0){ Swal.showValidationMessage("Seçilen seansın kontenjanı dolu."); return false; }
           if(!isValidTC(tc)){ Swal.showValidationMessage("Geçerli 11 haneli T.C. giriniz."); return false; }
 
           // Check for duplicate registration for this exam
