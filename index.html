@@ -781,7 +781,7 @@
 
     <!-- Footer: sits at the bottom of the main menu using flexbox -->
     <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.4</span>
+  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.5</span>
 </footer>
 
 <style>
@@ -1334,19 +1334,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const APP_VERSION = "v1.1.4";
+    const APP_VERSION = "v1.1.5";
     window.APP_VERSION = APP_VERSION;
 
-    // --- 1SMS Ayarları (mevcut yoklama sistemindeki çalışan hesap) ---
-    // Not: Tarayıcı içinden no-cors gönderimde firma cevabı okunamaz.
-    // Kesin firma onayı için aynı origin/CORS izinli bir sunucu proxy adresi tanımlayın.
+    // --- 1SMS Ayarları ---
     const SMS_CFG = {
       HOSTNAME: 'https://api.1sms.com.tr',
       USERNAME: 'fenomencocukkulubu',
       PASSWORD: '11b66accbf01c8cecd1af164c87da264',
       HEADER: 'FENOMEN',
-      DIRECT_GET_PATH: '/api/smsget/v1',
-      SMS_PROXY_URL: ''
+      DIRECT_GET_PATH: '/api/smsget/v1'
     };
 
     // --- Globals ---
@@ -2813,7 +2810,7 @@ window.generateBizCardHTML = function(data) {
     }
 
     // --- Toplu SMS ---
-    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen Egitim Kurumlari: {{ogrenci}} ogrencimizin {{sinav}} kaydi vardir. {{tarih}} {{saat}}, {{yer}}. Gec kalmamanizi rica ederiz.";
+    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen Egitim Kurumlari: {{ogrenci}} öğrencimizin deneme kaydi yapılmıştır.{{tarih}} ve ({{saat}}) uygulanacaktir. Gec kalmamanizi rica ederiz.";
 
     function normalizeTRGsm(raw){
       const digits = String(raw || '').replace(/\D/g,'');
@@ -2964,50 +2961,11 @@ window.generateBizCardHTML = function(data) {
       }
     }
 
-    function smsResponseLooksOk(data){
-      if(data === true || data === 1) return true;
-      if(!data) return false;
-      if(typeof data === 'object'){
-        const candidates = [data.ok, data.success, data.status, data.result, data.code];
-        return candidates.some(v => ['true','1','ok','success','successful','200'].includes(String(v ?? '').toLowerCase()));
-      }
-      const t = String(data).toLowerCase();
-      return /(^|\b)(ok|success|successful|200)(\b|$)/.test(t) && !/(error|fail|hata)/.test(t);
-    }
-
     async function sendSmsOnceBulk({gsm,message}){
       const gsmNo = normalizeTRGsm(gsm);
-      if(!isValidTRGsm(gsmNo)) return { ok:false, confirmed:false, reason:'Geçersiz telefon numarası' };
+      if(!isValidTRGsm(gsmNo)) return { ok:false, reason:'Geçersiz telefon numarası' };
+      if(!navigator.onLine) return { ok:false, reason:'İnternet bağlantısı yok' };
 
-      // Proxy tanımlıysa firma yanıtı okunabilir ve kesin onay durumu verilebilir.
-      if(SMS_CFG.SMS_PROXY_URL){
-        try{
-          const resp = await fetchWithTimeout(SMS_CFG.SMS_PROXY_URL, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-              username:SMS_CFG.USERNAME,
-              password:SMS_CFG.PASSWORD,
-              header:SMS_CFG.HEADER,
-              gsm:gsmNo,
-              message
-            }),
-            cache:'no-store',
-            mode:'cors'
-          },15000);
-          const ct = resp.headers.get('content-type') || '';
-          const data = ct.includes('application/json') ? await resp.json() : await resp.text();
-          const accepted = resp.ok && smsResponseLooksOk(data);
-          return accepted
-            ? { ok:true, confirmed:true, gsm:gsmNo, data }
-            : { ok:false, confirmed:true, gsm:gsmNo, data, reason:`Firma/Proxy yanıtı başarısız (HTTP ${resp.status})` };
-        }catch(e){
-          return { ok:false, confirmed:true, gsm:gsmNo, reason:e?.message || String(e) };
-        }
-      }
-
-      // Mevcut çalışan yoklama sistemiyle aynı yöntem: no-cors GET.
-      // İstek gönderilir; tarayıcı CORS nedeniyle firma cevabını okuyamaz.
       try{
         const url = `${SMS_CFG.HOSTNAME}${SMS_CFG.DIRECT_GET_PATH}` +
           `?username=${encodeURIComponent(SMS_CFG.USERNAME)}` +
@@ -3016,9 +2974,9 @@ window.generateBizCardHTML = function(data) {
           `&gsm=${encodeURIComponent(gsmNo)}` +
           `&message=${encodeURIComponent(message)}`;
         await fetchWithTimeout(url,{method:'GET',mode:'no-cors',cache:'no-store'},15000);
-        return { ok:true, confirmed:false, opaque:true, gsm:gsmNo };
+        return { ok:true, gsm:gsmNo };
       }catch(e){
-        return { ok:false, confirmed:false, gsm:gsmNo, reason:e?.message || String(e) };
+        return { ok:false, gsm:gsmNo, reason:e?.message || String(e) };
       }
     }
 
@@ -3040,7 +2998,7 @@ window.generateBizCardHTML = function(data) {
         return;
       }
       if(!navigator.onLine){
-        Swal.fire('İnternet Bağlantısı Yok','SMS gönderimi için internet bağlantısı gereklidir.','error');
+        Swal.fire('Mesaj İletilemedi','İnternet bağlantısı yok. SMS gönderimi yapılamadı.','error');
         return;
       }
 
@@ -3068,22 +3026,19 @@ window.generateBizCardHTML = function(data) {
       if(sendBtn) sendBtn.disabled = true;
       if(logEl){ logEl.style.display='block'; logEl.textContent=''; }
 
-      let confirmed=0, dispatched=0, failed=0;
+      let sent=0, failed=0;
       const logs=[];
       setBulkSmsStatus(`Gönderim başladı: 0/${prepared.sendable.length}`,'info');
 
       for(let i=0;i<prepared.sendable.length;i++){
         const item=prepared.sendable[i];
         const res=await sendSmsOnceBulk({gsm:item.gsm,message:item.message});
-        if(res.ok && res.confirmed){
-          confirmed++;
-          logs.push(`✓ ONAYLANDI • ${item.student.studentName} • ${item.gsm}`);
-        }else if(res.ok){
-          dispatched++;
-          logs.push(`→ İSTEK İLETİLDİ / YANIT OKUNAMADI • ${item.student.studentName} • ${item.gsm}`);
+        if(res.ok){
+          sent++;
+          logs.push(`✓ MESAJ İLETİLDİ • ${item.student.studentName} • ${item.gsm}`);
         }else{
           failed++;
-          logs.push(`✗ HATA • ${item.student.studentName} • ${item.gsm || '-'} • ${res.reason || 'Bilinmeyen hata'}`);
+          logs.push(`✗ MESAJ İLETİLEMEDİ • ${item.student.studentName} • ${item.gsm || '-'} • ${res.reason || 'İnternet/bağlantı hatası'}`);
         }
         const pct=Math.round(((i+1)/prepared.sendable.length)*100);
         if(progress){
@@ -3092,36 +3047,27 @@ window.generateBizCardHTML = function(data) {
           progress.className=`progress-bar ${failed ? 'bg-warning' : 'bg-success'}`;
         }
         if(logEl) logEl.textContent=logs.join('\n');
-        setBulkSmsStatus(`İşlenen: ${i+1}/${prepared.sendable.length} • Onaylı: ${confirmed} • Yanıt okunamadı: ${dispatched} • Hata: ${failed}`, failed?'warning':'info');
+        setBulkSmsStatus(`İşlenen: ${i+1}/${prepared.sendable.length} • Mesaj iletildi: ${sent} • Mesaj iletilemedi: ${failed}`, failed?'warning':'info');
         if(i < prepared.sendable.length-1) await new Promise(r=>setTimeout(r,250));
       }
 
       if(sendBtn) sendBtn.disabled = false;
 
-      let finalType='success';
-      let finalText='';
-      if(failed){
-        finalType='warning';
-        finalText=`Gönderim tamamlandı. Firma onaylı: ${confirmed}, istek iletildi ancak firma yanıtı okunamadı: ${dispatched}, hata: ${failed}.`;
-      }else if(dispatched && !confirmed){
-        finalType='warning';
-        finalText=`${dispatched} SMS isteği firmaya gönderildi. Tarayıcı CORS kısıtı nedeniyle firmanın kabul cevabı okunamadı.`;
-      }else{
-        finalText=`Gönderim tamamlandı. Firma tarafından onaylanan SMS: ${confirmed}.`;
-      }
+      let finalType = failed ? 'warning' : 'success';
+      let finalText = failed
+        ? `Gönderim tamamlandı. Mesaj iletildi: ${sent}, mesaj iletilemedi: ${failed}.`
+        : `${sent} mesaj iletildi.`;
       if(prepared.invalid.length) finalText += ` ${prepared.invalid.length} öğrenci geçersiz/eksik telefon nedeniyle atlandı.`;
       setBulkSmsStatus(finalText,finalType);
 
       await Swal.fire({
-        title: failed ? 'SMS Gönderimi Tamamlandı (Hata Var)' : (dispatched && !confirmed ? 'SMS İstekleri Gönderildi' : 'SMS Gönderimi Onaylandı'),
+        title: failed ? 'SMS Gönderimi Tamamlandı' : 'Mesajlar İletildi',
         html:`<div class="text-start">`+
-          `<div><b>Firma onaylı:</b> ${confirmed}</div>`+
-          `<div><b>İstek gönderildi, yanıt okunamadı:</b> ${dispatched}</div>`+
-          `<div><b>Hata:</b> ${failed}</div>`+
+          `<div><b>Mesaj iletildi:</b> ${sent}</div>`+
+          `<div><b>Mesaj iletilemedi:</b> ${failed}</div>`+
           `<div><b>Atlanan telefon:</b> ${prepared.invalid.length}</div>`+
-          `<hr><div class="small text-secondary">${SMS_CFG.SMS_PROXY_URL ? 'Firma/proxy yanıtı okunarak doğrulama yapıldı.' : 'Doğrudan tarayıcı gönderiminde no-cors kullanıldığı için firma kabul cevabı teknik olarak okunamaz. Kesin teslim/kabul doğrulaması için SMS_PROXY_URL tanımlanmalıdır.'}</div>`+
           `</div>`,
-        icon: failed ? 'warning' : (dispatched && !confirmed ? 'info' : 'success'),
+        icon: failed ? 'warning' : 'success',
         confirmButtonText:'Tamam'
       });
     };
