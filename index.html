@@ -3048,7 +3048,7 @@ window.generateBizCardHTML = function(data) {
         }
         if(logEl) logEl.textContent=logs.join('\n');
         setBulkSmsStatus(`İşlenen: ${i+1}/${prepared.sendable.length} • Mesaj iletildi: ${sent} • Mesaj iletilemedi: ${failed}`, failed?'warning':'info');
-        if(i < prepared.sendable.length-1) await new Promise(r=>setTimeout(r,250));
+        if(i < prepared.sendable.length-1) await new Promise(r=>setTimeout(r,1000));
       }
 
       if(sendBtn) sendBtn.disabled = false;
