@@ -751,7 +751,7 @@
 
     <!-- Footer: sits at the bottom of the main menu using flexbox -->
     <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.1</span>
+  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.2</span>
 </footer>
 
 <style>
@@ -1240,7 +1240,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const APP_VERSION = "v1.1.1";
+    const APP_VERSION = "v1.1.2";
     window.APP_VERSION = APP_VERSION;
 
     // --- Globals ---
@@ -2324,9 +2324,9 @@ window.generateBizCardHTML = function(data) {
               <tr><td class="lbl">Sınav Saati</td><td class="val">${safe(time)}</td></tr>
             </table>
             <div class="warnings">
-              <div class="warn-item"><span class="icon">⏰</span><span>Sınava 15 dakika kala sınav yerinde olunuz.</span></div>
-              <div class="warn-item"><span class="icon">📵</span><span>Cep telefonu ve akıllı saatle gelmek yasaktır.</span></div>
-              <div class="warn-item"><span class="icon">📚</span><span>LGS kuralları aynen geçerlidir.</span></div>
+              <div class="warn-item"><span class="icon">⏰</span><span>Sınava 15 dakika kala sınav yerinde olun</span></div>
+              <div class="warn-item"><span class="icon">📵</span><span>Cep telefonu ve akıllı saatle gelmek yasaktır</span></div>
+              <div class="warn-item"><span class="icon">📚</span><span>LGS kuralları geçerlidir</span></div>
             </div>
           </div>
           <div class="exam-doc-footer">
@@ -2336,7 +2336,7 @@ window.generateBizCardHTML = function(data) {
               ${safe(printStamp)}
             </div>
             <div class="footer-approval">
-              <img class="approval-signature" src="imza.png" alt="Fenomen Eğitim Kurumları imza" onerror="this.style.display='none'" />
+              <img class="approval-signature" src="imza.png" alt="Fenomen Eğitim Kurumları imza" />
               <div class="stamp"><span>ONAYLANDI</span></div>
             </div>
           </div>
@@ -3273,7 +3273,7 @@ window.generateBizCardHTML = function(data) {
 
     // --- Printing ---
 
-    window.printExamDocument = (data) => {
+    window.printExamDocument = async (data) => {
       if(!data){
         Swal.fire("Uyarı","Yazdırılacak giriş kartı bulunamadı.","warning");
         return;
@@ -3309,12 +3309,72 @@ window.generateBizCardHTML = function(data) {
       `;
       const area = el("printArea");
       area.innerHTML = `<style>${extraCss}</style>${docHtml}`;
-      window.print();
-      const cleanup = () => {
+
+      // v1.1.2: İlk baskıda imzanın boş çıkmasını önlemek için baskıdan önce
+      // imza görselinin gerçekten yüklenmesini ve tarayıcı tarafından decode edilmesini bekle.
+      // Kaynak yüklenemezse imzasız belge basmak yerine işlemi güvenli şekilde durdur.
+      try {
+        const signature = area.querySelector(".approval-signature");
+        if(!signature) throw new Error("İmza alanı bulunamadı.");
+
+        const waitForSignature = async () => {
+          if(signature.complete){
+            if(!signature.naturalWidth) throw new Error("imza.png yüklenemedi.");
+          } else {
+            await new Promise((resolve, reject) => {
+              const timeoutId = setTimeout(() => reject(new Error("İmza yükleme zaman aşımına uğradı.")), 10000);
+              const onLoad = () => {
+                clearTimeout(timeoutId);
+                signature.removeEventListener("error", onError);
+                resolve();
+              };
+              const onError = () => {
+                clearTimeout(timeoutId);
+                signature.removeEventListener("load", onLoad);
+                reject(new Error("imza.png yüklenemedi."));
+              };
+              signature.addEventListener("load", onLoad, { once:true });
+              signature.addEventListener("error", onError, { once:true });
+            });
+          }
+
+          // complete=true olması piksel çözümlemesinin de tamamlandığını garanti etmez.
+          if(typeof signature.decode === "function"){
+            try { await signature.decode(); } catch(_) {
+              if(!signature.naturalWidth) throw new Error("İmza görseli çözümlenemedi.");
+            }
+          }
+          if(!signature.naturalWidth || !signature.naturalHeight){
+            throw new Error("İmza görseli baskıya hazır değil.");
+          }
+        };
+
+        await waitForSignature();
+
+        // Inter yazı tipinin yüklenmesini mümkün olduğunca bekle; font hatası baskıyı engellemesin.
+        if(document.fonts && document.fonts.ready){
+          try { await document.fonts.ready; } catch(_) {}
+        }
+
+        // İki render turu bekleyerek flex hizalaması, maske ve görsel ölçülerinin
+        // print preview alınmadan önce son haline gelmesini sağla.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        const cleanup = () => {
+          area.innerHTML = "";
+          window.removeEventListener("afterprint", cleanup);
+        };
+        window.addEventListener("afterprint", cleanup, { once:true });
+        window.print();
+      } catch(err) {
+        console.error("Giriş kartı baskı hazırlık hatası:", err);
         area.innerHTML = "";
-        window.removeEventListener('afterprint', cleanup);
-      };
-      window.addEventListener('afterprint', cleanup);
+        Swal.fire(
+          "İmza Hazırlanamadı",
+          "Giriş kartı imzasız yazdırılmadı. imza.png dosyasının HTML dosyasıyla aynı klasörde olduğundan emin olun ve tekrar deneyin.",
+          "error"
+        );
+      }
     };
 
     window.printSingleExamCard = () => {
