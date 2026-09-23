@@ -595,14 +595,17 @@
     /* When printing, completely remove all layout boxes outside of the dedicated print area. Using
        display:none ensures elements such as the admin panel and main menu (which normally use
        flexbox with min-height:100vh) do not reserve space and create unwanted blank pages. */
-    body *{
+    /* Print only the dedicated output area.
+       Hiding top-level siblings preserves the natural flex/grid layout inside #printArea. */
+    body > *:not(#printArea){
       display:none !important;
       visibility:hidden !important;
     }
-    /* Show the hidden print area and all of its descendants. The display override
-       ensures they participate in layout, while visibility makes them visible. */
-    #printArea, #printArea *{
-      display:revert !important;
+    #printArea{
+      display:block !important;
+      visibility:visible !important;
+    }
+    #printArea *{
       visibility:visible !important;
     }
     /* Position the print area at the top of the page. Absolute positioning keeps it out
@@ -748,7 +751,7 @@
 
     <!-- Footer: sits at the bottom of the main menu using flexbox -->
     <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.0</span>
+  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.1</span>
 </footer>
 
 <style>
@@ -1237,7 +1240,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const APP_VERSION = "v1.1.0";
+    const APP_VERSION = "v1.1.1";
     window.APP_VERSION = APP_VERSION;
 
     // --- Globals ---
@@ -2295,10 +2298,9 @@ window.generateBizCardHTML = function(data) {
       // tarihi için mevcut sistem tarih-saatini kullanacağız.
       const now = new Date();
       const printStamp = now.toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day:'2-digit' }) + ' ' + now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
-      // Build a modern, premium A4 entry document.  The stamp label is uppercased to emphasise
-      // the approval status and will be rotated via CSS for a realistic seal effect.  Warnings
-      // remain semantic spans so icons can be styled in CSS rather than encoded directly into
-      // the document structure.
+      // Build a modern A4 entry document. The approval block is kept visually balanced
+      // under the signature; print CSS handles right alignment and soft edge blending.
+      // Warnings remain semantic spans so icons can be styled independently.
       return `
         <div class="exam-doc">
           <div class="exam-doc-header">
@@ -3298,12 +3300,12 @@ window.generateBizCardHTML = function(data) {
         .warn-item { display: flex; align-items: center; gap: 3mm; padding: 3mm 4mm; border-radius: 3mm; background: #f8fafc; border: 1px solid #e2e8f0; }
         .warn-item .icon { font-size: 14pt; color: #dc2626; }
         .warn-item span { font-size: 9pt; font-weight: 600; color: #dc2626; }
-        .exam-doc-footer { margin-top: auto; min-height: 42mm; border-top: 1.2px solid #cbd5e1; padding-top: 7mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 8mm; }
-        .footer-text { flex: 1; font-size: 8pt; color: #475569; line-height: 1.6; text-align: center; padding: 0 4mm 0 8mm; }
-        .footer-approval { flex: 0 0 52mm; width: 52mm; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3mm; }
-        .approval-signature { display: block; width: 48mm; max-width: 100%; height: auto; object-fit: contain; }
-        .stamp { width: 26mm; height: 26mm; border: 1.4mm solid #dc2626; border-radius: 50%; position: relative; background: transparent; overflow: hidden; }
-        .stamp span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block; width: 100%; padding: 0 2mm; font-size: 6.2pt; font-weight: 800; color: #dc2626; text-transform: uppercase; line-height: 1; text-align: center; letter-spacing: 0; white-space: nowrap; }
+        #printArea .exam-doc-footer { margin-top: auto; min-height: 42mm; border-top: 1.2px solid #cbd5e1; padding-top: 7mm; display: flex !important; align-items: flex-end; justify-content: space-between; gap: 8mm; }
+        #printArea .footer-text { flex: 1 1 auto; font-size: 8pt; color: #475569; line-height: 1.6; text-align: center; padding: 0 4mm 0 8mm; }
+        #printArea .footer-approval { flex: 0 0 64mm; width: 64mm; margin-left: auto; display: flex !important; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1.6mm; text-align: center; }
+        #printArea .approval-signature { display: block !important; width: 58mm; max-width: 58mm; height: auto; object-fit: contain; margin: 0 auto; opacity: .94; mix-blend-mode: multiply; filter: contrast(1.12); -webkit-mask-image: radial-gradient(ellipse 96% 88% at center, #000 68%, rgba(0,0,0,.92) 82%, transparent 100%); mask-image: radial-gradient(ellipse 96% 88% at center, #000 68%, rgba(0,0,0,.92) 82%, transparent 100%); }
+        #printArea .stamp { width: 25mm; height: 25mm; margin: 0 auto; border: 1.2mm solid #dc2626; border-radius: 50%; position: relative; background: transparent; overflow: hidden; }
+        #printArea .stamp span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block !important; width: 100%; padding: 0 1.5mm; font-size: 6.4pt; font-weight: 800; color: #dc2626; text-transform: uppercase; line-height: 1; text-align: center; letter-spacing: .02em; white-space: nowrap; }
       `;
       const area = el("printArea");
       area.innerHTML = `<style>${extraCss}</style>${docHtml}`;
