@@ -781,7 +781,7 @@
 
     <!-- Footer: sits at the bottom of the main menu using flexbox -->
     <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.5</span>
+  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.6</span>
 </footer>
 
 <style>
@@ -1334,7 +1334,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const APP_VERSION = "v1.1.5";
+    const APP_VERSION = "v1.1.6";
     window.APP_VERSION = APP_VERSION;
 
     // --- 1SMS Ayarları ---
@@ -1409,6 +1409,178 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     function isTwoWords(name){
       const parts = normSpaces(name).split(" ").filter(Boolean);
       return parts.length >= 2;
+    }
+
+    // --- Merkezi tekrar kayıt kontrolü ---
+    // İsim karşılaştırmasını Türkçe büyük/küçük harf ve gereksiz boşluklardan bağımsız yapar.
+    function normalizeStudentIdentityName(name){
+      return toUpperTR(normSpaces(String(name || "").normalize("NFKC")));
+    }
+
+    function normalizeExamIdentity(exam){
+      const key = normSpaces(String(exam?.examKey || exam?.key || ""));
+      if(key) return `KEY:${key}`;
+      return `NAME:${toUpperTR(normSpaces(String(exam?.examName || exam?.name || "")))}`;
+    }
+
+    function isSameExamForRegistration(a, b){
+      const aId = normalizeExamIdentity(a);
+      const bId = normalizeExamIdentity(b);
+      return aId !== "NAME:" && bId !== "NAME:" && aId === bId;
+    }
+
+    function isSameSessionForRegistration(a, b){
+      const aDate = normSpaces(String(a?.examDate || a?.date || ""));
+      const bDate = normSpaces(String(b?.examDate || b?.date || ""));
+      const aTime = normSpaces(String(a?.examTime || a?.time || ""));
+      const bTime = normSpaces(String(b?.examTime || b?.time || ""));
+
+      // Tarih ve saat kayıtlıysa esas eşleşme bunlardır.
+      if(aDate && bDate && aTime && bTime){
+        return aDate === bDate && aTime === bTime;
+      }
+
+      // Eski kayıtlarda tarih/saat eksikse seans indexi yedek kontrol olarak kullanılır.
+      const aIdx = a?.sessionIndex ?? a?.sessionIdx;
+      const bIdx = b?.sessionIndex ?? b?.sessionIdx;
+      return aIdx !== undefined && bIdx !== undefined && String(aIdx) === String(bIdx);
+    }
+
+    function findRegistrationConflict(students, candidate, options = {}){
+      const {
+        ignoreId = "",
+        tcMode = "exam", // "exam" = aynı sınavda, "global" = tüm kayıtlarda
+        checkTc = true,
+        checkName = true
+      } = options;
+
+      const tc = digitsOnly(candidate?.tc || "");
+      const candidateName = normalizeStudentIdentityName(candidate?.studentName || candidate?.name || "");
+
+      for(const s of (students || [])){
+        if(!s) continue;
+        if(ignoreId && String(s.id || "") === String(ignoreId)) continue;
+
+        const sameExam = isSameExamForRegistration(s, candidate);
+
+        if(checkTc && tc && digitsOnly(s.tc || "") === tc){
+          if(tcMode === "global" || sameExam){
+            return { type:"tc", record:s };
+          }
+        }
+
+        if(checkName && candidateName && sameExam && isSameSessionForRegistration(s, candidate)){
+          if(normalizeStudentIdentityName(s.studentName || s.name || "") === candidateName){
+            return { type:"name-session", record:s };
+          }
+        }
+      }
+
+      return null;
+    }
+
+    async function loadRegisteredStudents(){
+      const snap = await get(child(ref(db), "bursluluk/students"));
+      return snap.exists() ? Object.values(snap.val()) : [];
+    }
+
+    function registrationConflictMessage(conflict){
+      if(conflict?.type === "name-session") {
+        return "Bu öğrenci adıyla aynı sınavın aynı tarih ve seansına daha önce kayıt yapılmış. T.C. kimlik numarası farklı olsa bile ikinci kayıt oluşturulamaz.";
+      }
+      return "Bu T.C. kimlik numarası ile bu sınava daha önce kayıt yapılmış.";
+    }
+
+    // Eşzamanlı iki tarayıcının aynı anda kontrolü geçmesini önleyen kısa süreli kilit.
+    // Kilit en fazla 2 dakika geçerli tutulur; işlem sonunda serbest bırakılır.
+    function registrationGuardKey(raw){
+      return encodeURIComponent(String(raw || "")).replace(/\./g, "%2E");
+    }
+
+    function buildRegistrationGuardKeys(candidate, options = {}){
+      const { tcMode = "exam", checkTc = true, checkName = true } = options;
+      const keys = [];
+      const examId = normalizeExamIdentity(candidate);
+      const tc = digitsOnly(candidate?.tc || "");
+      const name = normalizeStudentIdentityName(candidate?.studentName || candidate?.name || "");
+      const date = normSpaces(String(candidate?.examDate || candidate?.date || ""));
+      const time = normSpaces(String(candidate?.examTime || candidate?.time || ""));
+      const sessionIndex = candidate?.sessionIndex ?? candidate?.sessionIdx ?? "";
+
+      if(checkTc && tc){
+        const tcRaw = tcMode === "global" ? `TC|${tc}` : `TC|${tc}|${examId}`;
+        keys.push(registrationGuardKey(tcRaw));
+      }
+
+      if(checkName && name && examId !== "NAME:"){
+        const sessionPart = (date && time) ? `${date}|${time}` : `IDX:${sessionIndex}`;
+        keys.push(registrationGuardKey(`NAME|${name}|${examId}|${sessionPart}`));
+      }
+
+      return [...new Set(keys)].sort();
+    }
+
+    async function acquireRegistrationGuards(candidate, ownerId, options = {}){
+      const keys = buildRegistrationGuardKeys(candidate, options);
+      const acquired = [];
+      const now = Date.now();
+      const staleMs = 2 * 60 * 1000;
+
+      for(const key of keys){
+        const guardRef = ref(db, `bursluluk/registrationGuards/${key}`);
+        const result = await runTransaction(guardRef, (current) => {
+          const isStale = current && Number(current.ts || 0) > 0 && (now - Number(current.ts || 0)) > staleMs;
+          if(current && !isStale) return; // başka işlem kullanıyor
+          return { ownerId:String(ownerId || ""), ts:now };
+        }, { applyLocally:false });
+
+        if(!result.committed){
+          await releaseRegistrationGuards(acquired, ownerId);
+          return { ok:false, keys:[] };
+        }
+        acquired.push(key);
+      }
+
+      return { ok:true, keys:acquired };
+    }
+
+    async function releaseRegistrationGuards(keys, ownerId){
+      for(const key of (keys || [])){
+        try{
+          const guardRef = ref(db, `bursluluk/registrationGuards/${key}`);
+          await runTransaction(guardRef, (current) => {
+            if(current && String(current.ownerId || "") === String(ownerId || "")) return null;
+            return current;
+          }, { applyLocally:false });
+        }catch(_){ /* best-effort cleanup */ }
+      }
+    }
+
+    async function beginUniqueRegistration(candidate, ownerId, options = {}){
+      const guards = await acquireRegistrationGuards(candidate, ownerId, options);
+      if(!guards.ok){
+        return { ok:false, reason:"busy", conflict:null, guardKeys:[] };
+      }
+
+      try{
+        const students = Array.isArray(options.students) ? options.students : await loadRegisteredStudents();
+        const conflict = findRegistrationConflict(students, candidate, options);
+        if(conflict){
+          await releaseRegistrationGuards(guards.keys, ownerId);
+          return { ok:false, reason:"conflict", conflict, guardKeys:[] };
+        }
+        return { ok:true, reason:"", conflict:null, guardKeys:guards.keys };
+      } catch(e){
+        await releaseRegistrationGuards(guards.keys, ownerId);
+        throw e;
+      }
+    }
+
+    function uniquenessResultMessage(result){
+      if(result?.reason === "busy") {
+        return "Bu öğrenci için başka bir kayıt işlemi şu anda devam ediyor. Lütfen işlemi yeniden deneyiniz.";
+      }
+      return registrationConflictMessage(result?.conflict);
     }
     function digitsOnly(s){
       // NOTE: Use real non-digit regex (\D) — previous version used \\D which matched literal "\\D".
@@ -1919,12 +2091,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         return;
       }
 
-      // Loading ekranını sadece veri okuma süresince gösterelim (SweetAlert'i perdelememek için)
+      // Merkezi tekrar kayıt kontrolü: bu aşamada öğrenci adı henüz bilinmediği için T.C. + sınav kontrolü yapılır.
       showLoading(true);
-      let students = [];
       try{
-        const snap = await get(child(ref(db), "bursluluk/students"));
-        students = snap.exists() ? Object.values(snap.val()) : [];
+        const students = await loadRegisteredStudents();
+        const conflict = findRegistrationConflict(students, {
+          tc,
+          examName: window.selectedExam.name,
+          examKey: window.selectedExam.key
+        }, { checkName:false, tcMode:"exam" });
+
+        if(conflict){
+          showLoading(false);
+          await Swal.fire({
+            title:"Zaten Kayıtlı",
+            text:registrationConflictMessage(conflict),
+            icon:"info",
+            confirmButtonText:"Ana Menüye Dön"
+          });
+          returnToMain();
+          return;
+        }
       } catch(e){
         console.error("T.C. sorgu hatası:", e);
         showLoading(false);
@@ -1932,19 +2119,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         return;
       } finally {
         showLoading(false);
-      }
-
-      const existsForThisExam = students.some(s => String(s.tc) === tc && s.examName === window.selectedExam.name);
-
-      if(existsForThisExam){
-        await Swal.fire({
-          title:"Zaten Kayıtlı",
-          text:"Bu T.C. numarası ile bu sınava daha önce başvurunuz alınmıştır.",
-          icon:"info",
-          confirmButtonText:"Ana Menüye Dön"
-        });
-        returnToMain();
-        return;
       }
 
       window.tcLocked = tc;
@@ -2129,6 +2303,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const maxQuota = window.selectedSession.maxQuota;
       const startNo = window.selectedExam.startNo;
 
+      const registrationCandidate = {
+        tc: form.tc,
+        studentName: form.studentName,
+        examName: window.selectedExam.name,
+        examKey,
+        examDate: window.selectedSession.date,
+        examTime: window.selectedSession.time,
+        sessionIndex
+      };
+
       // Prevent double submit
       const submitBtn = document.querySelector("#regForm button[type='submit']");
       if(submitBtn) submitBtn.disabled = true;
@@ -2137,37 +2321,46 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const newStudentRef = push(ref(db, "bursluluk/students"));
       const studentId = newStudentRef.key;
 
-      // try/catch içinde de erişebilmek için
       let candidate = null;
+      let seatReserved = false;
+      let numberLocked = false;
+      let guardKeys = [];
 
       try{
-        // 1) Reserve seat with transaction
+        // 1) Tek merkezden tekrar kayıt kontrolü + eşzamanlı kayıt kilidi
+        const unique = await beginUniqueRegistration(registrationCandidate, studentId, { tcMode:"exam" });
+        if(!unique.ok){
+          showLoading(false);
+          Swal.fire("Kayıt Engellendi", uniquenessResultMessage(unique), unique.reason === "busy" ? "warning" : "info");
+          return;
+        }
+        guardKeys = unique.guardKeys;
+
+        // 2) Reserve seat with transaction
         const seatOk = await reserveSeat(examKey, sessionIndex, maxQuota);
         if(!seatOk){
-          // Swal perdelememek için loading'i kapat
           showLoading(false);
           Swal.fire("Kontenjan Dolu","İşlem sırasında kontenjan doldu. Lütfen başka seans seçiniz.","error");
           changeStep(1);
           return;
         }
+        seatReserved = true;
 
-        // 2) Reserve smallest available number using numberLocks
-        let used = await getUsedNumbers(examKey);
+        // 3) Reserve smallest available number using numberLocks
+        const used = await getUsedNumbers(examKey);
         candidate = pickSmallestAvailable(startNo, used);
 
-        let locked = false;
         let tries = 0;
-        while(!locked && tries < 60){
-          locked = await reserveNumberLock(examKey, candidate, studentId);
-          if(locked) break;
-          // someone got it, advance
+        while(!numberLocked && tries < 60){
+          numberLocked = await reserveNumberLock(examKey, candidate, studentId);
+          if(numberLocked) break;
           candidate++;
           tries++;
         }
 
-        if(!locked){
-          // release seat and fail
+        if(!numberLocked){
           await releaseSeat(examKey, sessionIndex);
+          seatReserved = false;
           showLoading(false);
           Swal.fire("Sistem Yoğun","Öğrenci numarası atanamadı. Lütfen tekrar deneyiniz.","error");
           return;
@@ -2182,35 +2375,37 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
           phone1: form.phone1,
           phone2: form.phone2 || "",
           examName: window.selectedExam.name,
-          examKey: examKey,
+          examKey,
           examDate: window.selectedSession.date,
           examTime: window.selectedSession.time,
-          sessionIndex: sessionIndex,
+          sessionIndex,
           studentNo: candidate,
           regTs: Date.now(),
           regDate: new Date().toLocaleString("tr-TR"),
           place: "Fenomen Eğitim Kurumları"
         };
 
-        // 3) Save student
+        // 4) Save student
         await set(newStudentRef, studentData);
 
-        // 4) Show card preview
+        // Kayıt artık kalıcı olduğu için rollback bayraklarını kapat.
+        seatReserved = false;
+        numberLocked = false;
+
+        // 5) Show card preview
         window.lastCompletedRegistration = studentData;
         el("finalCardPreview").innerHTML = generateCardHTML(studentData);
         changeStep(5);
 
       } catch(e){
         console.error(e);
-        // cleanup best-effort
-        try{ await releaseSeat(examKey, sessionIndex); } catch(_){}
-        // Eğer numara kilidi alındıysa, sistemde kalmaması için (best-effort)
-        try{
-          if(typeof candidate === "number") await releaseNumberLock(examKey, candidate, studentId);
-        } catch(_){}
+        // Sadece gerçekten bu işlemde ayrılan kaynakları geri bırak.
+        try{ if(seatReserved) await releaseSeat(examKey, sessionIndex); } catch(_){}
+        try{ if(numberLocked && typeof candidate === "number") await releaseNumberLock(examKey, candidate, studentId); } catch(_){}
         showLoading(false);
         Swal.fire("Hata","Kayıt işlemi sırasında hata oluştu: " + (e?.message || e),"error");
       } finally {
+        await releaseRegistrationGuards(guardKeys, studentId);
         showLoading(false);
         if(submitBtn) submitBtn.disabled = false;
       }
@@ -2584,7 +2779,37 @@ window.generateBizCardHTML = function(data) {
       }
 
       showLoading(true);
+      const guardOwner = `LIMITED-EDIT-${id}-${Date.now()}`;
+      let guardKeys = [];
+
       try{
+        const snap = await get(child(ref(db), `bursluluk/students/${id}`));
+        if(!snap.exists()){
+          showLoading(false);
+          Swal.fire("Bulunamadı","Kayıt bulunamadı veya daha önce silinmiş olabilir.","warning");
+          return;
+        }
+
+        const current = snap.val();
+        const registrationCandidate = {
+          ...current,
+          studentName
+        };
+
+        // Öğrenci yalnızca adını düzenlese bile aynı sınav/tarih/seansta başka bir kayıtla çakışmasına izin verme.
+        const unique = await beginUniqueRegistration(registrationCandidate, guardOwner, {
+          ignoreId:id,
+          checkTc:false,
+          checkName:true,
+          tcMode:"exam"
+        });
+        if(!unique.ok){
+          showLoading(false);
+          Swal.fire("Güncelleme Engellendi", uniquenessResultMessage(unique), unique.reason === "busy" ? "warning" : "info");
+          return;
+        }
+        guardKeys = unique.guardKeys;
+
         await update(ref(db, `bursluluk/students/${id}`), {
           studentName,
           school,
@@ -2598,9 +2823,11 @@ window.generateBizCardHTML = function(data) {
         console.error(e);
         Swal.fire("Hata","Güncelleme sırasında hata oluştu: " + (e?.message || e),"error");
       } finally {
+        await releaseRegistrationGuards(guardKeys, guardOwner);
         showLoading(false);
       }
     };
+
 
     window.cancelRegistration = async (id, studentName) => {
       // Load record first (needs examKey/sessionIndex/studentNo)
@@ -3117,7 +3344,7 @@ window.generateBizCardHTML = function(data) {
 
             <label class="form-label fw-semibold">Öğrenci T.C.</label>
             <input id="qr_tc" class="form-control" maxlength="11" inputmode="numeric" placeholder="___________"
-                   oninput="this.value=this.value.replace(/\\D/g,'').slice(0,11)"/>
+                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)"/>
 
             <div class="hint mt-2">Önce T.C. sorgulanır; kayıt yoksa bilgiler alınır.</div>
           </div>
@@ -3148,7 +3375,7 @@ window.generateBizCardHTML = function(data) {
         preConfirm: async () => {
           const examIdx = parseInt(document.getElementById("qr_exam").value,10);
           const sessionIdx = parseInt(document.getElementById("qr_session").value,10);
-          const tc = String(document.getElementById("qr_tc").value || "").replace(/\\D/g,'');
+          const tc = String(document.getElementById("qr_tc").value || "").replace(/\D/g,'');
           if(!window.examData[examIdx]){ Swal.showValidationMessage("Sınav seçiniz."); return false; }
           const selectedSession = window.examData[examIdx]?.sessions?.[sessionIdx];
           if(Number.isNaN(sessionIdx) || !selectedSession){ Swal.showValidationMessage("Seans seçiniz."); return false; }
@@ -3156,15 +3383,16 @@ window.generateBizCardHTML = function(data) {
           if(selectedSession.remaining <= 0){ Swal.showValidationMessage("Seçilen seansın kontenjanı dolu."); return false; }
           if(!isValidTC(tc)){ Swal.showValidationMessage("Geçerli 11 haneli T.C. giriniz."); return false; }
 
-          // Check for duplicate registration for this exam
+          // Merkezi tekrar kayıt kontrolü: bu aşamada yalnızca T.C. + sınav kontrolü yapılır.
           showLoading(true);
           try{
-            const snap = await get(child(ref(db), "bursluluk/students"));
-            const list = snap.exists() ? Object.values(snap.val()) : [];
-            const exName = window.examData[examIdx].name;
-            const exists = list.some(s => String(s.tc) === tc && String(s.examName) === String(exName));
-            if(exists){
-              Swal.showValidationMessage("Bu T.C. numarası ile bu sınava daha önce kayıt yapılmış.");
+            const list = await loadRegisteredStudents();
+            const exam = window.examData[examIdx];
+            const conflict = findRegistrationConflict(list, {
+              tc, examName:exam.name, examKey:exam.key
+            }, { checkName:false, tcMode:"exam" });
+            if(conflict){
+              Swal.showValidationMessage(registrationConflictMessage(conflict));
               return false;
             }
           } catch(e){
@@ -3243,40 +3471,62 @@ window.generateBizCardHTML = function(data) {
       });
       if(!form) return;
 
-      // Create record using same atomic-ish flow as normal registration
+      // Create record using the same centralized uniqueness flow as normal registration
       const examKey = exam.key;
       const sessionIndex = step1.sessionIdx;
       const maxQuota = session.maxQuota;
       const startNo = exam.startNo;
+
+      const registrationCandidate = {
+        tc: step1.tc,
+        studentName: form.studentName,
+        examName: exam.name,
+        examKey,
+        examDate: session.date,
+        examTime: session.time,
+        sessionIndex
+      };
 
       showLoading(true);
       const newStudentRef = push(ref(db, "bursluluk/students"));
       const studentId = newStudentRef.key;
 
       let candidate = null;
+      let seatReserved = false;
+      let numberLocked = false;
+      let guardKeys = [];
 
       try{
+        const unique = await beginUniqueRegistration(registrationCandidate, studentId, { tcMode:"exam" });
+        if(!unique.ok){
+          showLoading(false);
+          Swal.fire("Kayıt Engellendi", uniquenessResultMessage(unique), unique.reason === "busy" ? "warning" : "info");
+          return;
+        }
+        guardKeys = unique.guardKeys;
+
         const seatOk = await reserveSeat(examKey, sessionIndex, maxQuota);
         if(!seatOk){
           showLoading(false);
           Swal.fire("Kontenjan Dolu","Seçilen seans dolu. Lütfen farklı seans seçiniz.","error");
           return;
         }
+        seatReserved = true;
 
-        let used = await getUsedNumbers(examKey);
+        const used = await getUsedNumbers(examKey);
         candidate = pickSmallestAvailable(startNo, used);
 
-        let locked = false;
         let tries = 0;
-        while(!locked && tries < 60){
-          locked = await reserveNumberLock(examKey, candidate, studentId);
-          if(locked) break;
+        while(!numberLocked && tries < 60){
+          numberLocked = await reserveNumberLock(examKey, candidate, studentId);
+          if(numberLocked) break;
           candidate++;
           tries++;
         }
 
-        if(!locked){
+        if(!numberLocked){
           await releaseSeat(examKey, sessionIndex);
+          seatReserved = false;
           showLoading(false);
           Swal.fire("Sistem Yoğun","Öğrenci numarası atanamadı. Lütfen tekrar deneyiniz.","error");
           return;
@@ -3291,28 +3541,31 @@ window.generateBizCardHTML = function(data) {
           phone1: form.phone1,
           phone2: form.phone2 || "",
           examName: exam.name,
-          examKey: examKey,
+          examKey,
           examDate: session.date,
           examTime: session.time,
-          sessionIndex: sessionIndex,
+          sessionIndex,
           studentNo: candidate,
           regTs: Date.now(),
           regDate: new Date().toLocaleDateString("tr-TR")
         };
 
         await set(newStudentRef, studentData);
+        seatReserved = false;
+        numberLocked = false;
 
         Swal.fire("Başarılı", `Kayıt oluşturuldu. Öğrenci No: <b>${candidate}</b>`, "success");
         await refreshAdminData();
       } catch(e){
         console.error(e);
         try{
-          if(candidate !== null) await releaseNumberLock(examKey, candidate, studentId);
-          await releaseSeat(examKey, sessionIndex);
+          if(numberLocked && candidate !== null) await releaseNumberLock(examKey, candidate, studentId);
+          if(seatReserved) await releaseSeat(examKey, sessionIndex);
           await remove(ref(db, `bursluluk/students/${studentId}`));
         } catch(_){}
         Swal.fire("Hata","Kayıt sırasında hata oluştu: " + (e?.message || e),"error");
       } finally {
+        await releaseRegistrationGuards(guardKeys, studentId);
         showLoading(false);
       }
     };
@@ -3436,7 +3689,7 @@ window.generateBizCardHTML = function(data) {
             <label class="form-label fw-semibold mb-1">T.C.</label>
             <input id="e_tc" class="form-control mb-2" maxlength="11" inputmode="numeric"
                    value="${escapeHtml(String(s.tc||''))}"
-                   oninput="this.value=this.value.replace(/\\D/g,'').slice(0,11)">
+                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
 
             <label class="form-label fw-semibold mb-1">Öğrenci Tam Adı</label>
             <input id="e_name" class="form-control mb-2" value="${escapeHtml(s.studentName)}">
@@ -3488,7 +3741,7 @@ window.generateBizCardHTML = function(data) {
         preConfirm: async () => {
           const examIdx = parseInt(document.getElementById("e_exam").value,10);
           const sessionIdx = parseInt(document.getElementById("e_session").value,10);
-          const tc = String(document.getElementById("e_tc").value || "").replace(/\\D/g,'');
+          const tc = String(document.getElementById("e_tc").value || "").replace(/\D/g,'');
 
           const studentName = toUpperTR(normSpaces(document.getElementById("e_name").value));
           const school = toUpperTR(normSpaces(document.getElementById("e_school").value));
@@ -3509,25 +3762,6 @@ window.generateBizCardHTML = function(data) {
           if(errs.length){
             Swal.showValidationMessage(errs.join("<br>"));
             return false;
-          }
-
-          // Duplicate check (same exam name)
-          showLoading(true);
-          try{
-            const snap = await get(child(ref(db), "bursluluk/students"));
-            const list = snap.exists() ? Object.values(snap.val()) : [];
-            const exName = window.examData[examIdx].name;
-            const exists = list.some(x => x.id !== id && String(x.tc) === tc && String(x.examName) === String(exName));
-            if(exists){
-              Swal.showValidationMessage("Bu T.C. ile aynı sınava kayıt zaten var.");
-              return false;
-            }
-          } catch(e){
-            console.error(e);
-            Swal.showValidationMessage("Sorgulama sırasında hata oluştu.");
-            return false;
-          } finally {
-            showLoading(false);
           }
 
           return { examIdx, sessionIdx, tc, studentName, school, parentName, phone1, phone2: phone2 || "" };
@@ -3553,8 +3787,31 @@ window.generateBizCardHTML = function(data) {
 
       let reservedNewSeat = false;
       let reservedNewNo = null;
+      let guardKeys = [];
+      const guardOwner = `EDIT-${id}-${Date.now()}`;
+
+      const registrationCandidate = {
+        tc: formValues.tc,
+        studentName: formValues.studentName,
+        examName: newExam.name,
+        examKey: newExamKey,
+        examDate: newSession.date,
+        examTime: newSession.time,
+        sessionIndex: newSessionIndex
+      };
 
       try{
+        const unique = await beginUniqueRegistration(registrationCandidate, guardOwner, {
+          ignoreId:id,
+          tcMode:"exam"
+        });
+        if(!unique.ok){
+          showLoading(false);
+          Swal.fire("Güncelleme Engellendi", uniquenessResultMessage(unique), unique.reason === "busy" ? "warning" : "info");
+          return;
+        }
+        guardKeys = unique.guardKeys;
+
         // If exam/session changed, reserve new seat first
         if(examChanged || sessionChanged){
           const seatOk = await reserveSeat(newExamKey, newSessionIndex, newSession.maxQuota);
@@ -3570,7 +3827,7 @@ window.generateBizCardHTML = function(data) {
 
         if(examChanged){
           // Allocate new number in new exam
-          let used = await getUsedNumbers(newExamKey);
+          const used = await getUsedNumbers(newExamKey);
           let candidate = pickSmallestAvailable(newExam.startNo, used);
 
           let locked = false;
@@ -3583,7 +3840,10 @@ window.generateBizCardHTML = function(data) {
           }
 
           if(!locked){
-            await releaseSeat(newExamKey, newSessionIndex);
+            if(reservedNewSeat){
+              await releaseSeat(newExamKey, newSessionIndex);
+              reservedNewSeat = false;
+            }
             showLoading(false);
             Swal.fire("Sistem Yoğun","Yeni öğrenci numarası atanamadı. Lütfen tekrar deneyiniz.","error");
             return;
@@ -3592,7 +3852,6 @@ window.generateBizCardHTML = function(data) {
           updatedNo = candidate;
         }
 
-        // Update record
         const payload = {
           tc: formValues.tc,
           studentName: formValues.studentName,
@@ -3611,6 +3870,10 @@ window.generateBizCardHTML = function(data) {
 
         await update(ref(db, `bursluluk/students/${id}`), payload);
 
+        // Yeni kayıt kaynakları artık güncellenmiş kayda ait; rollback yapılmamalı.
+        reservedNewSeat = false;
+        reservedNewNo = null;
+
         // Release old resources
         if(examChanged || sessionChanged){
           await releaseSeat(oldExamKey, oldSessionIndex);
@@ -3624,7 +3887,6 @@ window.generateBizCardHTML = function(data) {
       } catch(e){
         console.error(e);
 
-        // rollback new reservations best-effort
         try{
           if(reservedNewNo !== null) await releaseNumberLock(newExamKey, reservedNewNo, id);
           if(reservedNewSeat) await releaseSeat(newExamKey, newSessionIndex);
@@ -3632,8 +3894,10 @@ window.generateBizCardHTML = function(data) {
 
         Swal.fire("Hata","Güncelleme sırasında hata oluştu: " + (e?.message || e),"error");
       } finally {
+        await releaseRegistrationGuards(guardKeys, guardOwner);
         showLoading(false);
       }
+
     };
 
 
@@ -4647,30 +4911,7 @@ window.generateBizCardHTML = function(data) {
           rec.errors = validateBulkRecord(rec);
           list.push(rec);
         }
-        // Aynı TC ile birden fazla kayıt varsa hata ekle
-        const counts = {};
-        list.forEach(r => {
-          if(r.tc){ counts[r.tc] = (counts[r.tc] || 0) + 1; }
-        });
-        list.forEach(r => {
-          if(r.tc && counts[r.tc] > 1){
-            if(!Array.isArray(r.errors)) r.errors = [];
-            // aynı tc olduğu için hata ekle
-            r.errors.push('Aynı TC birden fazla satırda var');
-          }
-        });
-        // Daha önce veritabanında aynı TC ile bir öğrenci varsa hata ekle
-        if(typeof dbStudents !== 'undefined' && Array.isArray(dbStudents)){
-          list.forEach(r => {
-            if(!r.tc) return;
-            const existsInDb = dbStudents.some(s => String(s.tc) === String(r.tc));
-            if(existsInDb){
-              if(!Array.isArray(r.errors)) r.errors = [];
-              // Mark that this TC has already been registered
-              r.errors.push('Bu TC ile öğrenci zaten kaydedilmiş');
-            }
-          });
-        }
+        recalculateBulkDuplicateErrors(list);
         window.bulkStudents = list;
         displayBulkList();
         const assign = document.getElementById('bulkAssignControls');
@@ -4693,6 +4934,70 @@ window.generateBizCardHTML = function(data) {
         if(!isPhoneComplete(rec.phone1)) errs.push('Telefon 1 eksik veya hatalı');
       }catch(_e){/* ignore */}
       return errs;
+    }
+
+    function recalculateBulkDuplicateErrors(list = (window.bulkStudents || [])){
+      const dynamicErrors = new Set([
+        'Aynı TC birden fazla satırda var',
+        'Bu TC ile öğrenci zaten kaydedilmiş',
+        'Aynı öğrenci aynı sınav/seansta birden fazla satırda var',
+        'Bu öğrenci aynı sınav/seansta zaten kayıtlı'
+      ]);
+
+      (list || []).forEach(r => {
+        if(!Array.isArray(r.errors)) r.errors = [];
+        r.errors = r.errors.filter(e => !dynamicErrors.has(e));
+      });
+
+      const tcCounts = {};
+      const identityCounts = {};
+
+      (list || []).forEach(r => {
+        if(r.tc) tcCounts[r.tc] = (tcCounts[r.tc] || 0) + 1;
+
+        const name = normalizeStudentIdentityName(r.studentName || '');
+        const examId = normalizeExamIdentity(r);
+        const date = normSpaces(String(r.examDate || ''));
+        const time = normSpaces(String(r.examTime || ''));
+        const sessionIdx = r.sessionIndex ?? r.sessionIdx;
+        if(name && examId !== 'NAME:' && ((date && time) || sessionIdx !== undefined)){
+          const sessionPart = (date && time) ? `${date}|${time}` : `IDX:${sessionIdx}`;
+          const key = `${name}|${examId}|${sessionPart}`;
+          identityCounts[key] = (identityCounts[key] || 0) + 1;
+          r._bulkIdentityKey = key;
+        } else {
+          delete r._bulkIdentityKey;
+        }
+      });
+
+      (list || []).forEach(r => {
+        if(r.tc && tcCounts[r.tc] > 1){
+          r.errors.push('Aynı TC birden fazla satırda var');
+        }
+
+        if(r._bulkIdentityKey && identityCounts[r._bulkIdentityKey] > 1){
+          r.errors.push('Aynı öğrenci aynı sınav/seansta birden fazla satırda var');
+        }
+
+        if(Array.isArray(dbStudents)){
+          if(r.tc && dbStudents.some(s => String(s.tc) === String(r.tc))){
+            r.errors.push('Bu TC ile öğrenci zaten kaydedilmiş');
+          }
+
+          if(r._bulkIdentityKey){
+            const nameConflict = findRegistrationConflict(dbStudents, r, {
+              checkTc:false,
+              checkName:true,
+              tcMode:'global'
+            });
+            if(nameConflict){
+              r.errors.push('Bu öğrenci aynı sınav/seansta zaten kayıtlı');
+            }
+          }
+        }
+
+        delete r._bulkIdentityKey;
+      });
     }
 
     // Yüklenen öğrencileri tablo halinde gösterir
@@ -4953,7 +5258,8 @@ window.generateBizCardHTML = function(data) {
           stu.examTime = sess.time;
         }
       });
-      // Listeyi yeniden çiz ve kontenjan bilgisini güncelle
+      // Sınav/seans atandıktan sonra ad + sınav + tarih + seans tekrarlarını da anında hesapla.
+      recalculateBulkDuplicateErrors(window.bulkStudents || []);
       displayBulkList();
       updateBulkQuotaDisplay();
     };
@@ -4976,6 +5282,7 @@ window.generateBizCardHTML = function(data) {
         Swal.fire('Bilgi','Seçili öğrencilerde iptal edilecek bir atama bulunamadı.','info');
         return;
       }
+      recalculateBulkDuplicateErrors(window.bulkStudents || []);
       displayBulkList();
       updateBulkQuotaDisplay();
     };
@@ -5075,39 +5382,81 @@ window.generateBizCardHTML = function(data) {
       const successes = [];
       const failures = [];
       await fetchAdminData();
+      // Tek bir güncel liste üzerinden ilerle; başarılı toplu kayıtları da bu listeye ekleyerek
+      // aynı Excel dosyası içindeki tekrarları anında yakala.
+      const knownStudents = Array.isArray(dbStudents) ? [...dbStudents] : [];
+
       for(const idx of ids){
         const rec = window.bulkStudents[idx];
-        let seatCandidate;
-        let newRef;
+        const exam = window.examData[rec.examIdx];
+        const sessionIdx = rec.sessionIdx;
+        const session = exam?.sessions?.[sessionIdx];
+
+        let seatCandidate = null;
+        let newRef = null;
+        let seatReserved = false;
+        let numberLocked = false;
+        let guardKeys = [];
+        let studentId = "";
+
         try{
-        // tekrar kayıt kontrolü: aynı TC varsa daha önce kaydedilmiştir
-        const exists = dbStudents.some(x => String(x.tc) === String(rec.tc));
-        if(exists){ failures.push({rec, reason:'Bu T.C. ile kayıt mevcut'}); continue; }
-          const exam = window.examData[rec.examIdx];
-          const sessionIdx = rec.sessionIdx;
-          const session = exam.sessions[sessionIdx];
-          // kontenjan rezerve et
-          const seatOk = await reserveSeat(exam.key, sessionIdx, session.maxQuota);
-          if(!seatOk){ failures.push({rec, reason:'Kontenjan dolu'}); continue; }
-          // numara ata
-          const used = await getUsedNumbers(exam.key);
-          seatCandidate = pickSmallestAvailable(exam.startNo, used);
-          let locked = false;
-          let tries = 0;
-          newRef = push(ref(db, 'bursluluk/students'));
-          const studentId = newRef.key;
-          while(!locked && tries < 60){
-            locked = await reserveNumberLock(exam.key, seatCandidate, studentId);
-            if(!locked){ seatCandidate++; tries++; }
+          if(!exam || !session){
+            failures.push({rec, reason:'Sınav veya seans bilgisi bulunamadı'});
+            continue;
           }
-          if(!locked){ await releaseSeat(exam.key, sessionIdx); failures.push({rec, reason:'Öğrenci numarası atanamadı'}); continue; }
-          // alan doğrulama
+
           if(!isValidTC(rec.tc) || !isTwoWords(rec.studentName) || !isTwoWords(rec.parentName) || !isPhoneComplete(rec.phone1)){
-            await releaseSeat(exam.key, sessionIdx);
-            await releaseNumberLock(exam.key, seatCandidate, studentId);
             failures.push({rec, reason:'Veri eksik veya hatalı'});
             continue;
           }
+
+          newRef = push(ref(db, 'bursluluk/students'));
+          studentId = newRef.key;
+
+          const registrationCandidate = {
+            tc: rec.tc,
+            studentName: rec.studentName,
+            examName: rec.examName || exam.name,
+            examKey: rec.examKey || exam.key,
+            examDate: rec.examDate || session.date,
+            examTime: rec.examTime || session.time,
+            sessionIndex: sessionIdx
+          };
+
+          // Toplu yüklemede mevcut davranışı koru: aynı T.C. sistem genelinde tekrar kullanılamaz.
+          // Buna ek olarak aynı ad + aynı sınav + aynı tarih + aynı seans da engellenir.
+          const unique = await beginUniqueRegistration(registrationCandidate, studentId, {
+            tcMode:'global',
+            students:knownStudents
+          });
+          if(!unique.ok){
+            failures.push({rec, reason:uniquenessResultMessage(unique)});
+            continue;
+          }
+          guardKeys = unique.guardKeys;
+
+          const seatOk = await reserveSeat(exam.key, sessionIdx, session.maxQuota);
+          if(!seatOk){
+            failures.push({rec, reason:'Kontenjan dolu'});
+            continue;
+          }
+          seatReserved = true;
+
+          const used = await getUsedNumbers(exam.key);
+          seatCandidate = pickSmallestAvailable(exam.startNo, used);
+          let tries = 0;
+          while(!numberLocked && tries < 60){
+            numberLocked = await reserveNumberLock(exam.key, seatCandidate, studentId);
+            if(!numberLocked){ seatCandidate++; tries++; }
+          }
+
+          if(!numberLocked){
+            await releaseSeat(exam.key, sessionIdx);
+            seatReserved = false;
+            failures.push({rec, reason:'Öğrenci numarası atanamadı'});
+            continue;
+          }
+
           const studentData = {
             id: studentId,
             tc: rec.tc,
@@ -5116,26 +5465,37 @@ window.generateBizCardHTML = function(data) {
             parentName: rec.parentName,
             phone1: rec.phone1,
             phone2: rec.phone2 || '',
-            examName: rec.examName,
-            examKey: rec.examKey,
-            examDate: rec.examDate,
-            examTime: rec.examTime,
+            examName: rec.examName || exam.name,
+            examKey: rec.examKey || exam.key,
+            examDate: rec.examDate || session.date,
+            examTime: rec.examTime || session.time,
             sessionIndex: sessionIdx,
             studentNo: seatCandidate,
             regTs: Date.now(),
             regDate: new Date().toLocaleDateString('tr-TR')
           };
+
           await set(newRef, studentData);
+          seatReserved = false;
+          numberLocked = false;
           successes.push(studentData);
+          knownStudents.push(studentData);
         } catch(e){
           console.error(e);
           try{
-            if(rec.examKey && rec.sessionIdx !== undefined) await releaseSeat(rec.examKey, rec.sessionIdx);
-            if(seatCandidate !== undefined && newRef){ await releaseNumberLock(rec.examKey, seatCandidate, newRef.key); }
+            if(numberLocked && seatCandidate !== null && studentId){
+              await releaseNumberLock(exam?.key || rec.examKey, seatCandidate, studentId);
+            }
+            if(seatReserved){
+              await releaseSeat(exam?.key || rec.examKey, sessionIdx);
+            }
           } catch(_){}
           failures.push({rec, reason:(e && e.message) ? e.message : 'Hata'});
+        } finally {
+          await releaseRegistrationGuards(guardKeys, studentId);
         }
       }
+
       showLoading(false);
       await refreshAdminData();
       let resultHtml = '';
@@ -5264,32 +5624,9 @@ window.generateBizCardHTML = function(data) {
           rec.parentName = parent;
           rec.phone1 = phone1;
           rec.phone2 = phone2;
-          // Hataları yeniden hesapla ve tekrar duplicate kontrolü
+          // Hataları yeniden hesapla; TC ve ad/seans tekrarları tek merkezden denetlenir.
           rec.errors = validateBulkRecord(rec);
-          // İlk olarak tüm kayıtların duplicate hatalarını sıfırla
-          (window.bulkStudents || []).forEach(r => {
-            if(Array.isArray(r.errors)){
-              r.errors = r.errors.filter(e => e !== 'Aynı TC birden fazla satırda var' && e !== 'Bu TC ile öğrenci zaten kaydedilmiş');
-            }
-          });
-          // Duplicate kontrolü: diğer kayıtlarla aynı TC varsa hata ekle
-          const counts = {};
-          (window.bulkStudents || []).forEach(r => {
-            if(r.tc){ counts[r.tc] = (counts[r.tc] || 0) + 1; }
-          });
-          (window.bulkStudents || []).forEach(r => {
-            if(!Array.isArray(r.errors)) r.errors = [];
-            if(r.tc && counts[r.tc] > 1){
-              r.errors.push('Aynı TC birden fazla satırda var');
-            }
-            // Kontrol: mevcut veritabanındaki öğrencilerle aynı TC varsa
-            if(r.tc && typeof dbStudents !== 'undefined' && Array.isArray(dbStudents)){
-              const existsInDb = dbStudents.some(s => String(s.tc) === String(r.tc));
-              if(existsInDb){
-                r.errors.push('Bu TC ile öğrenci zaten kaydedilmiş');
-              }
-            }
-          });
+          recalculateBulkDuplicateErrors(window.bulkStudents || []);
           // Modalı kapat
           const modalEl = document.getElementById('bulkEditModal');
           const inst = bootstrap.Modal.getInstance(modalEl);
