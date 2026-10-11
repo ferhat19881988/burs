@@ -781,7 +781,7 @@
 
     <!-- Footer: sits at the bottom of the main menu using flexbox -->
     <footer id="mainFooter" class="no-print text-center" style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f4f6f9; padding: 15px 0; z-index: 1050; border-top: 1px solid #dcdcdc; font-weight: 500;">
-  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.6</span>
+  Bu programı tasarlayan ve dizayn eden <strong>Ferhat Karagöz</strong> · <span id="appVersionText">v1.1.7</span>
 </footer>
 
 <style>
@@ -1335,7 +1335,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const APP_VERSION = "v1.1.6";
+    const APP_VERSION = "v1.1.7";
     window.APP_VERSION = APP_VERSION;
 
     // --- 1SMS Ayarları ---
@@ -1613,14 +1613,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     function parseTRDateParts(dateStr){
       const raw = normSpaces(String(dateStr || ""));
       if(!raw) return null;
-      const m = raw.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+      // Hem Türkiye biçimi (23.10.2026) hem ISO (2026-10-23) desteklenir.
+      const m = raw.match(/^(\d{1,4})[.\/-](\d{1,2})[.\/-](\d{1,4})$/);
       if(!m) return null;
-      let day = parseInt(m[1], 10);
-      let month = parseInt(m[2], 10) - 1;
-      let year = parseInt(m[3], 10);
+      const iso = m[1].length === 4;
+      const day = parseInt(iso ? m[3] : m[1], 10);
+      const month = parseInt(m[2], 10) - 1;
+      let year = parseInt(iso ? m[1] : m[3], 10);
       if(year < 100) year += 2000;
       const dt = new Date(year, month, day);
-      if(Number.isNaN(dt.getTime())) return null;
+      if(Number.isNaN(dt.getTime()) || dt.getFullYear() !== year ||
+         dt.getMonth() !== month || dt.getDate() !== day) return null;
       dt.setHours(0,0,0,0);
       return dt;
     }
@@ -3061,7 +3064,7 @@ window.generateBizCardHTML = function(data) {
     }
 
     // --- Toplu SMS ---
-    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen E.K: {{ogrenci}} deneme kaydi yapilmistir. Sinav {{tarih}} ({{saat}}). Ogrenci No: {{ogrenci_no}}.";
+    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen Egitim: {{ogrenci}} deneme kaydi yapilmistir. Sinav {{tarih}} ({{saat}}). Ogrenci No: {{ogrenci_no}}";
 
     function normalizeTRGsm(raw){
       const digits = String(raw || '').replace(/\D/g,'');
@@ -3702,7 +3705,22 @@ window.generateBizCardHTML = function(data) {
         await fetchExamData(true);
       }
 
-      const examOptions = window.examData.map((e, idx) => `<option value="${idx}" ${e.key===s.examKey?'selected':''}>${escapeHtml(e.name)}</option>`).join("");
+      // Düzenleme penceresinde geçmiş veya tarih bilgisi hatalı sınav/seanslar listelenmez.
+      // Eski bir kaydın yalnızca kişisel bilgilerini güncellerken sınav ataması korunabilir.
+      const isSelectableEditDate = date => !!parseTRDateParts(date) && isFutureOrTodayDate(date);
+      const currentExam = window.examData.find(e => e.key === s.examKey);
+      const currentSession = currentExam?.sessions?.[parseInt(s.sessionIndex, 10)];
+      const currentSelectionActive = !!currentSession &&
+        isSelectableEditDate(s.examDate) && isSelectableEditDate(currentSession.date);
+      const examOptions = [
+        `<option value="-1" ${currentSelectionActive ? '' : 'selected'}>Mevcut sınav / seans değişmesin</option>`,
+        ...window.examData.map((exam, idx) => {
+          const hasUpcomingSession = (exam.sessions || []).some(session => isSelectableEditDate(session.date));
+          if(!hasUpcomingSession) return '';
+          const selected = currentSelectionActive && exam.key === s.examKey ? 'selected' : '';
+          return `<option value="${idx}" ${selected}>${escapeHtml(exam.name)}</option>`;
+        }).filter(Boolean)
+      ].join("");
 
       const { value: formValues } = await Swal.fire({
         title: "Kayıt Güncelleme",
@@ -3756,16 +3774,25 @@ window.generateBizCardHTML = function(data) {
           const se = document.getElementById("e_session");
 
           const fillSessions = () => {
+            if(ex.value === '-1'){
+              se.innerHTML = '<option value="-1">Mevcut seans korunacak</option>';
+              se.disabled = true;
+              return;
+            }
+            se.disabled = false;
             const exam = window.examData[parseInt(ex.value,10)];
-            const opts = (exam?.sessions || []).map((ss, i) => {
-              // Disable session if no remaining quota, except allow selecting current session for editing
-              const isCurrent = (exam.key === s.examKey && i === s.sessionIndex);
-              const disabled = (ss.remaining <= 0 && !isCurrent) ? 'disabled' : '';
-              const selected = isCurrent ? 'selected' : '';
-              const label = `${escapeHtml(ss.date)} • ${escapeHtml(ss.time)} (Kalan: ${ss.remaining}/${ss.maxQuota})`;
-              return `<option value="${i}" ${selected} ${disabled}>${label}</option>`;
-            }).join("");
-            se.innerHTML = opts || `<option value="">Seans bulunamadı</option>`;
+            const opts = (exam?.sessions || [])
+              .map((ss, i) => ({ss, i}))
+              .filter(({ss}) => isSelectableEditDate(ss.date))
+              .map(({ss, i}) => {
+                // Kontenjanı dolu seanslar seçilemez; öğrenci zaten bu seanstaysa korunabilir.
+                const isCurrent = exam.key === s.examKey && i === parseInt(s.sessionIndex, 10);
+                const disabled = (ss.remaining <= 0 && !isCurrent) ? 'disabled' : '';
+                const selected = isCurrent ? 'selected' : '';
+                const label = `${escapeHtml(ss.date)} • ${escapeHtml(ss.time)} (Kalan: ${ss.remaining}/${ss.maxQuota})`;
+                return `<option value="${i}" ${selected} ${disabled}>${label}</option>`;
+              }).join("");
+            se.innerHTML = opts || '<option value="">Gelecek tarihli seans bulunamadı</option>';
           };
           ex.addEventListener("change", fillSessions);
           fillSessions();
@@ -3781,8 +3808,9 @@ window.generateBizCardHTML = function(data) {
         confirmButtonText: "Güncelle",
         cancelButtonText: "Vazgeç",
         preConfirm: async () => {
-          const examIdx = parseInt(document.getElementById("e_exam").value,10);
-          const sessionIdx = parseInt(document.getElementById("e_session").value,10);
+          const preserveCurrent = document.getElementById("e_exam").value === '-1';
+          const examIdx = preserveCurrent ? -1 : parseInt(document.getElementById("e_exam").value,10);
+          const sessionIdx = preserveCurrent ? parseInt(s.sessionIndex,10) : parseInt(document.getElementById("e_session").value,10);
           const rawTc = String(document.getElementById("e_tc").value || "").trim().toUpperCase();
           const tc = isGuestCode(rawTc) ? rawTc : digitsOnly(rawTc);
 
@@ -3793,8 +3821,10 @@ window.generateBizCardHTML = function(data) {
           const phone2 = document.getElementById("e_phone2").value;
 
           const errs = [];
-          if(!window.examData[examIdx]) errs.push("Sınav seçiniz.");
-          if(Number.isNaN(sessionIdx)) errs.push("Seans seçiniz.");
+          if(!preserveCurrent && !window.examData[examIdx]) errs.push("Sınav seçiniz.");
+          if(!preserveCurrent && (!window.examData[examIdx]?.sessions?.[sessionIdx] ||
+              !isSelectableEditDate(window.examData[examIdx].sessions[sessionIdx].date)))
+            errs.push("Gelecek tarihli geçerli bir seans seçiniz.");
           if(!isValidTC(tc) && !(isGuestCode(tc) && tc === String(s.tc || '').toUpperCase()))
             errs.push("T.C. 11 haneli olmalı veya mevcut misafir kodu korunmalıdır.");
           if(!isTwoWords(studentName)) errs.push("Öğrenci adı en az 2 kelime olmalıdır.");
@@ -3808,14 +3838,18 @@ window.generateBizCardHTML = function(data) {
             return false;
           }
 
-          return { examIdx, sessionIdx, tc, studentName, school, parentName, phone1, phone2: phone2 || "" };
+          return { examIdx, sessionIdx, preserveCurrent, tc, studentName, school, parentName, phone1, phone2: phone2 || "" };
         }
       });
 
       if(!formValues) return;
 
-      const newExam = window.examData[formValues.examIdx];
-      const newSession = newExam.sessions[formValues.sessionIdx];
+      const newExam = formValues.preserveCurrent
+        ? { key:s.examKey, name:s.examName }
+        : window.examData[formValues.examIdx];
+      const newSession = formValues.preserveCurrent
+        ? { date:s.examDate, time:s.examTime }
+        : newExam.sessions[formValues.sessionIdx];
 
       const oldExamKey = s.examKey;
       const oldSessionIndex = s.sessionIndex;
@@ -3825,7 +3859,8 @@ window.generateBizCardHTML = function(data) {
       const newSessionIndex = formValues.sessionIdx;
 
       const examChanged = String(newExamKey) !== String(oldExamKey);
-      const sessionChanged = parseInt(newSessionIndex,10) !== parseInt(oldSessionIndex,10);
+      const sessionChanged = !formValues.preserveCurrent &&
+        parseInt(newSessionIndex,10) !== parseInt(oldSessionIndex,10);
 
       showLoading(true);
 
