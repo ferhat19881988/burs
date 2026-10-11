@@ -984,7 +984,7 @@
           <div class="text-center">
             <i class="fa-solid fa-circle-check text-success" style="font-size:64px;"></i>
             <h2 class="mt-3" style="font-weight:900;">Başvurunuz Alınmıştır</h2>
-            <p class="mb-1">Giriş kartınızı isterseniz aşağıdaki bölümden kendiniz yazdırabilir, isterseniz de sınavdan <b>2 gün öncesine kadar</b> kurumumuza gelerek teslim alabilirsiniz.</p>
+            <p class="mb-1">Giriş kartınızı isterseniz aşağıdaki bölümden kendiniz yazdırabilirsiniz.</p>
 
             <div class="card-preview-wrap mt-4">
               <div id="finalCardPreview"></div>
@@ -1181,7 +1181,7 @@
 
           <div class="alert alert-light border py-2 mb-3">
             <div class="fw-semibold"><i class="fa-solid fa-circle-info me-1"></i> Kullanılabilir alanlar</div>
-            <div class="small text-secondary"><code>{{ogrenci}}</code> <code>{{sinav}}</code> <code>{{tarih}}</code> <code>{{saat}}</code> <code>{{yer}}</code></div>
+            <div class="small text-secondary"><code>{{ogrenci}}</code> <code>{{sinav}}</code> <code>{{tarih}}</code> <code>{{saat}}</code> <code>{{yer}}</code> <code>{{ogrenci_no}}</code></div>
           </div>
 
           <label class="form-label fw-semibold">SMS Mesajı</label>
@@ -1194,7 +1194,7 @@
           <div class="form-check form-switch mt-3">
             <input class="form-check-input" type="checkbox" id="smsAsciiMode" checked onchange="updateBulkSmsSummary()">
             <label class="form-check-label fw-semibold" for="smsAsciiMode">Türkçe karakterleri SMS gönderiminde sadeleştir</label>
-            <div class="hint">Tek SMS sınırında kalma ihtimalini artırır. Önizleme gönderilecek gerçek metni gösterir.</div>
+            <div class="hint">Önizleme gönderilecek gerçek metni gösterir. Tek SMS sınırını aşan mesajların gönderimi engellenir.</div>
           </div>
 
           <div class="row g-3 mt-1">
@@ -1264,6 +1264,7 @@
           </div>
           <div class="col-md-3 d-grid gap-2">
             <button class="btn btn-success" onclick="adminQuickRegister()"><i class="fa-solid fa-plus"></i> Hızlı Öğrenci Kayıt</button>
+            <button class="btn btn-outline-primary" onclick="adminQuickRegister(true)"><i class="fa-solid fa-user-clock"></i> T.C.'siz Misafir Öğrenci Kaydet</button>
           </div>
 
           <div class="col-12 text-end mt-2">
@@ -1406,6 +1407,29 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
     function isValidTC(tc){
       return /^[0-9]{11}$/.test(tc);
     }
+
+    // Misafir kodları gerçek T.C. kimlik numarası DEĞİLDİR ve T.C. alanında
+    // yalnızca mevcut kayıt yapısıyla uyumluluk için saklanır.
+    function isGuestCode(value){
+      return /^MIS-[A-F0-9]{16}$/.test(String(value || '').trim().toUpperCase());
+    }
+    function registrationIdentity(value){
+      const raw = String(value || '').trim().toUpperCase();
+      return isGuestCode(raw) ? raw : digitsOnly(raw);
+    }
+    function generateUniqueGuestCode(students){
+      // Kriptografik rastgelelik; aynı kodun veritabanında olmadığını kontrol et.
+      // Son kayıt aşamasında da global kayıt kilidi tekrar çakışmayı önler.
+      const registered = new Set((students || []).map(s => registrationIdentity(s?.tc)));
+      if(!globalThis.crypto?.getRandomValues) throw new Error('Güvenli misafir kodu üretimi tarayıcıda desteklenmiyor.');
+      for(let attempt=0;attempt<30;attempt++){
+        const bytes = new Uint8Array(8);
+        globalThis.crypto.getRandomValues(bytes);
+        const code = 'MIS-' + Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+        if(!registered.has(code)) return code;
+      }
+      throw new Error('Benzersiz misafir kodu üretilemedi.');
+    }
     function isTwoWords(name){
       const parts = normSpaces(name).split(" ").filter(Boolean);
       return parts.length >= 2;
@@ -1454,7 +1478,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
         checkName = true
       } = options;
 
-      const tc = digitsOnly(candidate?.tc || "");
+      const tc = registrationIdentity(candidate?.tc);
       const candidateName = normalizeStudentIdentityName(candidate?.studentName || candidate?.name || "");
 
       for(const s of (students || [])){
@@ -1463,7 +1487,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 
         const sameExam = isSameExamForRegistration(s, candidate);
 
-        if(checkTc && tc && digitsOnly(s.tc || "") === tc){
+        if(checkTc && tc && registrationIdentity(s.tc) === tc){
           if(tcMode === "global" || sameExam){
             return { type:"tc", record:s };
           }
@@ -1501,7 +1525,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
       const { tcMode = "exam", checkTc = true, checkName = true } = options;
       const keys = [];
       const examId = normalizeExamIdentity(candidate);
-      const tc = digitsOnly(candidate?.tc || "");
+      const tc = registrationIdentity(candidate?.tc);
       const name = normalizeStudentIdentityName(candidate?.studentName || candidate?.name || "");
       const date = normSpaces(String(candidate?.examDate || candidate?.date || ""));
       const time = normSpaces(String(candidate?.examTime || candidate?.time || ""));
@@ -2456,8 +2480,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
             </div>
 
             <div class="kv is-tc" style="border-bottom:none;padding-bottom:0;">
-              <div class="k">T.C.</div>
-              <div class="v" title="${escapeHtml(tc)}">${tcPretty}</div>
+              <div class="k">${isGuestCode(tc) ? 'Misafir Kodu' : 'T.C.'}</div>
+              <div class="v" title="${escapeHtml(tc)}">${escapeHtml(tcPretty)}</div>
             </div>
 
             <div class="big-no">
@@ -2531,7 +2555,7 @@ window.generateBizCardHTML = function(data) {
                         <div class="biz-val school biz-multiline" title="${safe(school)}">${safe(school)}</div>
                     </div>
                     <div class="biz-row">
-                        <div class="biz-lbl">T.C. NO</div>
+                        <div class="biz-lbl">${isGuestCode(tc) ? 'MİSAFİR KODU' : 'T.C. NO'}</div>
                         <div class="biz-val tc">${safe(tcFmt)}</div>
                     </div>
                 </div>
@@ -2615,7 +2639,7 @@ window.generateBizCardHTML = function(data) {
             <table class="info-table">
               <tr><td class="lbl">Öğrenci Adı</td><td class="val">${safe(studentName)}</td></tr>
               <tr><td class="lbl">Okul</td><td class="val">${safe(school)}</td></tr>
-              <tr><td class="lbl">T.C. Kimlik No</td><td class="val">${safe(tcPretty)}</td></tr>
+              <tr><td class="lbl">${isGuestCode(tc) ? 'Misafir Kodu' : 'T.C. Kimlik No'}</td><td class="val">${safe(tcPretty)}</td></tr>
               <tr><td class="lbl">Sınav</td><td class="val">${safe(exam)}</td></tr>
               <tr><td class="lbl">Sınav Yeri</td><td class="val">${safe(place)}</td></tr>
               <tr><td class="lbl">Sınav Tarihi</td><td class="val">${safe(date)}</td></tr>
@@ -2961,7 +2985,7 @@ window.generateBizCardHTML = function(data) {
           <tr>
             <td><input type="checkbox" class="admin-chk" data-index="${idx}" value="${s.id}" ${checkedAttr}></td>
             <td class="fw-semibold">${escapeHtml(String(s.studentNo ?? ""))}</td>
-            <td>${escapeHtml(String(s.tc ?? ""))}</td>
+            <td>${isGuestCode(s.tc) ? '<span class="badge text-bg-info me-1">MİSAFİR</span>' : ''}${escapeHtml(String(s.tc ?? ""))}</td>
             <td>${escapeHtml(String(s.studentName ?? ""))}</td>
             <td>${escapeHtml(String(s.parentName ?? ""))}</td>
             <td>${escapeHtml(String(s.phone1 ?? ""))}</td>
@@ -3037,7 +3061,7 @@ window.generateBizCardHTML = function(data) {
     }
 
     // --- Toplu SMS ---
-    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen Egitim Kurumlari: {{ogrenci}} öğrencimizin deneme kaydi yapılmıştır.{{tarih}} ve ({{saat}}) uygulanacaktir. Gec kalmamanizi rica ederiz.";
+    const DEFAULT_BULK_SMS_TEMPLATE = "Fenomen E.K: {{ogrenci}} deneme kaydi yapilmistir. Sinav {{tarih}} ({{saat}}). Ogrenci No: {{ogrenci_no}}.";
 
     function normalizeTRGsm(raw){
       const digits = String(raw || '').replace(/\D/g,'');
@@ -3077,6 +3101,7 @@ window.generateBizCardHTML = function(data) {
     function buildBulkSmsMessage(template, student, asciiMode){
       const vars = {
         ogrenci: normSpaces(student?.studentName || ''),
+        ogrenci_no: String(student?.studentNo ?? ''),
         sinav: normSpaces(student?.examName || ''),
         tarih: normSpaces(student?.examDate || ''),
         saat: normSpaces(student?.examTime || ''),
@@ -3104,8 +3129,8 @@ window.generateBizCardHTML = function(data) {
         else { gsm7 = false; break; }
       }
       if(gsm7){
-        const parts = septets <= 155 ? (septets ? 1 : 0) : Math.ceil(septets / 153);
-        return { encoding:'GSM-7', length:septets, parts, singleLimit:155, multiLimit:153 };
+        const parts = septets <= 160 ? (septets ? 1 : 0) : Math.ceil(septets / 153);
+        return { encoding:'GSM-7', length:septets, parts, singleLimit:160, multiLimit:153 };
       }
       // Unicode SMS: JS UTF-16 kod birimi sayısı, UCS-2/UTF-16 SMS hesaplaması için güvenli yaklaşım.
       const units = value.length;
@@ -3149,13 +3174,13 @@ window.generateBizCardHTML = function(data) {
       const meta = document.getElementById('bulkSmsPreviewMeta');
       if(preview){
         meta.textContent = `${preview.metrics.encoding} • ${preview.metrics.length} karakter/birim • ${preview.metrics.parts} SMS` +
-          (multiCount ? ` • ${multiCount} öğrencinin mesajı birden fazla SMS'e bölünecek` : ' • Seçili mesajlar tek SMS sınırında');
+          (multiCount ? ` • UYARI: ${multiCount} öğrencinin mesajı tek SMS sınırını aşıyor; gönderim engellenecek` : ' • Seçili mesajlar tek SMS sınırında');
       }else{
         meta.textContent = '-';
       }
 
       const sendBtn = document.getElementById('bulkSmsSendBtn');
-      if(sendBtn) sendBtn.disabled = data.sendable.length === 0;
+      if(sendBtn) sendBtn.disabled = data.sendable.length === 0 || multiCount > 0;
     };
 
     window.openBulkSmsModal = () => {
@@ -3222,6 +3247,13 @@ window.generateBizCardHTML = function(data) {
       }
       if(!prepared.sendable.length){
         Swal.fire('Gönderilecek Numara Yok','Seçili öğrencilerin Telefon 1 / Telefon 2 alanlarında geçerli GSM numarası bulunamadı.','warning');
+        return;
+      }
+      const overLimit = prepared.sendable.filter(it => it.metrics.parts > 1);
+      if(overLimit.length){
+        Swal.fire('Tek SMS Sınırı Aşıldı',
+          `${overLimit.length} öğrencinin mesajı tek SMS sınırını aşıyor. Şablonu kısaltın veya Türkçe karakter sadeleştirmeyi açın. Hiçbir mesaj gönderilmedi.`,
+          'warning');
         return;
       }
       if(!navigator.onLine){
@@ -3299,13 +3331,13 @@ window.generateBizCardHTML = function(data) {
       });
     };
 
-    window.adminQuickRegister = async () => {
+    window.adminQuickRegister = async (guestMode = false) => {
       // Ensure exam data exists
       if(window.examData.length === 0){
         await fetchExamData(true);
       }
 
-      // Step 1: exam + session + TC
+      // Step 1: exam + session + TC, veya yalnızca yönetici için misafir kodu.
       // Yönetici hızlı kayıt ekranında yalnızca bugün veya ileri tarihli sınavlar gösterilir.
       // Bir sınavın eski tarihli seansları varsa, sınav seçilse bile bu seanslar listelenmez.
       const activeQuickExams = window.examData
@@ -3333,7 +3365,7 @@ window.generateBizCardHTML = function(data) {
         .map(({ exam, idx }) => `<option value="${idx}">${escapeHtml(exam.name)}</option>`)
         .join("");
       const { value: step1 } = await Swal.fire({
-        title: "Hızlı Kayıt (1/2)",
+        title: guestMode ? "Misafir Hızlı Kayıt (1/2)" : "Hızlı Kayıt (1/2)",
         html: `
           <div class="text-start">
             <label class="form-label fw-semibold">Sınav</label>
@@ -3342,11 +3374,17 @@ window.generateBizCardHTML = function(data) {
             <label class="form-label fw-semibold">Seans</label>
             <select id="qr_session" class="form-select mb-2"></select>
 
-            <label class="form-label fw-semibold">Öğrenci T.C.</label>
-            <input id="qr_tc" class="form-control" maxlength="11" inputmode="numeric" placeholder="___________"
-                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)"/>
-
-            <div class="hint mt-2">Önce T.C. sorgulanır; kayıt yoksa bilgiler alınır.</div>
+            ${guestMode ? `
+              <div class="alert alert-info mt-2 mb-0">
+                <strong>T.C.'siz misafir kayıt</strong><br>
+                Gerçek T.C. kullanılmaz. Sistem tüm kayıtları kontrol ederek benzersiz bir misafir kodu oluşturur.
+              </div>
+            ` : `
+              <label class="form-label fw-semibold">Öğrenci T.C.</label>
+              <input id="qr_tc" class="form-control" maxlength="11" inputmode="numeric" placeholder="___________"
+                     oninput="this.value=this.value.replace(/\\D/g,'').slice(0,11)"/>
+              <div class="hint mt-2">Önce T.C. sorgulanır; kayıt yoksa bilgiler alınır.</div>
+            `}
           </div>
         `,
         didOpen: () => {
@@ -3370,27 +3408,28 @@ window.generateBizCardHTML = function(data) {
           fillSessions();
         },
         showCancelButton: true,
-        confirmButtonText: "Sorgula",
+        confirmButtonText: guestMode ? "Misafir Olarak Devam Et" : "Sorgula",
         cancelButtonText: "Vazgeç",
         preConfirm: async () => {
           const examIdx = parseInt(document.getElementById("qr_exam").value,10);
           const sessionIdx = parseInt(document.getElementById("qr_session").value,10);
-          const tc = String(document.getElementById("qr_tc").value || "").replace(/\D/g,'');
+          let tc = guestMode ? '' : digitsOnly(document.getElementById("qr_tc")?.value || '');
           if(!window.examData[examIdx]){ Swal.showValidationMessage("Sınav seçiniz."); return false; }
           const selectedSession = window.examData[examIdx]?.sessions?.[sessionIdx];
           if(Number.isNaN(sessionIdx) || !selectedSession){ Swal.showValidationMessage("Seans seçiniz."); return false; }
           if(!isFutureOrTodayDate(selectedSession.date)){ Swal.showValidationMessage("Geçmiş tarihli seans için hızlı kayıt yapılamaz."); return false; }
           if(selectedSession.remaining <= 0){ Swal.showValidationMessage("Seçilen seansın kontenjanı dolu."); return false; }
-          if(!isValidTC(tc)){ Swal.showValidationMessage("Geçerli 11 haneli T.C. giriniz."); return false; }
+          if(!guestMode && !isValidTC(tc)){ Swal.showValidationMessage("Geçerli 11 haneli T.C. giriniz."); return false; }
 
-          // Merkezi tekrar kayıt kontrolü: bu aşamada yalnızca T.C. + sınav kontrolü yapılır.
+          // Misafir kodu tüm kayıtlar karşısında kontrol edilir; normal T.C. sınav bazlıdır.
           showLoading(true);
           try{
             const list = await loadRegisteredStudents();
+            if(guestMode) tc = generateUniqueGuestCode(list);
             const exam = window.examData[examIdx];
             const conflict = findRegistrationConflict(list, {
               tc, examName:exam.name, examKey:exam.key
-            }, { checkName:false, tcMode:"exam" });
+            }, { checkName:false, tcMode:guestMode ? "global" : "exam" });
             if(conflict){
               Swal.showValidationMessage(registrationConflictMessage(conflict));
               return false;
@@ -3413,13 +3452,14 @@ window.generateBizCardHTML = function(data) {
 
       // Step 2: details
       const { value: form } = await Swal.fire({
-        title: "Hızlı Kayıt (2/2)",
+        title: guestMode ? "Misafir Hızlı Kayıt (2/2)" : "Hızlı Kayıt (2/2)",
         html: `
           <div class="text-start">
             <div class="alert alert-light border mb-2">
               <div class="fw-semibold">${escapeHtml(exam.name)}</div>
               <div class="text-secondary small">${escapeHtml(session.date)} • ${escapeHtml(session.time)}</div>
-              <div class="text-secondary small">T.C.: <b>${escapeHtml(step1.tc)}</b> (kilitli)</div>
+              <div class="text-secondary small">${guestMode ? "Misafir Kodu" : "T.C."}: <b>${escapeHtml(step1.tc)}</b> (kilitli)</div>
+              ${guestMode ? '<div class="small text-info mt-1">Bu kod T.C. kimlik numarası değildir. Öğrenci kayıtlı sınava misafir statüsünde alınır.</div>' : ''}
             </div>
 
             <label class="form-label fw-semibold">Öğrenci Tam Adı</label>
@@ -3497,7 +3537,7 @@ window.generateBizCardHTML = function(data) {
       let guardKeys = [];
 
       try{
-        const unique = await beginUniqueRegistration(registrationCandidate, studentId, { tcMode:"exam" });
+        const unique = await beginUniqueRegistration(registrationCandidate, studentId, { tcMode:guestMode ? "global" : "exam" });
         if(!unique.ok){
           showLoading(false);
           Swal.fire("Kayıt Engellendi", uniquenessResultMessage(unique), unique.reason === "busy" ? "warning" : "info");
@@ -3535,6 +3575,7 @@ window.generateBizCardHTML = function(data) {
         const studentData = {
           id: studentId,
           tc: step1.tc,
+          isGuest: guestMode,
           studentName: form.studentName,
           school: form.school,
           parentName: form.parentName,
@@ -3554,7 +3595,7 @@ window.generateBizCardHTML = function(data) {
         seatReserved = false;
         numberLocked = false;
 
-        Swal.fire("Başarılı", `Kayıt oluşturuldu. Öğrenci No: <b>${candidate}</b>`, "success");
+        Swal.fire("Başarılı", `Kayıt oluşturuldu. Öğrenci No: <b>${candidate}</b>${guestMode ? `<br>Misafir Kodu: <b>${escapeHtml(step1.tc)}</b>` : ''}`, "success");
         await refreshAdminData();
       } catch(e){
         console.error(e);
@@ -3686,10 +3727,11 @@ window.generateBizCardHTML = function(data) {
             <div class="hint mt-2">Not: Sınav değişirse öğrenci numarası otomatik yeniden atanır. Seans değişirse numara korunur.</div>
             <hr class="my-2">
 
-            <label class="form-label fw-semibold mb-1">T.C.</label>
-            <input id="e_tc" class="form-control mb-2" maxlength="11" inputmode="numeric"
+            <label class="form-label fw-semibold mb-1">${isGuestCode(s.tc) ? 'Misafir Kodu / Gerçek T.C.' : 'T.C.'}</label>
+            <input id="e_tc" class="form-control mb-2" maxlength="20" inputmode="text"
                    value="${escapeHtml(String(s.tc||''))}"
-                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
+                   oninput="if(!this.value.toUpperCase().startsWith('MIS-'))this.value=this.value.replace(/\\D/g,'').slice(0,11)">
+            ${isGuestCode(s.tc) ? '<div class="hint mb-2">Misafir kodunu koruyabilir veya öğrenci T.C. numarasını öğrendiğinde 11 haneli gerçek numarayla değiştirebilirsiniz.</div>' : ''}
 
             <label class="form-label fw-semibold mb-1">Öğrenci Tam Adı</label>
             <input id="e_name" class="form-control mb-2" value="${escapeHtml(s.studentName)}">
@@ -3741,7 +3783,8 @@ window.generateBizCardHTML = function(data) {
         preConfirm: async () => {
           const examIdx = parseInt(document.getElementById("e_exam").value,10);
           const sessionIdx = parseInt(document.getElementById("e_session").value,10);
-          const tc = String(document.getElementById("e_tc").value || "").replace(/\D/g,'');
+          const rawTc = String(document.getElementById("e_tc").value || "").trim().toUpperCase();
+          const tc = isGuestCode(rawTc) ? rawTc : digitsOnly(rawTc);
 
           const studentName = toUpperTR(normSpaces(document.getElementById("e_name").value));
           const school = toUpperTR(normSpaces(document.getElementById("e_school").value));
@@ -3752,7 +3795,8 @@ window.generateBizCardHTML = function(data) {
           const errs = [];
           if(!window.examData[examIdx]) errs.push("Sınav seçiniz.");
           if(Number.isNaN(sessionIdx)) errs.push("Seans seçiniz.");
-          if(!isValidTC(tc)) errs.push("T.C. 11 haneli olmalıdır.");
+          if(!isValidTC(tc) && !(isGuestCode(tc) && tc === String(s.tc || '').toUpperCase()))
+            errs.push("T.C. 11 haneli olmalı veya mevcut misafir kodu korunmalıdır.");
           if(!isTwoWords(studentName)) errs.push("Öğrenci adı en az 2 kelime olmalıdır.");
           if(school.length < 2) errs.push("Okul boş olamaz.");
           if(!isTwoWords(parentName)) errs.push("Veli adı en az 2 kelime olmalıdır.");
@@ -3803,7 +3847,7 @@ window.generateBizCardHTML = function(data) {
       try{
         const unique = await beginUniqueRegistration(registrationCandidate, guardOwner, {
           ignoreId:id,
-          tcMode:"exam"
+          tcMode:isGuestCode(formValues.tc) ? "global" : "exam"
         });
         if(!unique.ok){
           showLoading(false);
@@ -3854,6 +3898,7 @@ window.generateBizCardHTML = function(data) {
 
         const payload = {
           tc: formValues.tc,
+          isGuest: isGuestCode(formValues.tc),
           studentName: formValues.studentName,
           school: formValues.school,
           parentName: formValues.parentName,
